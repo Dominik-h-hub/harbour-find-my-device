@@ -1,0 +1,20 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=harbour-find-my-device
+Exec=harbour-find-my-device
+Name=harbour-find-my-device
+# translation example:
+# your app name in German locale (de)
+#
+# Remember to comment out the following line, if you do not want to use
+# a different app name in German locale (de).
+Name[de]=harbour-find-my-device
+
+[X-Sailjail]
+# Replace with your organization as a reverse domain name
+OrganizationName=org.myorg
+# ApplicationName does not have to be identical to Name
+ApplicationName=find-my-device
+# Add the required permissions here
+Permissions=
