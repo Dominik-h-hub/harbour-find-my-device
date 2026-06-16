@@ -12,14 +12,16 @@
 # The name of your application
 TARGET = harbour-find-my-device
 
-CONFIG += sailfishapp
+CONFIG += sailfishapp_qml
 
-SOURCES += src/harbour-find-my-device.cpp
+SOURCES +=
 
-DISTFILES += qml/harbour-find-my-device.qml \
+OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/cover/CoverPage.qml \
+    qml/cover/coveractions.py \
     qml/pages/FirstPage.qml \
     qml/pages/SecondPage.qml \
+    qml/pages/main.py \
     rpm/harbour-find-my-device.changes.in \
     rpm/harbour-find-my-device.changes.run.in \
     rpm/harbour-find-my-device.spec \

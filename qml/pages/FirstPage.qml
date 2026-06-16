@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import io.thp.pyotherside 1.4
 
 Page {
     id: page
@@ -34,10 +35,35 @@ Page {
             }
             Label {
                 x: Theme.horizontalPageMargin
+                id: resultLabel
                 text: qsTr("Hello Sailors")
                 color: Theme.secondaryHighlightColor
                 font.pixelSize: Theme.fontSizeExtraLarge
             }
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Run Python")
+                onClicked: python.call('main.hello', [], function(result) {
+                    resultLabel.text = result;
+                });
+            }
+        }
+    }
+
+    Python {
+        id: python
+
+        Component.onCompleted: {
+            addImportPath(Qt.resolvedUrl('.'));
+            importModule('main', function () {});
+        }
+
+        onError: {
+            console.log('python error: ' + traceback);
+        }
+
+        onReceived: {
+            console.log('got message from python: ' + data);
         }
     }
 }

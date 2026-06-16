@@ -22,6 +22,10 @@
         <source>Hello Sailors</source>
         <translation>Hallo Matrosen</translation>
     </message>
+    <message>
+        <source>Run Python</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SecondPage</name>

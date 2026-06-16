@@ -2,7 +2,7 @@
 Type=Application
 X-Nemo-Application-Type=silica-qt5
 Icon=harbour-find-my-device
-Exec=harbour-find-my-device
+Exec=sailfish-qml harbour-find-my-device
 Name=harbour-find-my-device
 # translation example:
 # your app name in German locale (de)
