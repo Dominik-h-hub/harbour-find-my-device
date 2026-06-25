@@ -107,38 +107,99 @@ Dialog {
 
             // --- daemon status overview --------------------------------------
             SectionHeader { text: qsTr("Background services") }
-            Row {
+            Column {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                spacing: Theme.paddingLarge
-                Column {
-                    width: parent.width - statusBtn.width - Theme.paddingLarge
+                spacing: Theme.paddingSmall
+
+                Item {
+                    width: parent.width
+                    height: gpsNameLabel.implicitHeight
                     Label {
-                        text: qsTr("GPS service: %1").arg(dialog.daemonStatus.gps)
+                        id: gpsNameLabel
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("GPS service")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.primaryColor
+                    }
+                    Label {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: dialog.daemonStatus.gps
                         font.pixelSize: Theme.fontSizeSmall
                         color: dialog.daemonStatus.gps === "running"
                                ? Theme.highlightColor : Theme.secondaryColor
                     }
+                }
+
+                Item {
+                    width: parent.width
+                    height: cmdNameLabel.implicitHeight
                     Label {
-                        text: qsTr("Command service: %1").arg(dialog.daemonStatus.cmd)
+                        id: cmdNameLabel
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Command service")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.primaryColor
+                    }
+                    Label {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: dialog.daemonStatus.cmd
                         font.pixelSize: Theme.fontSizeSmall
                         color: dialog.daemonStatus.cmd === "running"
                                ? Theme.highlightColor : Theme.secondaryColor
                     }
                 }
+
                 Button {
                     id: statusBtn
                     text: qsTr("Refresh")
                     onClicked: dialog.refreshDaemonStatus()
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
                 }
             }
 
             // --- general -----------------------------------------------------
             SectionHeader { text: qsTr("General") }
-            DetailItem {
+            BackgroundItem {
                 id: ownIdLabel
-                label: qsTr("Device-Id")
+                property string value: ""
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                height: Math.max(ownIdNameLabel.implicitHeight, ownIdValueLabel.implicitHeight) + Theme.paddingMedium * 2
+                onClicked: {
+                    Clipboard.text = ownIdLabel.value
+                }
+                Label {
+                    id: ownIdNameLabel
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Device-Id")
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.primaryColor
+                }
+                Row {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.paddingSmall
+                    Label {
+                        id: ownIdValueLabel
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: ownIdLabel.value
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.highlightColor
+                    }
+                    Image {
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: "image://theme/icon-s-clipboard"
+                        sourceSize.width: Theme.iconSizeSmall
+                        sourceSize.height: Theme.iconSizeSmall
+                        opacity: 0.6
+                    }
+                }
             }
             TextField {
                 id: labelField

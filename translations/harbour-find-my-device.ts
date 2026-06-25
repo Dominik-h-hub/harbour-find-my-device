@@ -414,11 +414,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GPS service:</source>
+        <source>GPS service</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Command service:</source>
+        <source>Command service</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
