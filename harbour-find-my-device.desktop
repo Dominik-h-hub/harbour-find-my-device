@@ -3,18 +3,10 @@ Type=Application
 X-Nemo-Application-Type=silica-qt5
 Icon=harbour-find-my-device
 Exec=sailfish-qml harbour-find-my-device
-Name=harbour-find-my-device
-# translation example:
-# your app name in German locale (de)
-#
-# Remember to comment out the following line, if you do not want to use
-# a different app name in German locale (de).
-Name[de]=harbour-find-my-device
+Name=Find My Device
+Name[de]=Mein Gerät finden
 
 [X-Sailjail]
-# Replace with your organization as a reverse domain name
-OrganizationName=org.myorg
-# ApplicationName does not have to be identical to Name
-ApplicationName=find-my-device
-# Add the required permissions here
-Permissions=
+# Sailjail sandboxing is disabled
+# access: geoclue, ofono, devicelock, location.conf, WebDAV, MQTT).
+Sandboxing=Disabled

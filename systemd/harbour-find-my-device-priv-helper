@@ -1,0 +1,14 @@
+#!/bin/sh
+# harbour-find-my-device-priv-helper
+#
+# The ONLY privileged primitive Find My Device needs: reboot the device after a
+# remote DELETE (wipe). The wipe itself runs as the user (it owns the files); the
+# reboot needs root because the background daemon has no polkit session.
+#
+# This is the entire privilege boundary, so it accepts EXACTLY one fixed command
+# and nothing else -- no arguments are passed through, no shell is invoked.
+# Granted to the 'privileged' group via a NOPASSWD sudoers drop-in.
+case "$1" in
+  reboot) exec /sbin/reboot ;;
+  *) echo "unknown command" >&2; exit 2 ;;
+esac

@@ -1,0 +1,13 @@
+[Unit]
+Description=Find My Device - GPS daemon (periodic fix, store, MQTT publish)
+After=network.target
+
+[Service]
+Type=simple
+Environment=FMD_LOG_LEVEL=INFO
+ExecStart=/usr/bin/python3 /usr/share/harbour-find-my-device/qml/utilities/daemon_gps.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

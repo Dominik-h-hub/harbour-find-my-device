@@ -1,0 +1,7 @@
+# Find My Device: allow the 'privileged' group (the primary Sailfish user and its
+# user services) to run ONLY the fixed reboot helper, without a password. This is
+# the single elevation needed (reboot after a remote DELETE wipe).
+#
+# Installed to /etc/sudoers.d/harbour-find-my-device as root:root mode 0440.
+# Validate with: visudo -cf /etc/sudoers.d/harbour-find-my-device
+%privileged ALL=(root) NOPASSWD: /usr/bin/harbour-find-my-device-priv-helper reboot
