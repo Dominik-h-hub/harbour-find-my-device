@@ -222,192 +222,16 @@
 <context>
     <name>SettingsPage</name>
     <message>
+        <source>(not set)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Settings</source>
-        <translation>Einstellungen</translation>
+        <translation type="unfinished">Einstellungen</translation>
     </message>
     <message>
         <source>Background services</source>
-        <translation>Hintergrunddienste</translation>
-    </message>
-    <message>
-        <source>Refresh</source>
-        <translation>Aktualisieren</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation>Allgemein</translation>
-    </message>
-    <message>
-        <source>Device-Id</source>
-        <translation>Device-Id</translation>
-    </message>
-    <message>
-        <source>Device label</source>
-        <translation>Gerätename</translation>
-    </message>
-    <message>
-        <source>Falls leer wird die Device-Id angezeigt</source>
-        <translation>Falls leer wird die Device-Id angezeigt</translation>
-    </message>
-    <message>
-        <source>GPS query interval (minutes)</source>
-        <translation>Abfrageintervall GPS (Minuten)</translation>
-    </message>
-    <message>
-        <source>Auto-enable location when needed</source>
-        <translation>Ortung bei Bedarf automatisch aktivieren</translation>
-    </message>
-    <message>
-        <source>Lets the daemon turn on the system location services and accept the agreement. Opt-in.</source>
-        <translation>Erlaubt dem Dienst, die System-Standortdienste zu aktivieren und die Zustimmung zu akzeptieren. Opt-in.</translation>
-    </message>
-    <message>
-        <source>MQTT</source>
-        <translation>MQTT</translation>
-    </message>
-    <message>
-        <source>Publish coordinates over MQTT</source>
-        <translation>Koordinaten über MQTT veröffentlichen</translation>
-    </message>
-    <message>
-        <source>Off = the daemon stores locally but does not publish.</source>
-        <translation>Aus = der Dienst speichert lokal, veröffentlicht aber nicht.</translation>
-    </message>
-    <message>
-        <source>MQTT server</source>
-        <translation>MQTT-Server</translation>
-    </message>
-    <message>
-        <source>broker.example.com</source>
-        <translation>broker.example.com</translation>
-    </message>
-    <message>
-        <source>Use TLS</source>
-        <translation>TLS verwenden</translation>
-    </message>
-    <message>
-        <source>MQTT username</source>
-        <translation>MQTT-Benutzername</translation>
-    </message>
-    <message>
-        <source>MQTT password</source>
-        <translation>MQTT-Passwort</translation>
-    </message>
-    <message>
-        <source>Port</source>
-        <translation>Port</translation>
-    </message>
-    <message>
-        <source>Background activity</source>
-        <translation>Hintergrundaktivität</translation>
-    </message>
-    <message>
-        <source>Keep reporting the location while the app is closed (the GPS daemon runs).</source>
-        <translation>Standort weiter übermitteln, auch wenn die App geschlossen ist (der GPS-Dienst läuft).</translation>
-    </message>
-    <message>
-        <source>Remote actions</source>
-        <translation>Remote-Aktionen</translation>
-    </message>
-    <message>
-        <source>Allow RING</source>
-        <translation>RING erlauben</translation>
-    </message>
-    <message>
-        <source>Allow remote LOCK</source>
-        <translation>Fernsperre erlauben</translation>
-    </message>
-    <message>
-        <source>Allow remote DELETE (wipe)</source>
-        <translation>Fernlöschung erlauben</translation>
-    </message>
-    <message>
-        <source>PIN for remote access (HMAC secret)</source>
-        <translation>PIN für Fernzugriff (HMAC-Secret)</translation>
-    </message>
-    <message>
-        <source>Camera</source>
-        <translation>Kamera</translation>
-    </message>
-    <message>
-        <source>Allow remote photo</source>
-        <translation>Foto per Fernzugriff erlauben</translation>
-    </message>
-    <message>
-        <source>WebDAV URL for photo upload</source>
-        <translation>WebDAV-URL zum Hochladen von Fotos</translation>
-    </message>
-    <message>
-        <source>WebDAV username</source>
-        <translation>WebDAV-Benutzername</translation>
-    </message>
-    <message>
-        <source>WebDAV password</source>
-        <translation>WebDAV-Passwort</translation>
-    </message>
-    <message>
-        <source>SMS</source>
-        <translation>SMS</translation>
-    </message>
-    <message>
-        <source>Remote control via SMS</source>
-        <translation>Fernzugriff über SMS</translation>
-    </message>
-    <message>
-        <source>Send GPS coordinates via SMS</source>
-        <translation>GPS-Koordinaten per SMS senden</translation>
-    </message>
-    <message>
-        <source>+4915123456789</source>
-        <translation>+4915123456789</translation>
-    </message>
-    <message>
-        <source>SMS authentication (TOTP)</source>
-        <translation>SMS-Authentifizierung (TOTP)</translation>
-    </message>
-    <message>
-        <source>Enrol this secret in an authenticator app (e.g. Aegis, Google Authenticator) on a SECOND device. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation>Hinterlege dieses Secret in einer Authenticator-App (z. B. Aegis, Google Authenticator) auf einem ZWEITEN Gerät. Der aktuelle Code wird in SMS-Befehlen benötigt. Bewahre die Backup-Codes für den Fall ohne Authenticator-App sicher auf.</translation>
-    </message>
-    <message>
-        <source>TOTP secret</source>
-        <translation>TOTP-Secret</translation>
-    </message>
-    <message>
-        <source>(not set)</source>
-        <translation>(nicht gesetzt)</translation>
-    </message>
-    <message>
-        <source>Generate new TOTP secret</source>
-        <translation>Neues TOTP-Secret erzeugen</translation>
-    </message>
-    <message>
-        <source>Unused backup codes</source>
-        <translation>Unbenutzte Backup-Codes</translation>
-    </message>
-    <message>
-        <source>Regenerate backup codes</source>
-        <translation>Backup-Codes neu erzeugen</translation>
-    </message>
-    <message>
-        <source>Map</source>
-        <translation>Karte</translation>
-    </message>
-    <message>
-        <source>Tile provider</source>
-        <translation>Kartenanbieter</translation>
-    </message>
-    <message>
-        <source>OSM (no key needed)</source>
-        <translation>OSM (kein Schlüssel nötig)</translation>
-    </message>
-    <message>
-        <source>Geoapify</source>
-        <translation>Geoapify</translation>
-    </message>
-    <message>
-        <source>Geoapify API key (optional)</source>
-        <translation>Geoapify-API-Schlüssel (optional)</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>GPS service</source>
@@ -418,11 +242,195 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Refresh</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Device-Id</source>
+        <translation type="unfinished">Device-Id</translation>
+    </message>
+    <message>
+        <source>Device label</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Falls leer wird die Device-Id angezeigt</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS query interval (minutes)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Auto-enable location when needed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lets the daemon turn on the system location services and accept the agreement. Opt-in.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MQTT</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Publish coordinates over MQTT</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off = the daemon stores locally but does not publish.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MQTT server</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>broker.example.com</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use TLS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MQTT username</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MQTT password</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Background activity</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keep reporting the location while the app is closed (the GPS daemon runs).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remote actions</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow RING</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow remote LOCK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow remote DELETE (wipe)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PIN for remote access (HMAC secret)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Camera</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow remote photo</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>WebDAV URL for photo upload</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>WebDAV username</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>WebDAV password</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SMS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>+4915123456789</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Whitelist (Allowed senders) - one per line</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Remote control via SMS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Send GPS coordinates via SMS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SMS authentication (TOTP)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enrol this secret in a TOTP authenticator appon a SECOND device. The current code is requiredin SMS commands. Keep backup codes safe for usewithout an authenticator app.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>TOTP secret</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Scan with an authenticator app on another device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Generate new TOTP secret</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SMS - Backup Codes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>If TOTP is not available, backup codes can be used for authentication. Each code can be used only once.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unused backup codes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Regenerate backup codes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Map</source>
+        <translation type="unfinished">Karte</translation>
+    </message>
+    <message>
+        <source>Tile provider</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>OSM (no key needed)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Geoapify</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Geoapify API key (optional)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

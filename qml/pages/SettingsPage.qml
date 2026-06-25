@@ -65,8 +65,6 @@ Dialog {
         backupCountText = "" + (cfg.backup_codes_unused || 0);
     }
 
-    // Ask the backend for the QR matrix of the current otpauth URI so a second
-    // device's authenticator app can scan the secret. Cleared when no secret.
     function refreshTotpQr() {
         if (!totpUriText) {
             totpQrMatrix = null;
@@ -171,6 +169,7 @@ Dialog {
                 Button {
                     id: statusBtn
                     text: qsTr("Refresh")
+                    highlighted: true
                     onClicked: dialog.refreshDaemonStatus()
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -338,13 +337,11 @@ Dialog {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Theme.secondaryColor
-                text: qsTr("Enrol this secret in an authenticator app (e.g. Aegis, "
-                         + "Google Authenticator) on a SECOND device. The current "
-                         + "code is required in SMS commands. Keep backup codes safe "
-                         + "for use without an authenticator app.")
+                text: qsTr("Enrol this secret in a TOTP authenticator app"
+                         + "on a SECOND device. The current code is required"
+                         + "in SMS commands. Keep backup codes safe for use"
+                         + "without an authenticator app.")
             }
-            // TOTP secret: name left, value right, tap to copy (same pattern as
-            // Device-Id above).
             BackgroundItem {
                 id: totpSecretItem
                 x: Theme.horizontalPageMargin
@@ -409,6 +406,7 @@ Dialog {
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: qsTr("Generate new TOTP secret")
+                highlighted: true
                 onClicked: Bridge.call("rotate_totp_secret", [], function (r) {
                     if (r) {
                         dialog.totpSecretText = r.secret;
@@ -417,10 +415,46 @@ Dialog {
                     }
                 })
             }
-            DetailItem { label: qsTr("Unused backup codes"); value: dialog.backupCountText }
+            SectionHeader { text: qsTr("SMS - Backup Codes") }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryColor
+                text: qsTr("If TOTP is not available, backup codes can be used for authentication. Each code can be used only once.")
+            }
+            Column {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                spacing: Theme.paddingSmall
+
+                Item {
+                    width: parent.width
+                    height: backupCodesNameLabel.implicitHeight
+                    Label {
+                        id: backupCodesNameLabel
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Unused backup codes")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.primaryColor
+                    }
+                    Label {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: dialog.backupCountText
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.highlightColor
+                    }
+                }
+            }
+
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: qsTr("Regenerate backup codes")
+                highlighted: true
+                color: Theme.primaryColor
                 onClicked: Bridge.call("regenerate_backup_codes", [], function (codes) {
                     if (codes) {
                         dialog.backupCountText = "" + codes.length;

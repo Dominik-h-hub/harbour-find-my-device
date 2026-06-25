@@ -234,6 +234,14 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>GPS service</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Command service</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Refresh</source>
         <translation type="unfinished"></translation>
     </message>
@@ -354,6 +362,14 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>+4915123456789</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Whitelist (Allowed senders) - one per line</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Remote control via SMS</source>
         <translation type="unfinished"></translation>
     </message>
@@ -362,15 +378,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>+4915123456789</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>SMS authentication (TOTP)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enrol this secret in an authenticator app (e.g. Aegis, Google Authenticator) on a SECOND device. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
+        <source>Enrol this secret in a TOTP authenticator appon a SECOND device. The current code is requiredin SMS commands. Keep backup codes safe for usewithout an authenticator app.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -378,7 +390,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Scan with an authenticator app on another device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Generate new TOTP secret</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SMS - Backup Codes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>If TOTP is not available, backup codes can be used for authentication. Each code can be used only once.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -407,22 +431,6 @@
     </message>
     <message>
         <source>Geoapify API key (optional)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>GPS service</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Command service</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Whitelist (Allowed senders) - one per line</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Scan with an authenticator app on another device</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
