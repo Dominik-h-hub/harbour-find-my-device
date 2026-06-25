@@ -275,11 +275,10 @@ Dialog {
             TextSwitch { id: ringSwitch; text: qsTr("Allow RING") }
             TextSwitch { id: lockSwitch; text: qsTr("Allow remote LOCK") }
             TextSwitch { id: deleteSwitch; text: qsTr("Allow remote DELETE (wipe)") }
-            TextField {
+            PasswordField {
                 id: pinField
                 width: parent.width
                 label: qsTr("PIN for remote access (HMAC secret)")
-                echoMode: TextInput.Password
                 inputMethodHints: Qt.ImhNoPredictiveText
             }
 
@@ -308,14 +307,14 @@ Dialog {
 
             // --- SMS ---------------------------------------------------------
             SectionHeader { text: qsTr("SMS") }
-            TextSwitch { id: smsRemoteSwitch; text: qsTr("Remote control via SMS") }
-            TextSwitch { id: smsGpsSwitch; text: qsTr("Send GPS coordinates via SMS") }
             TextArea {
                 id: whitelistField
                 width: parent.width
-                label: qsTr("Allowed senders (one per line)")
                 placeholderText: qsTr("+4915123456789")
+                description: qsTr("Whitelist (Allowed senders) - one per line")
             }
+            TextSwitch { id: smsRemoteSwitch; text: qsTr("Remote control via SMS") }
+            TextSwitch { id: smsGpsSwitch; text: qsTr("Send GPS coordinates via SMS") }
 
             // --- SMS two-factor (TOTP + backup codes) ------------------------
             SectionHeader { text: qsTr("SMS authentication (TOTP)") }

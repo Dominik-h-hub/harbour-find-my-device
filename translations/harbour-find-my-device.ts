@@ -362,10 +362,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Allowed senders (one per line)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>+4915123456789</source>
         <translation type="unfinished"></translation>
     </message>
@@ -419,6 +415,10 @@
     </message>
     <message>
         <source>Command service</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Whitelist (Allowed senders) - one per line</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
