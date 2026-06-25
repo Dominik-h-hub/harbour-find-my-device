@@ -421,5 +421,9 @@
         <source>Whitelist (Allowed senders) - one per line</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Scan with an authenticator app on another device</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>

@@ -11,6 +11,7 @@ Dialog {
     property var daemonStatus: ({ gps: "unknown", cmd: "unknown" })
     property string totpSecretText: qsTr("(not set)")
     property string totpUriText: ""
+    property var totpQrMatrix: null
     property string backupCountText: "0"
 
     Component.onCompleted: {
@@ -60,7 +61,20 @@ Dialog {
 
         totpSecretText = cfg.totp_secret ? cfg.totp_secret : qsTr("(not set)");
         totpUriText = cfg.totp_uri || "";
+        refreshTotpQr();
         backupCountText = "" + (cfg.backup_codes_unused || 0);
+    }
+
+    // Ask the backend for the QR matrix of the current otpauth URI so a second
+    // device's authenticator app can scan the secret. Cleared when no secret.
+    function refreshTotpQr() {
+        if (!totpUriText) {
+            totpQrMatrix = null;
+            return;
+        }
+        Bridge.call("qr_matrix", [totpUriText], function (m) {
+            totpQrMatrix = (m && m.rows && m.rows.length > 0) ? m : null;
+        });
     }
 
     onAccepted: {
@@ -329,21 +343,78 @@ Dialog {
                          + "code is required in SMS commands. Keep backup codes safe "
                          + "for use without an authenticator app.")
             }
-            DetailItem { label: qsTr("TOTP secret"); value: dialog.totpSecretText }
+            // TOTP secret: name left, value right, tap to copy (same pattern as
+            // Device-Id above).
+            BackgroundItem {
+                id: totpSecretItem
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                height: Math.max(totpNameLabel.implicitHeight, totpValueLabel.implicitHeight) + Theme.paddingMedium * 2
+                enabled: dialog.totpUriText !== ""
+                onClicked: Clipboard.text = dialog.totpSecretText
+                Label {
+                    id: totpNameLabel
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("TOTP secret")
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.primaryColor
+                }
+                Row {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: totpNameLabel.right
+                    anchors.leftMargin: Theme.paddingMedium
+                    spacing: Theme.paddingSmall
+                    layoutDirection: Qt.RightToLeft
+                    Image {
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: "image://theme/icon-s-clipboard"
+                        sourceSize.width: Theme.iconSizeSmall
+                        sourceSize.height: Theme.iconSizeSmall
+                        opacity: 0.6
+                        visible: dialog.totpUriText !== ""
+                    }
+                    Label {
+                        id: totpValueLabel
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, parent.width - Theme.iconSizeSmall - Theme.paddingSmall)
+                        truncationMode: TruncationMode.Fade
+                        text: dialog.totpSecretText
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.family: Theme.fontFamilyHeading
+                        color: Theme.highlightColor
+                    }
+                }
+            }
+
+            // Scannable QR code of the otpauth:// URI for a second device.
+            QrCode {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: dialog.totpQrMatrix !== null
+                matrix: dialog.totpQrMatrix
+                dimension: Math.min(parent.width - 2 * Theme.horizontalPageMargin,
+                                    Theme.itemSizeHuge * 3)
+            }
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                wrapMode: Text.WrapAnywhere
-                visible: dialog.totpUriText !== ""
-                font.pixelSize: Theme.fontSizeTiny
-                color: Theme.secondaryHighlightColor
-                text: dialog.totpUriText
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                visible: dialog.totpQrMatrix !== null
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryColor
+                text: qsTr("Scan with an authenticator app on another device")
             }
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: qsTr("Generate new TOTP secret")
                 onClicked: Bridge.call("rotate_totp_secret", [], function (r) {
-                    if (r) { dialog.totpSecretText = r.secret; dialog.totpUriText = r.uri; }
+                    if (r) {
+                        dialog.totpSecretText = r.secret;
+                        dialog.totpUriText = r.uri;
+                        dialog.refreshTotpQr();
+                    }
                 })
             }
             DetailItem { label: qsTr("Unused backup codes"); value: dialog.backupCountText }
