@@ -101,7 +101,15 @@ Dialog {
             tile_provider: providerCombo.currentIndex === 1 ? "geoapify" : "osm",
             geoapify_key: geoapifyKeyField.text
         };
-        Bridge.call("save_settings", [values], function () {});
+        // Capture the Bridge singleton: onAccepted pops and destroys this Dialog
+        // page, so by the time the save_settings callback fires an unqualified
+        // 'Bridge' would resolve to undefined (the page's import scope is gone).
+        var b = Bridge;
+        b.call("save_settings", [values], function () {
+            // Re-read the map provider/key so the map page can rebuild itself
+            // with the new tile source without an app restart.
+            b.refreshMapConfig();
+        });
     }
 
     SilicaFlickable {

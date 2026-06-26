@@ -13,6 +13,23 @@ QtObject {
     property string ownLabel: ""
     property string osmUserAgent: ""
 
+    // Map tile config. The map (MapCanvas.qml) binds its plugin parameters to
+    // these, so they must be set before the Map is constructed. refreshMapConfig()
+    // re-reads them after a settings change; the map page recreates the Map when
+    // they change so the osm plugin picks up the new provider/key.
+    property string tileProvider: ""
+    property string geoapifyKey: ""
+
+    // Re-read the map provider config from the backend (call after saving settings).
+    function refreshMapConfig() {
+        call("get_map_config", [], function (cfg) {
+            if (!cfg) return;
+            bridge.tileProvider = cfg.tile_provider || "osm";
+            bridge.geoapifyKey = cfg.geoapify_key || "";
+            bridge.osmUserAgent = cfg.osm_user_agent || bridge.osmUserAgent;
+        });
+    }
+
     // Relayed backend signals (see api.py _emit()).
     signal logMessage(string text)
     signal mapUpdated()
@@ -37,6 +54,8 @@ QtObject {
                         bridge.ownDeviceId = state.own_device_id;
                         bridge.ownLabel = state.own_label;
                         bridge.osmUserAgent = state.osm_user_agent;
+                        bridge.tileProvider = state.tile_provider || "osm";
+                        bridge.geoapifyKey = state.geoapify_key || "";
                     }
                     bridge.ready = true;
                     bridge.devicesUpdated();
