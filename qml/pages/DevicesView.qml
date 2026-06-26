@@ -93,7 +93,7 @@ SilicaListView {
                 width: parent.width
                 text: {
                     var parts = [];
-                    if (lastTime !== "") parts.push("Last update from: " + lastTime);
+                    if (lastTime !== "") parts.push("Last GPS fix: " + lastTime);
                     if (battery >= 0) parts.push(battery + "%");
                     if (isOwn === 0 && hasPin === 0) parts.push(qsTr("no PIN set"));
                     if (authFailed === 1) parts.push(qsTr("wrong PIN"));
@@ -112,11 +112,6 @@ SilicaListView {
                 color: Theme.highlightColor
             }
 
-            // One row, four equal-width compact buttons (RING/LOCK/CAMERA/DELETE).
-            // Silica's Button has no settable font on this SFOS version, so we use
-            // custom chip buttons to control the size. Width is always a quarter so
-            // the own device's lone RING button keeps the same size; hidden buttons
-            // are skipped by the Row layout.
             Row {
                 width: parent.width
                 spacing: Theme.paddingSmall

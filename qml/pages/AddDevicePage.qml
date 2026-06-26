@@ -14,6 +14,14 @@ Dialog {
     canAccept: editMode || (idField.text.length === 10 && idValid)
     property bool idValid: /^[A-Za-z0-9]{10}$/.test(idField.text)
 
+    Component.onCompleted: {
+        if (editMode && deviceId !== "") {
+            Bridge.call("get_device_pin", [deviceId], function (pin) {
+                pinField.text = pin || "";
+            });
+        }
+    }
+
     onAccepted: {
         if (editMode) {
             Bridge.call("update_device",
