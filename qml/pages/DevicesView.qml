@@ -105,33 +105,50 @@ SilicaListView {
             }
 
             // --- action buttons ------------------------------------------
-            Flow {
+            // Caption so it is clear these control the remote phone.
+            Label {
+                text: qsTr("Commands")
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.highlightColor
+            }
+
+            // One row, four equal-width compact buttons (RING/LOCK/CAMERA/DELETE).
+            // Silica's Button has no settable font on this SFOS version, so we use
+            // custom chip buttons to control the size. Width is always a quarter so
+            // the own device's lone RING button keeps the same size; hidden buttons
+            // are skipped by the Row layout.
+            Row {
                 width: parent.width
                 spacing: Theme.paddingSmall
+                property real btnWidth: (width - spacing * 3) / 4
 
-                Button {
+                CommandButton {
+                    width: parent.btnWidth
                     text: qsTr("RING")
-                    enabled: ringEnabled === 1
-                    onClicked: list.sendCommand(deviceId, "RING", "")
+                    btnEnabled: ringEnabled === 1
+                    onActivated: list.sendCommand(deviceId, "RING", "")
                 }
-                Button {
+                CommandButton {
+                    width: parent.btnWidth
                     text: qsTr("LOCK")
                     visible: isOwn === 0
-                    enabled: actionsEnabled === 1
-                    onClicked: list.sendCommand(deviceId, "LOCK", "")
+                    btnEnabled: actionsEnabled === 1
+                    onActivated: list.sendCommand(deviceId, "LOCK", "")
                 }
-                Button {
+                CommandButton {
+                    width: parent.btnWidth
                     text: qsTr("CAMERA")
                     visible: isOwn === 0
-                    enabled: cameraEnabled === 1
+                    btnEnabled: cameraEnabled === 1
                     // Default to the back camera; front is in the long-press menu.
-                    onClicked: list.sendCommand(deviceId, "CAMERA", "back")
+                    onActivated: list.sendCommand(deviceId, "CAMERA", "back")
                 }
-                Button {
+                CommandButton {
+                    width: parent.btnWidth
                     text: qsTr("DELETE")
                     visible: isOwn === 0
-                    enabled: actionsEnabled === 1
-                    onClicked: remorse.execute(item, qsTr("Wiping remote device"),
+                    btnEnabled: actionsEnabled === 1
+                    onActivated: remorse.execute(item, qsTr("Wiping remote device"),
                         function () { list.sendCommand(deviceId, "DELETE", ""); })
                 }
             }

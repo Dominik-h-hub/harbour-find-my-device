@@ -28,19 +28,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>PIN (leave empty to keep current)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PIN for remote access</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PIN</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>The PIN must match the remote device&apos;s own PIN. The same MQTT server as configured in Settings is used to reach it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PIN for remote access (HMAC secret)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -74,6 +66,10 @@
     <name>DevicesView</name>
     <message>
         <source>Devices</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Commands</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

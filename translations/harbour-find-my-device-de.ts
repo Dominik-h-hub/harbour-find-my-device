@@ -28,20 +28,12 @@
         <translation>z. B. Handy meiner Frau</translation>
     </message>
     <message>
-        <source>PIN (leave empty to keep current)</source>
-        <translation>PIN (leer lassen, um aktuelle zu behalten)</translation>
-    </message>
-    <message>
-        <source>PIN for remote access</source>
-        <translation>PIN für Fernzugriff</translation>
-    </message>
-    <message>
-        <source>PIN</source>
-        <translation>PIN</translation>
-    </message>
-    <message>
         <source>The PIN must match the remote device&apos;s own PIN. The same MQTT server as configured in Settings is used to reach it.</source>
         <translation>Die PIN muss mit der eigenen PIN des anderen Geräts übereinstimmen. Zum Erreichen wird derselbe MQTT-Server wie in den Einstellungen verwendet.</translation>
+    </message>
+    <message>
+        <source>PIN for remote access (HMAC secret)</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -83,6 +75,10 @@
     <message>
         <source>Devices</source>
         <translation>Geräte</translation>
+    </message>
+    <message>
+        <source>Commands</source>
+        <translation>Befehle</translation>
     </message>
     <message>
         <source>Could not send %1: %2</source>
