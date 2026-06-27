@@ -26,6 +26,7 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/pages/SettingsPage.qml \
     qml/pages/AddDevicePage.qml \
     qml/pages/BackupCodesPage.qml \
+    qml/pages/ConfirmDeletePage.qml \
     qml/utilities/api.py \
     qml/utilities/mqtt_client.py \
     qml/utilities/daemon_gps.py \

@@ -167,8 +167,10 @@ SilicaListView {
                         text: qsTr("DELETE")
                         visible: isOwn === 0
                         btnEnabled: actionsEnabled === 1
-                        onActivated: remorse.execute(item, qsTr("Wiping remote device"),
-                            function () { list.sendCommand(deviceId, "DELETE", ""); })
+                        // Destructive: confirm on a dedicated page before sending.
+                        onActivated: pageStack.push(
+                            Qt.resolvedUrl("ConfirmDeletePage.qml"),
+                            { deviceId: deviceId, deviceLabel: label })
                     }
                 }
             }

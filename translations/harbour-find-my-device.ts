@@ -52,6 +52,25 @@
     </message>
 </context>
 <context>
+    <name>ConfirmDeletePage</name>
+    <message>
+        <source>Confirm deletion</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>WARNING: You are about to delete all user data from your device. This cannot be undone. After the user data has been deleted the device will reboot. Locating it will no longer be possible. Do you really want to continue?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete user data now</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>CoverPage</name>
     <message>
         <source>Find My Device</source>
@@ -146,10 +165,6 @@
     </message>
     <message>
         <source>DELETE</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Wiping remote device</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

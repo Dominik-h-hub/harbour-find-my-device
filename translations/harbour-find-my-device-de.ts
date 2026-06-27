@@ -52,6 +52,25 @@
     </message>
 </context>
 <context>
+    <name>ConfirmDeletePage</name>
+    <message>
+        <source>Confirm deletion</source>
+        <translation>Löschung bestätigen</translation>
+    </message>
+    <message>
+        <source>WARNING: You are about to delete all user data from your device. This cannot be undone. After the user data has been deleted the device will reboot. Locating it will no longer be possible. Do you really want to continue?</source>
+        <translation>ACHTUNG: Du bist im Begriff alle Userdaten von deinem Gerät zu löschen. Dies kann nicht rückgängig gemacht werden. Nach der Löschung der Userdaten wird das Gerät neu gestartet. Eine Ortung ist danach nicht mehr möglich. Möchtest du wirklich fortfahren?</translation>
+    </message>
+    <message>
+        <source>Delete user data now</source>
+        <translation>Userdaten jetzt löschen</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
+    </message>
+</context>
+<context>
     <name>CoverPage</name>
     <message>
         <source>Find My Device</source>
@@ -131,10 +150,6 @@
     <message>
         <source>Uhr</source>
         <translation>Uhr</translation>
-    </message>
-    <message>
-        <source>Wiping remote device</source>
-        <translation>Gerät wird gelöscht</translation>
     </message>
     <message>
         <source>Photo (front camera)</source>
