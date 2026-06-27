@@ -117,8 +117,20 @@
         <translation>falsche PIN</translation>
     </message>
     <message>
+        <source>no response (check device id)</source>
+        <translation>keine Antwort (Device-Id prüfen)</translation>
+    </message>
+    <message>
+        <source>%1: no response</source>
+        <translation>%1: keine Antwort</translation>
+    </message>
+    <message>
         <source>no data yet</source>
         <translation>noch keine Daten</translation>
+    </message>
+    <message>
+        <source>Uhr</source>
+        <translation>Uhr</translation>
     </message>
     <message>
         <source>Wiping remote device</source>
@@ -162,6 +174,10 @@
     </message>
     <message>
         <source>DELETE</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Last GPS FIX: %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

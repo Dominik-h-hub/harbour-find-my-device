@@ -117,7 +117,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>no response (check device id)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1: no response</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>no data yet</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Uhr</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -162,6 +174,10 @@
     </message>
     <message>
         <source>Pull down to add a device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Last GPS FIX: %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

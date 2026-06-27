@@ -37,6 +37,7 @@ SilicaListView {
                     isOwn: d.is_own ? 1 : 0,
                     hasPin: d.has_pin ? 1 : 0,
                     authFailed: d.auth_failed ? 1 : 0,
+                    noResponse: d.no_response ? 1 : 0,
                     lastAuthResult: d.last_auth_result,
                     actionsEnabled: d.actions_enabled ? 1 : 0,
                     cameraEnabled: d.camera_enabled ? 1 : 0,
@@ -47,6 +48,13 @@ SilicaListView {
                 });
             }
         });
+    }
+
+    // Render an ISO timestamp (e.g. "2026-06-26T19:09:24+02:00") as YYYY-MM-DD HH:MM Uhr.
+    function formatTimestamp(iso) {
+        if (!iso || iso.length < 16)
+            return iso || "";
+        return iso.substr(0, 10) + " " + iso.substr(11, 5) + " " + qsTr("Uhr");
     }
 
     function sendCommand(deviceId, cmd, arg) {
@@ -65,6 +73,7 @@ SilicaListView {
             var txt = result === "ok" ? qsTr("%1 acknowledged").arg(cmd)
                     : result === "auth_failed" ? qsTr("%1 failed: wrong PIN").arg(cmd)
                     : result === "disabled" ? qsTr("%1 disabled on target").arg(cmd)
+                    : result === "timeout" ? qsTr("%1: no response").arg(cmd)
                     : qsTr("%1: %2").arg(cmd).arg(result);
             feedback.show(txt);
         }
@@ -74,77 +83,93 @@ SilicaListView {
 
     delegate: ListItem {
         id: item
-        contentHeight: contentColumn.height + Theme.paddingMedium
+        contentHeight: frame.height + 2 * Theme.paddingSmall
         menu: (isOwn === 1) ? null : contextMenuComponent
 
-        Column {
-            id: contentColumn
+        Rectangle {
+            id: frame
             x: Theme.horizontalPageMargin
-            width: parent.width - 2 * Theme.horizontalPageMargin
             y: Theme.paddingSmall
-            spacing: Theme.paddingSmall
+            width: parent.width - 2 * Theme.horizontalPageMargin
+            height: contentColumn.height + 2 * Theme.paddingMedium
+            radius: Theme.paddingMedium
+            color: item.highlighted ? Theme.rgba(Theme.highlightColor, 0.1)
+                                    : Theme.rgba(Theme.primaryColor, 0.06)
+            border.width: 1
+            border.color: Theme.rgba(Theme.highlightColor, 0.8)
 
-            Label {
-                text: label + (isOwn === 1 ? "  " + qsTr("(this device)") : "")
-                color: item.highlighted ? Theme.highlightColor : Theme.primaryColor
-                font.pixelSize: Theme.fontSizeMedium
-            }
-            Label {
-                width: parent.width
-                text: {
-                    var parts = [];
-                    if (lastTime !== "") parts.push("Last GPS fix: " + lastTime);
-                    if (battery >= 0) parts.push(battery + "%");
-                    if (isOwn === 0 && hasPin === 0) parts.push(qsTr("no PIN set"));
-                    if (authFailed === 1) parts.push(qsTr("wrong PIN"));
-                    return parts.length ? parts.join("  ·  ") : qsTr("no data yet");
-                }
-                color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
-                truncationMode: TruncationMode.Fade
-            }
-
-            // --- action buttons ------------------------------------------
-            // Caption so it is clear these control the remote phone.
-            Label {
-                text: qsTr("Commands")
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.highlightColor
-            }
-
-            Row {
-                width: parent.width
+            Column {
+                id: contentColumn
+                x: Theme.paddingMedium
+                y: Theme.paddingMedium
+                width: parent.width - 2 * Theme.paddingMedium
                 spacing: Theme.paddingSmall
-                property real btnWidth: (width - spacing * 3) / 4
 
-                CommandButton {
-                    width: parent.btnWidth
-                    text: qsTr("RING")
-                    btnEnabled: ringEnabled === 1
-                    onActivated: list.sendCommand(deviceId, "RING", "")
+                Label {
+                    text: label + (isOwn === 1 ? "  " + qsTr("(this device)") : "")
+                    color: item.highlighted ? Theme.highlightColor : Theme.primaryColor
+                    font.pixelSize: Theme.fontSizeMedium
                 }
-                CommandButton {
-                    width: parent.btnWidth
-                    text: qsTr("LOCK")
-                    visible: isOwn === 0
-                    btnEnabled: actionsEnabled === 1
-                    onActivated: list.sendCommand(deviceId, "LOCK", "")
+                Label {
+                    width: parent.width
+                    text: {
+                        var parts = [];
+                        if (lastTime !== "")
+                            parts.push(qsTr("Last GPS FIX: %1").arg(list.formatTimestamp(lastTime)));
+                        if (battery >= 0) parts.push(battery + "%");
+                        if (isOwn === 0 && hasPin === 0) parts.push(qsTr("no PIN set"));
+                        if (authFailed === 1) parts.push(qsTr("wrong PIN"));
+                        if (noResponse === 1) parts.push(qsTr("no response (check device id)"));
+                        return parts.length ? parts.join("  ·  ") : qsTr("no data yet");
+                    }
+                    // Red when something is wrong (wrong PIN / no response)
+                    color: (authFailed === 1 || noResponse === 1)
+                           ? Theme.errorColor : Theme.secondaryColor
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    wrapMode: Text.Wrap
                 }
-                CommandButton {
-                    width: parent.btnWidth
-                    text: qsTr("CAMERA")
-                    visible: isOwn === 0
-                    btnEnabled: cameraEnabled === 1
-                    // Default to the back camera; front is in the long-press menu.
-                    onActivated: list.sendCommand(deviceId, "CAMERA", "back")
+
+                // --- action buttons --------------------------------------
+                Label {
+                    text: qsTr("Commands")
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.highlightColor
                 }
-                CommandButton {
-                    width: parent.btnWidth
-                    text: qsTr("DELETE")
-                    visible: isOwn === 0
-                    btnEnabled: actionsEnabled === 1
-                    onActivated: remorse.execute(item, qsTr("Wiping remote device"),
-                        function () { list.sendCommand(deviceId, "DELETE", ""); })
+
+                Row {
+                    width: parent.width
+                    spacing: Theme.paddingSmall
+                    property real btnWidth: (width - spacing * 3) / 4
+
+                    CommandButton {
+                        width: parent.btnWidth
+                        text: qsTr("RING")
+                        btnEnabled: ringEnabled === 1
+                        onActivated: list.sendCommand(deviceId, "RING", "")
+                    }
+                    CommandButton {
+                        width: parent.btnWidth
+                        text: qsTr("LOCK")
+                        visible: isOwn === 0
+                        btnEnabled: actionsEnabled === 1
+                        onActivated: list.sendCommand(deviceId, "LOCK", "")
+                    }
+                    CommandButton {
+                        width: parent.btnWidth
+                        text: qsTr("CAMERA")
+                        visible: isOwn === 0
+                        btnEnabled: cameraEnabled === 1
+                        // Default to the back camera; front is in the long-press menu.
+                        onActivated: list.sendCommand(deviceId, "CAMERA", "back")
+                    }
+                    CommandButton {
+                        width: parent.btnWidth
+                        text: qsTr("DELETE")
+                        visible: isOwn === 0
+                        btnEnabled: actionsEnabled === 1
+                        onActivated: remorse.execute(item, qsTr("Wiping remote device"),
+                            function () { list.sendCommand(deviceId, "DELETE", ""); })
+                    }
                 }
             }
         }
