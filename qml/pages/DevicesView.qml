@@ -38,6 +38,7 @@ SilicaListView {
                     hasPin: d.has_pin ? 1 : 0,
                     authFailed: d.auth_failed ? 1 : 0,
                     noResponse: d.no_response ? 1 : 0,
+                    ringing: d.ringing ? 1 : 0,
                     lastAuthResult: d.last_auth_result,
                     actionsEnabled: d.actions_enabled ? 1 : 0,
                     cameraEnabled: d.camera_enabled ? 1 : 0,
@@ -143,9 +144,14 @@ SilicaListView {
 
                     CommandButton {
                         width: parent.btnWidth
-                        text: qsTr("RING")
+                        // While ringing the button becomes a red STOP that sends
+                        // STOP_RING; otherwise it starts a RING.
+                        text: ringing === 1 ? qsTr("STOP") : qsTr("RING")
+                        active: ringing === 1
                         btnEnabled: ringEnabled === 1
-                        onActivated: list.sendCommand(deviceId, "RING", "")
+                        onActivated: ringing === 1
+                            ? list.sendCommand(deviceId, "STOP_RING", "")
+                            : list.sendCommand(deviceId, "RING", "")
                     }
                     CommandButton {
                         width: parent.btnWidth

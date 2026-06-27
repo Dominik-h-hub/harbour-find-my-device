@@ -42,6 +42,14 @@ _timed_out = set()        # device ids whose last command got no ack in time
 _pending_lock = threading.Lock()
 _ack_seq = 0
 
+# Devices currently ringing (optimistic UI state so the RING button can become a
+# STOP button). A ring lasts ~RING_SECONDS on the target; we auto-clear a little
+# later so the button reverts even if the "ring ended" is not signalled. Pressing
+# STOP sends a STOP_RING command and clears the state immediately.
+_RING_AUTOCLEAR_S = 65
+_ringing = set()          # device ids shown as ringing
+_ring_timers = {}         # device_id -> (token, threading.Timer)
+
 
 # --- signal helper ---------------------------------------------------------
 def _emit(event, *args):
@@ -201,6 +209,7 @@ def list_devices():
             "has_pin": has_pin,
             "auth_failed": auth_failed,
             "no_response": no_response,
+            "ringing": dev["device_id"] in _ringing,
             "last_auth_result": last_result,
             "actions_enabled": actions_enabled,
             "camera_enabled": actions_enabled and webdav_ok and dev["is_own"] == 0,
@@ -260,6 +269,7 @@ def remove_device(device_id):
     ok, err = devices.remove_device(device_id)
     if ok:
         _clear_ack_timeout(device_id)
+        _clear_ringing(device_id)
         _log_ui("device unpaired: %s" % device_id)
         _restart_ui_mqtt()
         _emit("devicesUpdated")
@@ -403,7 +413,51 @@ def send_command(device_id, cmd, arg=""):
     # are never greyed, so a missing self-ack must not flag it as "no response".
     if dev.get("is_own") != 1:
         _arm_ack_timeout(device_id, cmd)
+    # Toggle the optimistic ringing state so the RING button can show STOP.
+    if cmd == "RING":
+        _mark_ringing(device_id)
+        _emit("devicesUpdated")
+    elif cmd == "STOP_RING":
+        _clear_ringing(device_id)
+        _emit("devicesUpdated")
     return {"ok": True}
+
+
+def _mark_ringing(device_id):
+    """Flag a device as ringing (RING button -> STOP) until STOP_RING or auto-clear."""
+    global _ack_seq
+    with _pending_lock:
+        old = _ring_timers.pop(device_id, None)
+        if old is not None:
+            old[1].cancel()
+        _ack_seq += 1
+        token = _ack_seq
+        _ringing.add(device_id)
+        timer = threading.Timer(_RING_AUTOCLEAR_S, _on_ring_autoclear,
+                                args=(device_id, token))
+        timer.daemon = True
+        _ring_timers[device_id] = (token, timer)
+        timer.start()
+
+
+def _clear_ringing(device_id):
+    """Clear the ringing flag and cancel its auto-clear timer."""
+    with _pending_lock:
+        _ringing.discard(device_id)
+        entry = _ring_timers.pop(device_id, None)
+    if entry is not None:
+        entry[1].cancel()
+
+
+def _on_ring_autoclear(device_id, token):
+    """The ring has (almost certainly) ended: revert the button to RING."""
+    with _pending_lock:
+        entry = _ring_timers.get(device_id)
+        if entry is None or entry[0] != token:
+            return
+        _ring_timers.pop(device_id, None)
+        _ringing.discard(device_id)
+    _emit("devicesUpdated")
 
 
 def _arm_ack_timeout(device_id, cmd):
@@ -586,6 +640,10 @@ def _on_remote_ack(device_id, payload):
     cmd = payload.get("cmd", "?")
     if result in ("ok", "auth_failed", "disabled"):
         devices.set_auth_result(device_id, result)
+    # If a RING was not actually accepted, drop the optimistic ringing state so the
+    # button does not stay on STOP for a device that never started ringing.
+    if (cmd or "").upper() == "RING" and result != "ok":
+        _clear_ringing(device_id)
     _log_ui("ack from %s: %s -> %s" % (device_id, cmd, result))
     _emit("commandResult", device_id, cmd, result or "")
     _emit("devicesUpdated")

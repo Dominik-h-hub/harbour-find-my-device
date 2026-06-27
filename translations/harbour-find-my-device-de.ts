@@ -152,6 +152,10 @@
         <translation>Uhr</translation>
     </message>
     <message>
+        <source>STOP</source>
+        <translation>STOPP</translation>
+    </message>
+    <message>
         <source>Photo (front camera)</source>
         <translation>Foto (Frontkamera)</translation>
     </message>

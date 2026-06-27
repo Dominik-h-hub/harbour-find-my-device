@@ -156,6 +156,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>STOP</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>LOCK</source>
         <translation type="unfinished"></translation>
     </message>

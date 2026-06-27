@@ -35,6 +35,7 @@ PRIV_HELPER = "/usr/bin/harbour-find-my-device-priv-helper"
 # Map each command to the settings switch that enables it.
 _FEATURE_KEY = {
     "RING": settings.RING_ENABLED,
+    "STOP_RING": settings.RING_ENABLED,  # stopping a ring uses the same toggle
     "LOCK": settings.LOCK_ENABLED,
     "DELETE": settings.DELETE_ENABLED,
     "CAMERA": settings.CAMERA_ENABLED,
@@ -89,6 +90,8 @@ class CommandExecutor(object):
         try:
             if cmd == "RING":
                 return self._do_ring()
+            if cmd == "STOP_RING":
+                return self._do_stop_ring()
             if cmd == "LOCK":
                 return self._do_lock()
             if cmd == "GPS":
@@ -109,6 +112,12 @@ class CommandExecutor(object):
         ok = ring_control.ring()
         notify.notify("Find My Device", "RING activated remotely")
         return "ok" if ok else "error"
+
+    def _do_stop_ring(self):
+        import ring_control
+        ring_control.stop_current()
+        notify.notify("Find My Device", "RING stopped remotely")
+        return "ok"
 
     def _do_lock(self):
         import lock_control
