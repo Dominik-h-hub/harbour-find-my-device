@@ -11,7 +11,8 @@ Dialog {
     property string deviceId: ""
     property string deviceLabel: ""
 
-    canAccept: editMode || (idField.text.length === 10 && idValid)
+    // The id is editable in both modes now, so it must always be valid to accept.
+    canAccept: idField.text.length === 10 && idValid
     property bool idValid: /^[A-Za-z0-9]{10}$/.test(idField.text)
 
     Component.onCompleted: {
@@ -24,8 +25,11 @@ Dialog {
 
     onAccepted: {
         if (editMode) {
+            // dialog.deviceId is the CURRENT id (lookup key); idField.text may be a
+            // corrected id passed as new_device_id so the backend renames the row.
             Bridge.call("update_device",
-                [deviceId, labelField.text, pinField.text], function () {});
+                [dialog.deviceId, labelField.text, pinField.text, idField.text],
+                function () {});
         } else {
             Bridge.call("add_device",
                 [idField.text, labelField.text, pinField.text], function (res) {
@@ -52,10 +56,8 @@ Dialog {
                 label: qsTr("Device-Id (10 letters/digits)")
                 placeholderText: qsTr("Device-Id")
                 text: dialog.deviceId
-                readOnly: dialog.editMode
-                enabled: !dialog.editMode
                 inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
-                color: (dialog.editMode || dialog.idValid || text.length === 0)
+                color: (dialog.idValid || text.length === 0)
                        ? Theme.primaryColor : Theme.errorColor
                 EnterKey.iconSource: "image://theme/icon-m-enter-next"
                 EnterKey.onClicked: labelField.focus = true
