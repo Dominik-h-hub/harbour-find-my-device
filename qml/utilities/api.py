@@ -106,10 +106,11 @@ def get_settings():
     data = settings.get_all_public()
     own = devices.ensure_own_device()
     data["own_device_id"] = own["device_id"]
+    data["device_label"] = own["device_label"]
     data["own_pin_set"] = bool(own.get("pin"))
     data["pin"] = own.get("pin") or ""
     data["totp_secret"] = own.get("totp_secret") or ""
-    data["totp_uri"] = (tokens.totp_uri(own["totp_secret"], own["device_id"])
+    data["totp_uri"] = (tokens.totp_uri(own["totp_secret"], own["device_label"])
                         if own.get("totp_secret") else "")
     data["backup_codes_unused"] = tokens.count_unused_backup_codes()
     data["gps_enabled"] = location_control.is_enabled()
@@ -151,7 +152,7 @@ def rotate_totp_secret():
     tokens.set_own_totp_secret(secret)
     own = devices.ensure_own_device()
     _log_ui("new TOTP secret generated for own device")
-    return {"secret": secret, "uri": tokens.totp_uri(secret, own["device_id"])}
+    return {"secret": secret, "uri": tokens.totp_uri(secret, own["device_label"])}
 
 
 def qr_matrix(text):
