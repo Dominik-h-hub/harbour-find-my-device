@@ -5,9 +5,6 @@ import "../components"
 // in MapCanvas.qml and loaded via a Loader, so a missing QtLocation module on the
 // device degrades gracefully (fallback below) instead of breaking the whole app.
 
-// Map tab: shows the last known position of every device on an OpenStreetMap
-// map. The main map is intentionally static (gestures off) to minimise tile
-// requests. Reloads on open and via the pull-down item.
 SilicaFlickable {
     id: root
     anchors.fill: parent
@@ -15,6 +12,20 @@ SilicaFlickable {
 
     property var mapData: ({ devices: [], network_online: true, gps_available: true })
     property bool mapReady: false
+
+    // True while this is the visible tab. Re-query the DB when the user swipes
+    // here so background GPS-daemon fixes show without a manual refresh.
+    property bool activeTab: true
+    onActiveTabChanged: if (activeTab) reload()
+
+    // Interactive exploration is only meaningful with Geoapify (OSM stays static
+    // to limit tile requests). Mirrors MapCanvas.useGeoapify.
+    property bool canExplore: Bridge.tileProvider === "geoapify" && Bridge.geoapifyKey !== ""
+
+    // Last computed view, handed to FullMapPage so it opens where the tab is.
+    property real centerLat: 0
+    property real centerLon: 0
+    property real centerZoom: 13
 
     PullDownMenu {
         MenuItem {
@@ -58,11 +69,12 @@ SilicaFlickable {
             });
             sumLat += d.lat; sumLon += d.lon; n++;
         }
-        if (n > 0 && mapLoader.item && mapLoader.status === Loader.Ready) {
-            // One device -> street level so the road is visible; several devices
-            // -> zoom out a bit so they are more likely to share the view.
-            var zoom = n === 1 ? 20 : 13;
-            mapLoader.item.recenter(sumLat / n, sumLon / n, zoom);
+        if (n > 0) {
+            root.centerLat = sumLat / n;
+            root.centerLon = sumLon / n;
+            root.centerZoom = n === 1 ? 20 : 13;
+            if (mapLoader.item && mapLoader.status === Loader.Ready)
+                mapLoader.item.recenter(root.centerLat, root.centerLon, root.centerZoom);
         }
     }
 
@@ -87,7 +99,7 @@ SilicaFlickable {
 
     Component.onCompleted: reload()
 
-    // --- the map (isolated in MapCanvas.qml) -------------------------------
+    // --- the map (static; isolated in MapCanvas.qml) ----------------------
     Loader {
         id: mapLoader
         anchors.fill: parent
@@ -98,6 +110,31 @@ SilicaFlickable {
                 root.rebuildMarkers();
             }
         }
+    }
+
+    MouseArea {
+        anchors.fill: mapLoader
+        enabled: root.canExplore && mapLoader.status === Loader.Ready
+        onClicked: pageStack.push(Qt.resolvedUrl("FullMapPage.qml"), {
+            markerModel: deviceModel,
+            startLat: root.centerLat,
+            startLon: root.centerLon,
+            startZoom: root.centerZoom
+        })
+    }
+
+    Label {
+        anchors {
+            bottom: parent.bottom
+            horizontalCenter: parent.horizontalCenter
+            bottomMargin: Theme.paddingLarge
+        }
+        visible: root.canExplore && mapLoader.status === Loader.Ready
+        text: qsTr("Tap the map to explore")
+        font.pixelSize: Theme.fontSizeTiny
+        color: Theme.primaryColor
+        style: Text.Outline
+        styleColor: Theme.overlayBackgroundColor
     }
 
     // Fallback shown when the QtLocation module is not installed on the device.

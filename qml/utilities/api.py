@@ -50,6 +50,15 @@ _RING_AUTOCLEAR_S = 65
 _ringing = set()          # device ids shown as ringing
 _ring_timers = {}         # device_id -> (token, threading.Timer)
 
+# Foreground GPS polling. When "Background activity" is OFF the GPS daemon does
+# not run, so the running app itself keeps taking/publishing fixes on the GPS
+# interval until the user closes it. Lives only in the UI process (dies with it).
+_fg_gps_timer = None      # threading.Timer for the next foreground tick
+_fg_gps_lock = threading.Lock()
+# Serialises GPS fixes so a foreground tick and a manual "Update map" never drive
+# geoclue concurrently.
+_fix_lock = threading.Lock()
+
 
 # --- signal helper ---------------------------------------------------------
 def _emit(event, *args):
@@ -266,6 +275,22 @@ def update_device(device_id, label, pin, new_device_id=None):
     return {"ok": ok, "error": err or ""}
 
 
+def set_own_label(label):
+    """Set the own device's display label (editable from the Devices tab).
+    Keeps the devices row and the DEVICE_LABEL setting in sync -- the Settings
+    page reads the latter -- and refreshes the map/cover. The device-id and the
+    remote-access PIN are NOT touched here (id is fixed; PIN stays in Settings).
+    """
+    label = (label or "").strip()
+    own = devices.ensure_own_device()
+    devices.update_device(own["device_id"], label=label)
+    settings.set(settings.DEVICE_LABEL, label)
+    _log_ui("own device label updated")
+    _emit("devicesUpdated")
+    _emit("mapUpdated")
+    return {"ok": True}
+
+
 def remove_device(device_id):
     ok, err = devices.remove_device(device_id)
     if ok:
@@ -326,6 +351,14 @@ def _friendly_fix_error(err):
 
 def refresh_location():
     #ake a one-off own-device GPS fix, store it, publish it (if enabled).
+    # Serialise so the foreground poll and a manual refresh can't fix at once.
+    with _fix_lock:
+        return _do_refresh_location(notify=True)
+
+
+def _do_refresh_location(notify=True):
+    # notify=False is used by the foreground poll so periodic failures (no fix /
+    # GPS off) don't pop the Map banner every interval; the map/cover still update.
     own_id = devices.own_device_id()
 
     if not location_control.is_enabled():
@@ -334,7 +367,8 @@ def refresh_location():
             location_control.set_location_enabled(enable=True)
             time.sleep(2)  # allow the provider to start before the first fix
         else:
-            _emit("locationFix", False, "GPS is disabled")
+            if notify:
+                _emit("locationFix", False, "GPS is disabled")
             _emit("mapUpdated")
             return {"ok": False, "error": "gps_disabled"}
 
@@ -342,7 +376,8 @@ def refresh_location():
         import gps_reader  # device-only (dbus/gi)
     except Exception as exc:
         _log_ui("gps_reader unavailable: %s" % exc)
-        _emit("locationFix", False, "GPS reader unavailable")
+        if notify:
+            _emit("locationFix", False, "GPS reader unavailable")
         return {"ok": False, "error": "no_gps_reader"}
 
     fix = gps_reader.get_fix(timeout=90)
@@ -350,7 +385,8 @@ def refresh_location():
     if not fix.success:
         # Keep the raw error in the log; show a clean message in the UI banner.
         _log_ui("no GPS fix: %s" % fix.error)
-        _emit("locationFix", False, _friendly_fix_error(fix.error))
+        if notify:
+            _emit("locationFix", False, _friendly_fix_error(fix.error))
         _emit("mapUpdated")
         return {"ok": False, "error": fix.error or "no_fix"}
 
@@ -359,8 +395,11 @@ def refresh_location():
                        fix.accuracy_h, battery)
 
     _publish_own_location(own_id, fix, battery)
-    _emit("locationFix", True, "fix stored")
+    if notify:
+        _emit("locationFix", True, "fix stored")
     _emit("mapUpdated")
+    # The own device's last fix time / battery changed -> refresh the Devices tab too.
+    _emit("devicesUpdated")
     return {"ok": True}
 
 
@@ -384,6 +423,57 @@ def _publish_own_location(own_id, fix, battery):
             _ui_mqtt.publish_location(own_id, payload)
         else:
             log.warning("UI MQTT not connected; location published by daemon instead")
+
+
+# =========================================================================
+# Foreground GPS polling (app-side fallback when the daemon is off)
+# =========================================================================
+def _start_foreground_gps():
+    """Begin periodic own-device fixes from the UI process. No-op if already
+    running. Stops automatically when the app process exits."""
+    with _fg_gps_lock:
+        if _fg_gps_timer is not None:
+            return
+        _log_ui("foreground GPS polling started (background activity off)")
+        _schedule_foreground_tick_locked()
+
+
+def _stop_foreground_gps():
+    global _fg_gps_timer
+    with _fg_gps_lock:
+        if _fg_gps_timer is None:
+            return
+        _fg_gps_timer.cancel()
+        _fg_gps_timer = None
+        _log_ui("foreground GPS polling stopped")
+
+
+def _schedule_foreground_tick_locked():
+    """Arm the next foreground tick. Caller must hold _fg_gps_lock."""
+    global _fg_gps_timer
+    minutes = settings.get_int(settings.GPS_INTERVAL_MIN, 5)
+    if minutes < 1:
+        minutes = 1
+    _fg_gps_timer = threading.Timer(minutes * 60, _foreground_tick)
+    _fg_gps_timer.daemon = True
+    _fg_gps_timer.start()
+
+
+def _foreground_tick():
+    # If background activity got turned on meanwhile, the daemon now handles it.
+    if settings.get_bool(settings.BACKGROUND_ENABLED):
+        _stop_foreground_gps()
+        return
+    try:
+        with _fix_lock:
+            res = _do_refresh_location(notify=False)
+        log.info("foreground GPS tick: %s", res)
+    except Exception as exc:
+        log.error("foreground GPS tick failed: %s", exc)
+    # Reschedule unless we were stopped while fixing.
+    with _fg_gps_lock:
+        if _fg_gps_timer is not None:
+            _schedule_foreground_tick_locked()
 
 
 # =========================================================================
@@ -543,6 +633,13 @@ def _sync_daemons():
     gps_wanted = settings.get_bool(settings.BACKGROUND_ENABLED)
     _set_daemon_state(_DAEMONS["cmd"], cmd_wanted)
     _set_daemon_state(_DAEMONS["gps"], gps_wanted)
+    # When the background daemon is off, the running app polls GPS itself so the
+    # location keeps being published until the user closes the app. When the
+    # daemon is on it owns the polling (also while the app is closed).
+    if gps_wanted:
+        _stop_foreground_gps()
+    else:
+        _start_foreground_gps()
 
 
 def get_daemon_status():
@@ -627,6 +724,8 @@ def _on_remote_location(device_id, payload):
             payload.get("speed"), payload.get("accuracy"), payload.get("battery"))
         _log_ui("updated location for remote device %s" % device_id)
         _emit("mapUpdated")
+        # The device's last fix time / battery changed -> refresh the Devices tab.
+        _emit("devicesUpdated")
     except Exception as exc:
         log.error("failed storing remote location for %s: %s", device_id, exc)
 

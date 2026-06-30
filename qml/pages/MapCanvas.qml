@@ -12,7 +12,8 @@ Map {
     property bool useGeoapify: Bridge.tileProvider === "geoapify"
                                && Bridge.geoapifyKey !== ""
 
-    gesture.enabled: useGeoapify     // scrollable only for geoapify (spec)
+    property bool allowGestures: false
+    gesture.enabled: allowGestures && useGeoapify
     zoomLevel: 20                    // street level, so the road is visible
     center: QtPositioning.coordinate(0, 0)
 

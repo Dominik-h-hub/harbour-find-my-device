@@ -4,6 +4,10 @@
 <context>
     <name>AddDevicePage</name>
     <message>
+        <source>Edit this device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Edit device</source>
         <translation type="unfinished"></translation>
     </message>
@@ -24,15 +28,15 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>e.g. Wife&apos;s phone</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>The PIN must match the remote device&apos;s own PIN. The same MQTT server as configured in Settings is used to reach it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>PIN for remote access (HMAC secret)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>e.g. My Jolla Phone</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -80,6 +84,10 @@
         <source>Battery: %1%</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Uhr</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DevicesView</name>
@@ -97,6 +105,10 @@
     </message>
     <message>
         <source>Add device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Refresh</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -201,6 +213,13 @@
     </message>
 </context>
 <context>
+    <name>FullMapPage</name>
+    <message>
+        <source>Map module not available</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MainPage</name>
     <message>
         <source>Map</source>
@@ -215,6 +234,10 @@
     <name>MapView</name>
     <message>
         <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tap the map to explore</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -285,14 +308,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Device label</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Falls leer wird die Device-Id angezeigt</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>GPS query interval (minutes)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -342,10 +357,6 @@
     </message>
     <message>
         <source>Background activity</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Keep reporting the location while the app is closed (the GPS daemon runs).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -462,6 +473,18 @@
     </message>
     <message>
         <source>Geoapify API key (optional)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keep reporting the location while the app is closed (the daemon &apos;GPS service&apos; runs).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

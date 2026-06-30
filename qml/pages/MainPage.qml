@@ -4,7 +4,7 @@ import "../components"
 
 Page {
     id: mainPage
-    allowedOrientations: Orientation.All
+    allowedOrientations: Orientation.Portrait
 
     property int currentIndex: tabView.currentIndex
     readonly property var tabTitles: [ qsTr("Map"), qsTr("Devices") ]
@@ -70,6 +70,6 @@ Page {
         }
     }
 
-    Component { id: mapComponent; MapView { } }
-    Component { id: devicesComponent; DevicesView { } }
+    Component { id: mapComponent; MapView { activeTab: mainPage.currentIndex === 0 } }
+    Component { id: devicesComponent; DevicesView { activeTab: mainPage.currentIndex === 1 } }
 }

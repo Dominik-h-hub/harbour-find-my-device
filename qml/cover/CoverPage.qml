@@ -24,9 +24,24 @@ CoverBackground {
         });
     }
 
+    // Render an ISO timestamp (e.g. "2026-06-26T19:09:24+02:00") as YYYY-MM-DD HH:MM Uhr.
+    function formatTimestamp(iso) {
+        if (!iso || iso.length < 16)
+            return iso || "";
+        return iso.substr(0, 10) + " " + iso.substr(11, 5) + " " + qsTr("Uhr");
+    }
+
     Connections {
         target: Bridge
         onMapUpdated: cover.reload()
+    }
+    // The cover persists across minimise/restore, so Component.onCompleted runs
+    // only once and mapUpdated never fires for a background GPS-daemon fix. Re-read
+    // the DB whenever the app goes inactive (i.e. the cover becomes visible) so the
+    // shown values are current.
+    Connections {
+        target: Qt.application
+        onActiveChanged: if (!Qt.application.active) cover.reload()
     }
     Component.onCompleted: reload()
 
@@ -55,7 +70,7 @@ CoverBackground {
         Label {
             width: parent.width
             visible: cover.lastTime !== ""
-            text: cover.lastTime
+            text: formatTimestamp(cover.lastTime)
             font.pixelSize: Theme.fontSizeExtraSmall
             color: Theme.secondaryColor
             wrapMode: Text.Wrap

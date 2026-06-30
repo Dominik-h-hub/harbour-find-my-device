@@ -5,7 +5,7 @@ import "../components"
 // Secrets (PINs, passwords) are obfuscated by the backend before storage.
 Dialog {
     id: dialog
-    allowedOrientations: Orientation.All
+    allowedOrientations: Orientation.Portrait
 
     property var cfg: ({})
     property var daemonStatus: ({ gps: "unknown", cmd: "unknown" })
@@ -30,7 +30,6 @@ Dialog {
 
     function loadFields() {
         ownIdLabel.value = cfg.own_device_id || "";
-        labelField.text = cfg.device_label || "";
         intervalField.text = "" + (cfg.gps_interval_min || "5");
         autoLocSwitch.checked = cfg.auto_enable_location === "1";
 
@@ -77,7 +76,6 @@ Dialog {
 
     onAccepted: {
         var values = {
-            device_label_own: labelField.text,
             gps_interval_min: intervalField.text,
             auto_enable_location: autoLocSwitch.checked ? "1" : "0",
             mqtt_enabled: mqttSwitch.checked ? "1" : "0",
@@ -106,8 +104,6 @@ Dialog {
         // 'Bridge' would resolve to undefined (the page's import scope is gone).
         var b = Bridge;
         b.call("save_settings", [values], function () {
-            // Re-read the map provider/key so the map page can rebuild itself
-            // with the new tile source without an app restart.
             b.refreshMapConfig();
         });
     }
@@ -181,6 +177,23 @@ Dialog {
                     onClicked: dialog.refreshDaemonStatus()
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
+
+                // Two separate labels so each line is its own translation unit and
+                // the command-service note always starts on a new line.
+                Label {
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryColor
+                    text: qsTr("GPS service: Activated when you turn the switch 'Background activity' on.")
+                }
+                Label {
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryColor
+                    text: qsTr("Command service: Activated when you turn min. one remote action or SMS action on.")
+                }
             }
 
             // --- general -----------------------------------------------------
@@ -221,12 +234,6 @@ Dialog {
                         opacity: 0.6
                     }
                 }
-            }
-            TextField {
-                id: labelField
-                width: parent.width
-                label: qsTr("Device label")
-                placeholderText: qsTr("Falls leer wird die Device-Id angezeigt")
             }
             TextField {
                 id: intervalField
@@ -270,11 +277,10 @@ Dialog {
                 label: qsTr("MQTT username")
                 inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
             }
-            TextField {
+            PasswordField {
                 id: mqttPassField
                 width: parent.width
                 label: qsTr("MQTT password")
-                echoMode: TextInput.Password
                 inputMethodHints: Qt.ImhNoPredictiveText
             }
             TextField {
@@ -288,7 +294,7 @@ Dialog {
                 id: backgroundSwitch
                 text: qsTr("Background activity")
                 description: qsTr("Keep reporting the location while the app is closed "
-                                + "(the GPS daemon runs).")
+                                + "(the daemon 'GPS service' runs).")
             }
 
             // --- remote actions ---------------------------------------------
@@ -318,11 +324,10 @@ Dialog {
                 label: qsTr("WebDAV username")
                 inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
             }
-            TextField {
+            PasswordField {
                 id: webdavPassField
                 width: parent.width
                 label: qsTr("WebDAV password")
-                echoMode: TextInput.Password
                 inputMethodHints: Qt.ImhNoPredictiveText
             }
 

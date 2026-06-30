@@ -46,7 +46,7 @@ import dbus.mainloop.glib
 
 log = logging.getLogger("fmd.sms")
 
-KEYWORDS = ("CAMERA", "LOCK", "DELETE", "RING")
+KEYWORDS = ("CAMERA", "LOCK", "DELETE", "RING", "GPS")
 CAMERA_ARGS = ("front", "back")
 OFONO_MM_IFACE = "org.ofono.MessageManager"
 

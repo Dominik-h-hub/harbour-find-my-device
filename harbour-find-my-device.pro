@@ -22,6 +22,8 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/components/Bridge.qml \
     qml/pages/MainPage.qml \
     qml/pages/MapView.qml \
+    qml/pages/MapCanvas.qml \
+    qml/pages/FullMapPage.qml \
     qml/pages/DevicesView.qml \
     qml/pages/SettingsPage.qml \
     qml/pages/AddDevicePage.qml \

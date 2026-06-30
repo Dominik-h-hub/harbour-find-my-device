@@ -4,6 +4,10 @@
 <context>
     <name>AddDevicePage</name>
     <message>
+        <source>Edit this device</source>
+        <translation>Dieses Gerät bearbeiten</translation>
+    </message>
+    <message>
         <source>Edit device</source>
         <translation>Gerät bearbeiten</translation>
     </message>
@@ -24,15 +28,15 @@
         <translation>Gerätename (Anzeige auf der Karte)</translation>
     </message>
     <message>
-        <source>e.g. Wife&apos;s phone</source>
-        <translation>z. B. Handy meiner Frau</translation>
-    </message>
-    <message>
         <source>The PIN must match the remote device&apos;s own PIN. The same MQTT server as configured in Settings is used to reach it.</source>
         <translation>Die PIN muss mit der eigenen PIN des anderen Geräts übereinstimmen. Zum Erreichen wird derselbe MQTT-Server wie in den Einstellungen verwendet.</translation>
     </message>
     <message>
         <source>PIN for remote access (HMAC secret)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>e.g. My Jolla Phone</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -80,6 +84,10 @@
         <source>Battery: %1%</source>
         <translation>Akku: %1 %</translation>
     </message>
+    <message>
+        <source>Uhr</source>
+        <translation type="unfinished">Uhr</translation>
+    </message>
 </context>
 <context>
     <name>DevicesView</name>
@@ -90,6 +98,10 @@
     <message>
         <source>Add device</source>
         <translation>Gerät hinzufügen</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Aktualisieren</translation>
     </message>
     <message>
         <source>Devices</source>
@@ -201,6 +213,13 @@
     </message>
 </context>
 <context>
+    <name>FullMapPage</name>
+    <message>
+        <source>Map module not available</source>
+        <translation>Kartenmodul nicht verfügbar</translation>
+    </message>
+</context>
+<context>
     <name>MainPage</name>
     <message>
         <source>Map</source>
@@ -216,6 +235,10 @@
     <message>
         <source>Settings</source>
         <translation>Einstellungen</translation>
+    </message>
+    <message>
+        <source>Tap the map to explore</source>
+        <translation>Zum Erkunden auf die Karte tippen</translation>
     </message>
     <message>
         <source>Update map</source>
@@ -243,7 +266,7 @@
     </message>
     <message>
         <source>Map module not available</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Kartenmodul nicht verfügbar</translation>
     </message>
     <message>
         <source>Install QtLocation on the device to show the map. Device positions are still listed on the Devices tab.</source>
@@ -274,7 +297,7 @@
     </message>
     <message>
         <source>Refresh</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Aktualisieren</translation>
     </message>
     <message>
         <source>General</source>
@@ -283,14 +306,6 @@
     <message>
         <source>Device-Id</source>
         <translation type="unfinished">Device-Id</translation>
-    </message>
-    <message>
-        <source>Device label</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Falls leer wird die Device-Id angezeigt</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>GPS query interval (minutes)</source>
@@ -342,10 +357,6 @@
     </message>
     <message>
         <source>Background activity</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Keep reporting the location while the app is closed (the GPS daemon runs).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -463,6 +474,18 @@
     <message>
         <source>Geoapify API key (optional)</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keep reporting the location while the app is closed (the daemon &apos;GPS service&apos; runs).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
+        <translation>GPS service: Wird aktiviert, wenn der Schalter „Hintergrundaktivität“ einschaltet wird.</translation>
+    </message>
+    <message>
+        <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
+        <translation>Command service: Wird aktiviert, wenn mindestens eine Fernaktion oder SMS-Aktion einschaltet wird.</translation>
     </message>
 </context>
 </TS>

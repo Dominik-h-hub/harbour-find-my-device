@@ -13,6 +13,9 @@ SilicaListView {
 
     header: PageHeader { title: qsTr("Devices") }
 
+    property bool activeTab: true
+    onActiveTabChanged: if (activeTab) reload()
+
     PullDownMenu {
         MenuItem {
             text: qsTr("Settings")
@@ -21,6 +24,10 @@ SilicaListView {
         MenuItem {
             text: qsTr("Add device")
             onClicked: pageStack.push(Qt.resolvedUrl("AddDevicePage.qml"))
+        }
+        MenuItem {
+            text: qsTr("Refresh")
+            onClicked: list.reload()
         }
     }
 
@@ -85,7 +92,8 @@ SilicaListView {
     delegate: ListItem {
         id: item
         contentHeight: frame.height + 2 * Theme.paddingSmall
-        menu: (isOwn === 1) ? null : contextMenuComponent
+        // Own device: edit the label only. Remote devices: full menu.
+        menu: (isOwn === 1) ? ownMenuComponent : contextMenuComponent
 
         Rectangle {
             id: frame
@@ -183,6 +191,18 @@ SilicaListView {
         }
 
         RemorseItem { id: remorse }
+
+        Component {
+            id: ownMenuComponent
+            ContextMenu {
+                MenuItem {
+                    text: qsTr("Edit")
+                    // Own device: id is read-only, no PIN field (managed in Settings).
+                    onClicked: pageStack.push(Qt.resolvedUrl("AddDevicePage.qml"),
+                        { editMode: true, isOwn: true, deviceId: deviceId, deviceLabel: label })
+                }
+            }
+        }
 
         Component {
             id: contextMenuComponent
