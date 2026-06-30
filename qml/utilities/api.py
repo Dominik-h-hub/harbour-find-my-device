@@ -202,6 +202,12 @@ def list_devices():
     webdav_ok = bool(settings.get(settings.WEBDAV_URL)
                      and settings.get(settings.WEBDAV_USERNAME))
     result = []
+    own_ringing = False
+    try:
+        import ring_control
+        own_ringing = ring_control.is_ringing()
+    except Exception:
+        own_ringing = False
     for dev in devices.list_devices():
         fix = gpsstore.get_latest(dev["device_id"])
         has_pin = bool(dev.get("pin"))
@@ -219,7 +225,11 @@ def list_devices():
             "has_pin": has_pin,
             "auth_failed": auth_failed,
             "no_response": no_response,
-            "ringing": dev["device_id"] in _ringing,
+            # The own device can be rung remotely by another device; the command
+            # daemon flags that via a cross-process state file (own_ringing) so the
+            # STOP button shows here too, not only on the controlling device.
+            "ringing": (dev["device_id"] in _ringing)
+                       or (dev["is_own"] == 1 and own_ringing),
             "last_auth_result": last_result,
             "actions_enabled": actions_enabled,
             "camera_enabled": actions_enabled and webdav_ok and dev["is_own"] == 0,
@@ -704,6 +714,10 @@ def _start_ui_mqtt():
                     continue
                 _ui_mqtt.subscribe_location(dev["device_id"])
                 _ui_mqtt.subscribe_ack(dev["device_id"])
+            # Also listen to the own ack topic: the command daemon acks here when it
+            # executes a locally-triggered command (e.g. a RING sent from another
+            # device), which lets us refresh the own-device row's STOP button.
+            _ui_mqtt.subscribe_ack(own_id)
             log.info("UI MQTT listener started")
 
 
@@ -733,6 +747,15 @@ def _on_remote_location(device_id, payload):
 def _on_remote_ack(device_id, payload):
     """Handle an ack from a remote device: update its button state."""
     if not device_id:
+        return
+    # Own ack: the command daemon executed a locally-triggered command (e.g. a
+    # RING from another device). The own device is never greyed, so skip the
+    # remote button-state logic; just refresh so the ring state (STOP button)
+    # picked up from ring_control.is_ringing() is reflected immediately.
+    if device_id == devices.own_device_id():
+        _log_ui("own ack: %s -> %s"
+                % ((payload.get("cmd") or "?"), payload.get("result")))
+        _emit("devicesUpdated")
         return
     # An ack arrived -> cancel the no-ack timeout for this device.
     _clear_ack_timeout(device_id)

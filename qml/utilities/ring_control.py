@@ -10,12 +10,21 @@ started.
 """
 
 import logging
+import os
 import threading
 import time
+
+from fmd import paths
 
 log = logging.getLogger("fmd.ring")
 
 RING_SECONDS = 60
+
+# Cross-process ring state. The command daemon runs the actual ring, but the UI
+# process needs to know the own device is ringing so it can show the STOP button
+# on the own-device row. We share that fact through a tiny file holding the
+# ring's expiry timestamp; any process can check is_ringing().
+_STATE_FILE = "ring_active"
 
 NGF_NAME = "com.nokia.NonGraphicFeedback1.Backend"
 NGF_PATH = "/com/nokia/NonGraphicFeedback1"
@@ -26,6 +35,41 @@ PROFILED_PATH = "/com/nokia/profiled"
 PROFILED_IFACE = "com.nokia.profiled"
 
 _active = {"stop": None}
+
+
+def _state_path():
+    return os.path.join(paths.data_dir(), _STATE_FILE)
+
+
+def _write_state(duration):
+    """Record that a ring is active until now+duration (cross-process flag)."""
+    try:
+        with open(_state_path(), "w") as fh:
+            fh.write(str(time.time() + duration))
+    except OSError as exc:
+        log.info("could not write ring state: %s", exc)
+
+
+def _clear_state():
+    try:
+        os.remove(_state_path())
+    except OSError:
+        pass
+
+
+def is_ringing():
+    """True if a ring is currently active on this device. Lets the UI process show
+    the STOP button for a ring the command daemon started. Self-healing: an expired
+    or stale state file is treated as 'not ringing' and removed."""
+    try:
+        with open(_state_path()) as fh:
+            until = float(fh.read().strip() or "0")
+    except (OSError, ValueError):
+        return False
+    if time.time() < until:
+        return True
+    _clear_state()
+    return False
 
 
 def _force_volume_max():
@@ -106,6 +150,7 @@ def ring(duration=RING_SECONDS):
         return False
 
     _active["stop"] = stop
+    _write_state(duration)
     timer = threading.Timer(duration, stop_current)
     timer.daemon = True
     timer.start()
@@ -115,6 +160,7 @@ def ring(duration=RING_SECONDS):
 
 def stop_current():
     """Stop any active ring."""
+    _clear_state()
     stop = _active.get("stop")
     if stop:
         try:

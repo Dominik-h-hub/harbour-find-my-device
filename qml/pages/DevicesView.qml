@@ -172,7 +172,7 @@ SilicaListView {
                         width: parent.btnWidth
                         text: qsTr("CAMERA")
                         visible: isOwn === 0
-                        btnEnabled: cameraEnabled === 1
+                        btnEnabled: actionsEnabled === 1
                         // Default to the back camera; front is in the long-press menu.
                         onActivated: list.sendCommand(deviceId, "CAMERA", "back")
                     }
@@ -181,7 +181,7 @@ SilicaListView {
                         text: qsTr("DELETE")
                         visible: isOwn === 0
                         btnEnabled: actionsEnabled === 1
-                        // Destructive: confirm on a dedicated page before sending.
+                        // Confirm on a dedicated page before sending.
                         onActivated: pageStack.push(
                             Qt.resolvedUrl("ConfirmDeletePage.qml"),
                             { deviceId: deviceId, deviceLabel: label })
@@ -209,7 +209,7 @@ SilicaListView {
             ContextMenu {
                 MenuItem {
                     text: qsTr("Photo (front camera)")
-                    enabled: cameraEnabled === 1
+                    enabled: actionsEnabled === 1
                     onClicked: list.sendCommand(deviceId, "CAMERA", "front")
                 }
                 MenuItem {
