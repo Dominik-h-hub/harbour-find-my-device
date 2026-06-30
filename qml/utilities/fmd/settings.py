@@ -34,6 +34,7 @@ MQTT_PORT = "mqtt_port"
 BACKGROUND_ENABLED = "background_enabled"
 # Remote actions
 RING_ENABLED = "ring_enabled"
+RING_TONE = "ring_tone"                   # absolute path to the ringtone .ogg file
 LOCK_ENABLED = "lock_enabled"
 DELETE_ENABLED = "delete_enabled"
 # Camera
@@ -65,6 +66,8 @@ DEFAULTS = {
     MQTT_PORT: "8883",
     BACKGROUND_ENABLED: "0",
     RING_ENABLED: "0",
+    # A pleasant default ringtone; the harsh sine is only a last-resort fallback.
+    RING_TONE: "/usr/share/sounds/jolla-ringtones/stereo/jolla-ringtone.ogg",
     LOCK_ENABLED: "0",
     DELETE_ENABLED: "0",
     CAMERA_ENABLED: "0",

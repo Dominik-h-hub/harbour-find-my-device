@@ -207,6 +207,53 @@ def regenerate_backup_codes():
 
 
 # =========================================================================
+# Ringtone (RING command sound)
+# =========================================================================
+# Sailfish standard tones.
+_RINGTONE_DIRS = ("/usr/share/sounds/jolla-ringtones/stereo",)
+
+
+def _tone_label(path):
+    """Human-readable name from a tone filename, e.g. jolla-ringtone.ogg -> 'Jolla ringtone'."""
+    import os
+    base = os.path.splitext(os.path.basename(path))[0]
+    return base.replace("-", " ").replace("_", " ").strip().capitalize()
+
+
+def list_ring_tones():
+    """Return the selectable ringtones plus the currently configured one, for the
+    Settings ringtone picker: {'current': path, 'tones': [{'path','name'}, ...]}."""
+    import glob
+    import os
+    tones = []
+    seen = set()
+    for d in _RINGTONE_DIRS:
+        for p in sorted(glob.glob(os.path.join(d, "*.ogg"))):
+            tones.append({"path": p, "name": _tone_label(p)})
+            seen.add(p)
+    current = settings.get(settings.RING_TONE) or ""
+    # Keep a custom/configured tone visible even if it lives outside the dirs.
+    if current and current not in seen and os.path.isfile(current):
+        tones.insert(0, {"path": current, "name": _tone_label(current)})
+    return {"current": current, "tones": tones}
+
+
+def preview_ring_tone(path):
+    """Audition a ringtone file once (Settings preview). Plays in the UI process."""
+    import ring_control
+    ok = ring_control.preview(path)
+    _log_ui("ringtone preview: %s -> %s" % (path, "ok" if ok else "failed"))
+    return {"ok": ok}
+
+
+def stop_ring_preview():
+    """Stop a running ringtone preview."""
+    import ring_control
+    ring_control.stop_preview()
+    return {"ok": True}
+
+
+# =========================================================================
 # Devices
 # =========================================================================
 def list_devices():

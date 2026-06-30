@@ -368,6 +368,18 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Ringtone</source>
+        <translation>Klingelton</translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation>Vorhören</translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation>Stopp</translation>
+    </message>
+    <message>
         <source>Allow remote LOCK</source>
         <translation type="unfinished"></translation>
     </message>

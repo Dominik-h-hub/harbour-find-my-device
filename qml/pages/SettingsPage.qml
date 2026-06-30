@@ -14,17 +14,39 @@ Dialog {
     property var totpQrMatrix: null
     property string backupCountText: "0"
 
+    ListModel { id: ringToneModel }
+
     Component.onCompleted: {
         Bridge.call("get_settings", [], function (data) {
             cfg = data || {};
             loadFields();
         });
         refreshDaemonStatus();
+        loadRingTones();
     }
+
+    // Stop any preview that is still playing when leaving the page.
+    Component.onDestruction: Bridge.call("stop_ring_preview", [], function () {})
 
     function refreshDaemonStatus() {
         Bridge.call("get_daemon_status", [], function (s) {
             if (s) daemonStatus = s;
+        });
+    }
+
+    function loadRingTones() {
+        Bridge.call("list_ring_tones", [], function (res) {
+            ringToneModel.clear();
+            var tones = (res && res.tones) ? res.tones : [];
+            var cur = (res && res.current) ? res.current : "";
+            var sel = 0;
+            for (var i = 0; i < tones.length; i++) {
+                ringToneModel.append({ name: tones[i].name, path: tones[i].path });
+                if (tones[i].path === cur)
+                    sel = i;
+            }
+            if (ringToneModel.count > 0)
+                ringToneCombo.currentIndex = sel;
         });
     }
 
@@ -99,10 +121,14 @@ Dialog {
             tile_provider: providerCombo.currentIndex === 1 ? "geoapify" : "osm",
             geoapify_key: geoapifyKeyField.text
         };
+        var ri = ringToneCombo.currentIndex;
+        if (ri >= 0 && ri < ringToneModel.count)
+            values.ring_tone = ringToneModel.get(ri).path;
         // Capture the Bridge singleton: onAccepted pops and destroys this Dialog
         // page, so by the time the save_settings callback fires an unqualified
         // 'Bridge' would resolve to undefined (the page's import scope is gone).
         var b = Bridge;
+        b.call("stop_ring_preview", [], function () {});
         b.call("save_settings", [values], function () {
             b.refreshMapConfig();
         });
@@ -300,6 +326,37 @@ Dialog {
             // --- remote actions ---------------------------------------------
             SectionHeader { text: qsTr("Remote actions") }
             TextSwitch { id: ringSwitch; text: qsTr("Allow RING") }
+            // Ringtone picker for the RING sound. Plays the chosen file on a loop
+            ComboBox {
+                id: ringToneCombo
+                width: parent.width
+                label: qsTr("Ringtone")
+                visible: ringSwitch.checked
+                menu: ContextMenu {
+                    Repeater {
+                        model: ringToneModel
+                        MenuItem { text: model.name }
+                    }
+                }
+            }
+            Row {
+                width: parent.width
+                spacing: Theme.paddingMedium
+                visible: ringSwitch.checked && ringToneModel.count > 0
+                Button {
+                    text: qsTr("Preview")
+                    onClicked: {
+                        var idx = ringToneCombo.currentIndex;
+                        if (idx >= 0 && idx < ringToneModel.count)
+                            Bridge.call("preview_ring_tone",
+                                [ringToneModel.get(idx).path], function () {});
+                    }
+                }
+                Button {
+                    text: qsTr("Stop")
+                    onClicked: Bridge.call("stop_ring_preview", [], function () {})
+                }
+            }
             TextSwitch { id: lockSwitch; text: qsTr("Allow remote LOCK") }
             TextSwitch { id: deleteSwitch; text: qsTr("Allow remote DELETE (wipe)") }
             PasswordField {
