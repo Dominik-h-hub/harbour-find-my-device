@@ -105,10 +105,15 @@ def _gst_init():
         return None
 
 
-def _play_file(path, loop):
-    """Play a sound file via playbin. When `loop` is True the (usually short)
-    ringtone repeats by seeking back to the start on end-of-stream. Returns a
-    stop() callable, or None if the file/pipeline could not be set up."""
+def _play_file(path, loop, volume=None):
+    """Play a sound file via playbin.
+
+    `volume` is the playbin stream volume (0.0..1.0). Pass None to leave it
+    untouched so the stream follows the system media volume -- setting it forces
+    the PulseAudio stream to that level and overrides the user's volume keys, which
+    we only want for a real (loud) ring, not for the Settings preview.
+
+    Returns a stop() callable, or None if the file/pipeline could not be set up."""
     Gst = _gst_init()
     if Gst is None:
         return None
@@ -121,10 +126,11 @@ def _play_file(path, loop):
             log.warning("could not create playbin element")
             return None
         playbin.set_property("uri", "file://" + os.path.abspath(path))
-        try:
-            playbin.set_property("volume", 1.0)
-        except Exception:
-            pass
+        if volume is not None:
+            try:
+                playbin.set_property("volume", volume)
+            except Exception:
+                pass
         bus = playbin.get_bus()
         playbin.set_state(Gst.State.PLAYING)
         log.info("ringtone playing: %s (loop=%s)", path, loop)
@@ -191,7 +197,8 @@ def ring(duration=RING_SECONDS):
     stop_current()
     _force_volume_max()
     tone = settings.get(settings.RING_TONE) or ""
-    stop = _play_file(tone, loop=True) if tone else None
+    # lost/silenced device still rings loudly.
+    stop = _play_file(tone, loop=True, volume=1.0) if tone else None
     if stop is None:
         log.warning("falling back to sine tone (tone=%r unplayable)", tone)
         stop = _play_sine()
