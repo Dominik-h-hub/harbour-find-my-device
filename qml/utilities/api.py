@@ -35,6 +35,10 @@ OSM_USER_AGENT = "harbour-find-my-device/1.0 (contact: dominikh@atomicmail.io)"
 _ui_mqtt = None
 _ui_lock = threading.Lock()
 
+# Serialises the post-save side effects (MQTT reconnect + daemon resync) which run
+# in a background thread so a settings save never blocks the PyOtherSide worker.
+_settings_apply_lock = threading.Lock()
+
 # If a command was sent and no response after XX seconds, command buttons will be disabled.
 _ACK_TIMEOUT_S = 60
 _pending_acks = {}        # device_id -> (token, threading.Timer)
@@ -149,10 +153,18 @@ def save_settings(values):
         settings.set(settings.DEVICE_LABEL, own_label)
 
     _log_ui("settings saved")
-    _restart_ui_mqtt()
-    _sync_daemons()
     _emit("devicesUpdated")
+    # Apply side effects in a background thread so the UI save call returns at once
+    threading.Thread(target=_apply_settings_side_effects, daemon=True).start()
     return True
+
+
+def _apply_settings_side_effects():
+    """Reconnect the UI MQTT client and resync the daemons after a settings save.
+    Runs in a background thread (see save_settings)"""
+    with _settings_apply_lock:
+        _restart_ui_mqtt()
+        _sync_daemons()
 
 
 def rotate_totp_secret():
@@ -630,7 +642,8 @@ def _set_daemon_state(unit, wanted):
     import subprocess
     action = "restart" if wanted else "stop"
     try:
-        subprocess.call(["systemctl", "--user", action, unit],
+        # --no-block: queue the job in systemd and return at once instead of blocking settings reloading
+        subprocess.call(["systemctl", "--user", "--no-block", action, unit],
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         log.info("daemon %s -> %s (wanted=%s)", unit, action, wanted)
     except Exception as exc:
