@@ -9,7 +9,17 @@ on modem /ril_0 sends an SMS and returns the message object path.
 Used by the GPS remote command to reply with coordinates by SMS. The companion
 receiver is sms_command_listener.py; secret/DB handling stays in the daemon.
 
-REQUIREMENTS: python3-dbus. Run as user.
+IMPORTANT: SMS will be sent directly by modem, NO commhistory will be saved here,
+so sent SMS will not be shown in sent sms messages. To mitigate this the notification
+to SFOS devices shows that an SMS was sent.
+
+REQUIREMENTS: python3-dbus.
+
+PRIVILEGE: ofono's SendMessage is denied to the normal user on Sailfish
+C(org.ofono.Error.AccessDenied) but works as root, and Sailfish has no `sudo`.
+send_sms() therefore QUEUES the message for the root priv service (priv_client ->
+spool -> priv_service.py) when not already running as root; run as root (inside the
+priv service, or a root spike) it sends directly via ofono.
 
 LIBRARY USE:
     from sms_sender import send_sms, send_gps_sms, send_gps_sms_to_all
@@ -25,6 +35,7 @@ CLI (testing -- sends a REAL SMS, may cost money):
 import argparse
 import collections
 import logging
+import os
 import sys
 
 import dbus
@@ -52,6 +63,14 @@ def send_sms(to, text, modem=None, bus=None):
 
     Returns SendResult(success, message_path, error). Never raises.
     """
+    # ofono SendMessage is not permitted to the normal user, and Sailfish has no
+    # sudo; when not already root (e.g. the user command daemon), queue the message
+    # for the root priv service, which sends it. Fire-and-forget: "success" here
+    # means "queued".
+    if os.geteuid() != 0:
+        import priv_client
+        ok = priv_client.send_sms(to, text)
+        return SendResult(ok, None, None if ok else "could not queue SMS")
     bus = bus or _bus()
     try:
         if not modem:

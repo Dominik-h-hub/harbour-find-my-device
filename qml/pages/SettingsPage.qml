@@ -325,7 +325,19 @@ Dialog {
 
             // --- remote actions ---------------------------------------------
             SectionHeader { text: qsTr("Remote actions") }
-            TextSwitch { id: ringSwitch; text: qsTr("Allow RING") }
+
+            PasswordField {
+                id: pinField
+                width: parent.width
+                label: qsTr("PIN for remote access (HMAC secret)")
+                inputMethodHints: Qt.ImhNoPredictiveText
+            }
+
+            TextSwitch {
+                id: ringSwitch
+                text: qsTr("Allow RING")
+                description: qsTr("Device will ring for 60 seconds the below defined tone.")
+            }
             // Ringtone picker for the RING sound. Plays the chosen file on a loop
             ComboBox {
                 id: ringToneCombo
@@ -357,22 +369,28 @@ Dialog {
                     onClicked: Bridge.call("stop_ring_preview", [], function () {})
                 }
             }
-            TextSwitch { id: lockSwitch; text: qsTr("Allow remote LOCK") }
-            TextSwitch { id: deleteSwitch; text: qsTr("Allow remote DELETE (wipe)") }
-            PasswordField {
-                id: pinField
-                width: parent.width
-                label: qsTr("PIN for remote access (HMAC secret)")
-                inputMethodHints: Qt.ImhNoPredictiveText
+            TextSwitch {
+                id: lockSwitch
+                text: qsTr("Allow remote LOCK")
+                description: qsTr("If device is unlocked, it will be locked into lock screen.")
+            }
+            TextSwitch {
+                id: deleteSwitch
+                text: qsTr("Allow remote DELETE (wipe)")
+                description: qsTr("Will delete all userdata stored under 'home//<user>//' and reboot device afterwards.")
             }
 
             // --- camera ------------------------------------------------------
             SectionHeader { text: qsTr("Camera") }
-            TextSwitch { id: cameraSwitch; text: qsTr("Allow remote photo") }
+            TextSwitch {
+                id: cameraSwitch
+                text: qsTr("Allow remote photo")
+                description: qsTr("A photo can be captured and uploaded to the configured WebDAV server.")
+            }
             TextField {
                 id: webdavUrlField
                 width: parent.width
-                label: qsTr("WebDAV URL for photo upload")
+                label: qsTr("WebDAV URL (full upload path) for photo upload")
                 inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
             }
             TextField {
@@ -396,8 +414,17 @@ Dialog {
                 placeholderText: qsTr("+4915123456789")
                 description: qsTr("Whitelist (Allowed senders) - one per line")
             }
-            TextSwitch { id: smsRemoteSwitch; text: qsTr("Remote control via SMS") }
-            TextSwitch { id: smsGpsSwitch; text: qsTr("Send GPS coordinates via SMS") }
+            TextSwitch {
+                id: smsRemoteSwitch
+                text: qsTr("Remote control via SMS")
+                description: qsTr("Turn on if you want accept SMS commands from the whitelist. "
+                                + "The current TOTP code is required in SMS commands.")
+            }
+            TextSwitch {
+                id: smsGpsSwitch
+                text: qsTr("Allow Command GPS")
+                description: qsTr("Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.")
+            }
 
             // --- SMS two-factor (TOTP + backup codes) ------------------------
             SectionHeader { text: qsTr("SMS authentication (TOTP)") }
@@ -407,9 +434,9 @@ Dialog {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Theme.secondaryColor
-                text: qsTr("Enrol this secret in a TOTP authenticator app"
-                         + "on a SECOND device. The current code is required"
-                         + "in SMS commands. Keep backup codes safe for use"
+                text: qsTr("Enrol this secret in a TOTP authenticator app "
+                         + "on a SECOND device. The current code is required "
+                         + "in SMS commands. Keep backup codes safe for use "
                          + "without an authenticator app.")
             }
             BackgroundItem {
@@ -535,13 +562,23 @@ Dialog {
 
             // --- map ---------------------------------------------------------
             SectionHeader { text: qsTr("Map") }
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.secondaryColor
+                text: qsTr("The standard OpenStreetMap is not zoomable but you can create a free account " +
+                            "at Geoapify to get a free API key for a zoomable map. The key is optional, but " +
+                            "without it the map will not be zoomable.")
+            }
             ComboBox {
                 id: providerCombo
                 width: parent.width
                 label: qsTr("Tile provider")
                 menu: ContextMenu {
-                    MenuItem { text: qsTr("OSM (no key needed)") }
-                    MenuItem { text: qsTr("Geoapify") }
+                    MenuItem { text: qsTr("OpenStreetMap (no key needed)") }
+                    MenuItem { text: qsTr("OpenStreetMap Geoapify") }
                 }
             }
             TextField {
@@ -549,6 +586,116 @@ Dialog {
                 width: parent.width
                 label: qsTr("Geoapify API key (optional)")
                 inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+            }
+
+            // ── About ────────────────────────────────────
+            SectionHeader {
+                text: qsTr("About")
+            }
+
+            ListItem {
+                contentHeight: Theme.itemSizeMedium
+                _backgroundColor: "transparent"
+                highlighted: false
+
+                Label {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("App Version")
+                    color: Theme.primaryColor
+                }
+                Label {
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Bridge.appVersion !== "" ? Bridge.appVersion : "?.?.?"
+                    color: Theme.secondaryColor
+                }
+            }
+
+            Separator {
+                width: parent.width
+                color: Theme.primaryColor
+                horizontalAlignment: Qt.AlignHCenter
+            }
+
+            ListItem {
+                contentHeight: Theme.itemSizeMedium
+
+                onClicked: Qt.openUrlExternally("https://forum.sailfishos.org/")
+
+                Label {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Report a bug or request a feature")
+                    color: Theme.primaryColor
+                }
+                Image {
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    source: "image://theme/icon-m-right"
+                    width: Theme.iconSizeSmall
+                    height: Theme.iconSizeSmall
+                }
+            }
+
+            Separator {
+                width: parent.width
+                color: Theme.primaryColor
+                horizontalAlignment: Qt.AlignHCenter
+            }
+
+            ListItem {
+                contentHeight: Theme.itemSizeMedium
+
+                onClicked: Qt.openUrlExternally("https://codeberg.org/dominik-h/harbour-find-my-device")
+
+                Label {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Code Repository")
+                    color: Theme.primaryColor
+                }
+                Image {
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    source: "image://theme/icon-m-right"
+                    width: Theme.iconSizeSmall
+                    height: Theme.iconSizeSmall
+                }
+            }
+
+            Separator {
+                width: parent.width
+                color: Theme.primaryColor
+                horizontalAlignment: Qt.AlignHCenter
+            }
+
+            ListItem {
+                contentHeight: Theme.itemSizeMedium
+
+                onClicked: Qt.openUrlExternally("https://codeberg.org/dominik-h/harbour-find-my-device")
+
+                Label {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("User Manual")
+                    color: Theme.primaryColor
+                }
+                Image {
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    source: "image://theme/icon-m-right"
+                    width: Theme.iconSizeSmall
+                    height: Theme.iconSizeSmall
+                }
             }
 
             Item { width: 1; height: Theme.paddingLarge }

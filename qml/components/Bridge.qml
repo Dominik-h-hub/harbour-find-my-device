@@ -12,6 +12,7 @@ QtObject {
     property string ownDeviceId: ""
     property string ownLabel: ""
     property string osmUserAgent: ""
+    property string appVersion: ""
 
     // Map tile config. The map (MapCanvas.qml) binds its plugin parameters to
     // these, so they must be set before the Map is constructed. refreshMapConfig()
@@ -56,6 +57,7 @@ QtObject {
                         bridge.osmUserAgent = state.osm_user_agent;
                         bridge.tileProvider = state.tile_provider || "osm";
                         bridge.geoapifyKey = state.geoapify_key || "";
+                        bridge.appVersion = state.app_version || "";
                     }
                     bridge.ready = true;
                     bridge.devicesUpdated();

@@ -1,0 +1,10 @@
+[Unit]
+Description=Watch the Find My Device privileged action spool
+
+[Path]
+# Trigger the processor whenever the (non-root) user daemon queues a request.
+DirectoryNotEmpty=/run/harbour-find-my-device/spool
+Unit=harbour-find-my-device-priv.service
+
+[Install]
+WantedBy=multi-user.target

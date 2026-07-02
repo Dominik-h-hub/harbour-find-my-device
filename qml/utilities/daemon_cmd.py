@@ -30,8 +30,6 @@ import notify
 
 log = logging.getLogger("fmd.daemon.cmd")
 
-PRIV_HELPER = "/usr/bin/harbour-find-my-device-priv-helper"
-
 # Map each command to the settings switch that enables it.
 _FEATURE_KEY = {
     "RING": settings.RING_ENABLED,
@@ -152,11 +150,16 @@ class CommandExecutor(object):
             if last:
                 lat, lon = last["latitude"], last["longitude"]
 
+        msg = "GPS location requested remotely"
         if channel == "sms" and sender:
-            self._reply_gps_sms(sender, lat, lon, fix_dt,
-                                None if fix_dt else self._db_time(own_id))
+            sent = self._reply_gps_sms(sender, lat, lon, fix_dt,
+                                       None if fix_dt else self._db_time(own_id))
+            # Sent SMS do not show in the Messages history (raw ofono bypasses
+            # commhistory), so record the reply in the notification instead.
+            msg += ("\nReply sent by SMS to %s" % sender if sent
+                    else "\nSMS reply to %s failed" % sender)
 
-        notify.notify("Find My Device", "GPS location requested remotely")
+        notify.notify("Find My Device", msg)
         return "ok" if (lat is not None) else "error"
 
     def _do_camera(self, arg):
@@ -183,7 +186,7 @@ class CommandExecutor(object):
         return "ok" if uploaded else "error"
 
     def _do_delete(self):
-        """Wipe user data, then reboot via the one-command root helper."""
+        """Wipe user data, then reboot via the root priv service (queued request)."""
         notify.notify("Find My Device", "REMOTE WIPE started")
         log.warning("DELETE: wiping user data now")
         home = os.path.expanduser("~")
@@ -196,11 +199,12 @@ class CommandExecutor(object):
             subprocess.call(["sh", "-c", wipe_cmd])
         except Exception as exc:
             log.error("wipe command error: %s", exc)
-        log.warning("DELETE: requesting reboot via priv-helper")
+        log.warning("DELETE: requesting reboot via priv service")
         try:
-            subprocess.call(["sudo", "-n", PRIV_HELPER, "reboot"])
+            import priv_client
+            priv_client.reboot()
         except Exception as exc:
-            log.error("reboot helper failed: %s", exc)
+            log.error("reboot request failed: %s", exc)
         return "ok"
 
     # -- gps helpers --
@@ -217,12 +221,14 @@ class CommandExecutor(object):
         })
 
     def _reply_gps_sms(self, sender, lat, lon, fix_dt, db_time):
+        """Send the GPS reply SMS. Returns True if it was sent/queued."""
         if lat is None or lon is None:
             log.warning("no coordinates available for GPS SMS reply")
-            return
+            return False
         import sms_sender
-        sms_sender.send_gps_sms(sender, lat, lon, fix_datetime=fix_dt,
-                                db_timestamp_local=db_time)
+        res = sms_sender.send_gps_sms(sender, lat, lon, fix_datetime=fix_dt,
+                                      db_timestamp_local=db_time)
+        return bool(res and res.success)
 
     @staticmethod
     def _db_time(own_id):

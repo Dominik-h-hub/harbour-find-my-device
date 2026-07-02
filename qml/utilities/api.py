@@ -96,7 +96,25 @@ def init_app():
         "tile_provider": settings.get(settings.TILE_PROVIDER),
         "geoapify_key": settings.get(settings.GEOAPIFY_KEY),
         "osm_user_agent": OSM_USER_AGENT,
+        "app_version": app_version(),
     }
+
+#App-Version fallback if its not available via .spec file
+_APP_VERSION_FALLBACK = "0.1"
+
+
+def app_version():
+    #Version string for the Settings 'App Version' row from .spec file.
+    try:
+        import subprocess
+        out = subprocess.check_output(
+            ["rpm", "-q", "--qf", "%{VERSION}-%{RELEASE}", "harbour-find-my-device"],
+            stderr=subprocess.DEVNULL).decode().strip()
+        if out and "not installed" not in out:
+            return out
+    except Exception:
+        pass
+    return _APP_VERSION_FALLBACK
 
 
 def get_map_config():

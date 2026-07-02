@@ -55,7 +55,7 @@ SilicaFlickable {
     function rebuildMarkers() {
         deviceModel.clear();
         var devs = root.mapData.devices || [];
-        var sumLat = 0, sumLon = 0, n = 0;
+        var minLat = 90, maxLat = -90, minLon = 180, maxLon = -180, n = 0;
         for (var i = 0; i < devs.length; i++) {
             var d = devs[i];
             deviceModel.append({
@@ -67,15 +67,48 @@ SilicaFlickable {
                 battery: d.battery === null ? -1 : d.battery,
                 isOwn: d.is_own ? 1 : 0
             });
-            sumLat += d.lat; sumLon += d.lon; n++;
+            if (d.lat < minLat) minLat = d.lat;
+            if (d.lat > maxLat) maxLat = d.lat;
+            if (d.lon < minLon) minLon = d.lon;
+            if (d.lon > maxLon) maxLon = d.lon;
+            n++;
         }
         if (n > 0) {
-            root.centerLat = sumLat / n;
-            root.centerLon = sumLon / n;
-            root.centerZoom = n === 1 ? 20 : 13;
+            // Centre on the bounding box; with several devices pick a zoom that fits
+            // them all in view (with a buffer), otherwise a close single-device zoom.
+            root.centerLat = (minLat + maxLat) / 2;
+            root.centerLon = (minLon + maxLon) / 2;
+            if (n === 1 || root.width < 100 || root.height < 100)
+                root.centerZoom = n === 1 ? 20 : 13;
+            else
+                root.centerZoom = root.fitZoom(minLat, minLon, maxLat, maxLon,
+                                               root.width, root.height);
             if (mapLoader.item && mapLoader.status === Loader.Ready)
                 mapLoader.item.recenter(root.centerLat, root.centerLon, root.centerZoom);
         }
+    }
+
+    // Function to fit map zoom for multiple devices.
+    function fitZoom(minLat, minLon, maxLat, maxLon, w, h) {
+        var TILE = 256;
+        var PAD = 64;                       // px buffer per side
+        var ZOOM_MARGIN = 0.5; // adjust to 0.7 if its too close to border or 0.3 if too far away from borders.
+        var usableW = Math.max(32, w - 2 * PAD);
+        var usableH = Math.max(32, h - 2 * PAD);
+        var latFrac = Math.abs(_latMerc(maxLat) - _latMerc(minLat)) / (2 * Math.PI);
+        var lonFrac = Math.abs(maxLon - minLon) / 360;
+        var EPS = 1e-9;
+        var latZoom = latFrac > EPS ? Math.log(usableH / TILE / latFrac) / Math.LN2 : 20;
+        var lonZoom = lonFrac > EPS ? Math.log(usableW / TILE / lonFrac) / Math.LN2 : 20;
+        var z = Math.min(latZoom, lonZoom) - ZOOM_MARGIN;
+        return isFinite(z) ? z : 13;
+    }
+
+    // Mercator-projected latitude (radians), used by fitZoom.
+    function _latMerc(lat) {
+        var s = Math.sin(lat * Math.PI / 180);
+        s = Math.max(-0.9999, Math.min(0.9999, s));
+        return Math.log((1 + s) / (1 - s)) / 2;
     }
 
     ListModel { id: deviceModel }

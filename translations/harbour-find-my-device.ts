@@ -300,6 +300,14 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>General</source>
         <translation type="unfinished"></translation>
     </message>
@@ -360,11 +368,23 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Keep reporting the location while the app is closed (the daemon &apos;GPS service&apos; runs).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Remote actions</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>PIN for remote access (HMAC secret)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Allow RING</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Device will ring for 60 seconds the below defined tone.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -384,11 +404,15 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>If device is unlocked, it will be locked into lock screen.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Allow remote DELETE (wipe)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>PIN for remote access (HMAC secret)</source>
+        <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -400,7 +424,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>WebDAV URL for photo upload</source>
+        <source>A photo can be captured and uploaded to the configured WebDAV server.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>WebDAV URL (full upload path) for photo upload</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -428,7 +456,15 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Send GPS coordinates via SMS</source>
+        <source>Turn on if you want accept SMS commands from the whitelist. The current TOTP code is required in SMS commands.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow Command GPS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -436,7 +472,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enrol this secret in a TOTP authenticator appon a SECOND device. The current code is requiredin SMS commands. Keep backup codes safe for usewithout an authenticator app.</source>
+        <source>Enrol this secret in a TOTP authenticator app on a SECOND device. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -472,15 +508,15 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>The standard OpenStreetMap is not zoomable but you can create a free account at Geoapify to get a free API key for a zoomable map. The key is optional, but without it the map will not be zoomable.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Tile provider</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>OSM (no key needed)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Geoapify</source>
+        <source>OpenStreetMap Geoapify</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -488,15 +524,27 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Keep reporting the location while the app is closed (the daemon &apos;GPS service&apos; runs).</source>
+        <source>About</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
+        <source>App Version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
+        <source>Report a bug or request a feature</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Code Repository</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>OpenStreetMap (no key needed)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>User Manual</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
