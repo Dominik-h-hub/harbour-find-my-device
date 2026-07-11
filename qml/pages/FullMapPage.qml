@@ -8,6 +8,7 @@ import "../components"
 Page {
     id: page
     allowedOrientations: Orientation.All
+    backNavigation: false
 
     property var markerModel: null
     property real startLat: 0
