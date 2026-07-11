@@ -26,7 +26,7 @@ jobs:
     name: Build (${{ matrix.arch }})
     # Avoid duplicate builds: on pull_request, only run for forks (push already covers internal branches)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-    runs-on: ubuntu-latest
+    runs-on: codeberg-tiny
 
     strategy:
       fail-fast: false
