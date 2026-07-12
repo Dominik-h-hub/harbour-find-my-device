@@ -31,7 +31,7 @@ PROFILED_NAME = "com.nokia.profiled"
 PROFILED_PATH = "/com/nokia/profiled"
 PROFILED_IFACE = "com.nokia.profiled"
 
-_active = {"stop": None}
+_active = {"stop": None, "timer": None}
 _preview = {"stop": None, "timer": None}
 
 
@@ -210,6 +210,7 @@ def ring(duration=RING_SECONDS):
     _write_state(duration)
     timer = threading.Timer(duration, stop_current)
     timer.daemon = True
+    _active["timer"] = timer
     timer.start()
     log.info("ringing for %ds (tone=%s)", duration, tone or "sine")
     return True
@@ -218,6 +219,10 @@ def ring(duration=RING_SECONDS):
 def stop_current():
     """Stop any active ring."""
     _clear_state()
+    timer = _active.get("timer")
+    if timer is not None:
+        timer.cancel()
+        _active["timer"] = None
     stop = _active.get("stop")
     if stop:
         try:
