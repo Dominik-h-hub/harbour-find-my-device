@@ -20,6 +20,8 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/cover/CoverPage.qml \
     qml/components/qmldir \
     qml/components/Bridge.qml \
+    qml/components/CommandButton.qml \
+    qml/components/QrCode.qml \
     qml/pages/MainPage.qml \
     qml/pages/MapView.qml \
     qml/pages/MapCanvas.qml \
@@ -33,6 +35,8 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/utilities/mqtt_client.py \
     qml/utilities/daemon_gps.py \
     qml/utilities/daemon_cmd.py \
+    qml/utilities/notify.py \
+    qml/utilities/ring_control.py \
     qml/utilities/gps_reader.py \
     qml/utilities/location_control.py \
     qml/utilities/lock_control.py \
@@ -49,6 +53,26 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/utilities/fmd/devices.py \
     qml/utilities/fmd/tokens.py \
     qml/utilities/fmd/gpsstore.py \
+    qml/utilities/paho/__init__.py \
+    qml/utilities/paho/edl-v10 \
+    qml/utilities/paho/LICENSE.txt \
+    qml/utilities/paho/mqtt/__init__.py \
+    qml/utilities/paho/mqtt/client.py \
+    qml/utilities/paho/mqtt/matcher.py \
+    qml/utilities/paho/mqtt/packettypes.py \
+    qml/utilities/paho/mqtt/properties.py \
+    qml/utilities/paho/mqtt/publish.py \
+    qml/utilities/paho/mqtt/reasoncodes.py \
+    qml/utilities/paho/mqtt/subscribe.py \
+    qml/utilities/paho/mqtt/subscribeoptions.py \
+    qml/utilities/qrcode/__init__.py \
+    qml/utilities/qrcode/base.py \
+    qml/utilities/qrcode/constants.py \
+    qml/utilities/qrcode/exceptions.py \
+    qml/utilities/qrcode/LICENSE \
+    qml/utilities/qrcode/LUT.py \
+    qml/utilities/qrcode/main.py \
+    qml/utilities/qrcode/util.py \
     systemd/harbour-find-my-device-daemon-gps.service \
     systemd/harbour-find-my-device-daemon-cmd.service \
     systemd/harbour-find-my-device-priv.service \
