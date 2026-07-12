@@ -19,7 +19,7 @@ runs:
           echo "::error::No RPM files produced"
           exit 1
         fi
-        echo "OK - Build successful – $rpm_count RPM package(s) produced for ${{ inputs.arch }}"
+        echo "✅ Build successful – $rpm_count RPM package(s) produced for ${{ inputs.arch }}"
         find RPMS/ -name "*.rpm" -not -name "*-debuginfo-*" -not -name "*-debugsource-*"
 
     - name: Harbour compliance check
@@ -58,7 +58,7 @@ runs:
               if [ -n "$VALIDATOR" ]; then
                 echo "Running: $VALIDATOR $rpm"
                 if "$VALIDATOR" "$rpm"; then
-                  echo "OK - $name passed harbour validation"
+                  echo "✅ $name passed harbour validation"
                 else
                   echo "::error::$name FAILED harbour validation"
                   failed=1
@@ -67,7 +67,7 @@ runs:
                 echo "Running basic RPM metadata check..."
                 rpm -qip "$rpm"
                 rpm -qlp "$rpm"
-                echo "OK - $name basic metadata OK (full harbour check unavailable)"
+                echo "✅ $name basic metadata OK (full harbour check unavailable)"
               fi
 
               echo "::endgroup::"

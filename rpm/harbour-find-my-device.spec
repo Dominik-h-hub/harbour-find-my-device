@@ -5,7 +5,7 @@ Name:       harbour-find-my-device
 Summary:    Find My Device for Sailfish OS
 Version:    0.1
 Release:    1
-License:    EPL-2.0
+License:    Apache-2.0
 URL:        https://openrepos.net/
 Source0:    %{name}-%{version}.tar.bz2
 Requires:   sailfishsilica-qt5 >= 0.10.9
@@ -62,6 +62,7 @@ fi
 
 %files
 %defattr(-,root,root,-)
+%license LICENSE NOTICE
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png

@@ -1,0 +1,54 @@
+﻿harbour-find-my-device
+Copyright 2024 harbour-find-my-device contributors
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
+==============================================================================
+This project incorporates components from third-party libraries listed below.
+Their original license texts are included alongside the respective source
+files in this repository.
+------------------------------------------------------------------------------
+1. Eclipse Paho MQTT Python client
+   Location : qml/utilities/paho/
+   Version  : 1.6.1
+   Copyright: Copyright (c) 2013-2022 Roger Light and others
+   paho-mqtt is dual-licensed under the Eclipse Public License v2.0 (EPL-2.0)
+   and the Eclipse Distribution License v1.0 (EDL-1.0, a BSD 3-Clause variant).
+   This project redistributes paho-mqtt under the EDL-1.0 license, which is
+   compatible with the Apache License 2.0.
+   The full EDL-1.0 text is available at:
+     qml/utilities/paho/edl-v10
+   SPDX-License-Identifier: BSD-3-Clause
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+     1. Redistributions of source code must retain the above copyright notice,
+        this list of conditions and the following disclaimer.
+     2. Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+     3. Neither the name of the copyright holder nor the names of its
+        contributors may be used to endorse or promote products derived from
+        this software without specific prior written permission.
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+   TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+   PURPOSE ARE DISCLAIMED.
+------------------------------------------------------------------------------
+2. qrcode
+   Location : qml/utilities/qrcode/
+   Version  : 7.4.2 (core only, no image-rendering dependencies)
+   Copyright: Copyright (c) 2011 Lincoln Loop
+   Originally forked from pyqrnative (Copyright (c) 2009 Kazuhiko Arase,
+   MIT License). The qrcode library itself is BSD-licensed.
+   SPDX-License-Identifier: BSD-3-Clause
+   The full license text is available at:
+     qml/utilities/qrcode/LICENSE
+------------------------------------------------------------------------------
