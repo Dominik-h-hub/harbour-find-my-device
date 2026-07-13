@@ -291,10 +291,11 @@ def list_devices():
         last_result = dev.get("last_auth_result") or ""
         auth_failed = last_result == "auth_failed"
         no_response = dev["device_id"] in _timed_out
-        # Buttons start active; grey on auth_failed, no-response (ack timeout) or a
-        # missing PIN (remote). The own device is never greyed.
+        is_deleted = bool(dev.get("deleted"))
+        # Buttons start active; grey on auth_failed, no-response (ack timeout), a
+        # missing PIN (remote) or a wiped device. The own device is never greyed.
         actions_enabled = (dev["is_own"] == 1) or (
-            has_pin and not auth_failed and not no_response)
+            has_pin and not auth_failed and not no_response and not is_deleted)
         result.append({
             "device_id": dev["device_id"],
             "label": devices.display_label(dev),
@@ -302,6 +303,7 @@ def list_devices():
             "has_pin": has_pin,
             "auth_failed": auth_failed,
             "no_response": no_response,
+            "deleted": is_deleted,
             # The own device can be rung remotely by another device; the command
             # daemon flags that via a cross-process state file (own_ringing) so the
             # STOP button shows here too, not only on the controlling device.
@@ -350,10 +352,12 @@ def update_device(device_id, label, pin, new_device_id=None):
     pin_arg = pin if pin else None
     ok, err = devices.update_device(device_id, label=label, pin=pin_arg)
     if ok:
-        # Editing is the recovery action for a wrong id/PIN: clear any previous
-        # auth_failed / timeout state so the command buttons are usable again.
+        # Editing is the recovery action for a wrong id/PIN (or a re-set-up
+        # device after a wipe): clear any previous auth_failed / timeout /
+        # deleted state so the command buttons are usable again.
         _clear_ack_timeout(device_id)
         devices.set_auth_result(device_id, None)
+        devices.set_deleted(device_id, False)
         if renamed:
             _restart_ui_mqtt()  # subscribe to the new id's location/ack topics
         _log_ui("device updated: %s" % device_id)
@@ -841,6 +845,10 @@ def _on_remote_ack(device_id, payload):
     cmd = payload.get("cmd", "?")
     if result in ("ok", "auth_failed", "disabled"):
         devices.set_auth_result(device_id, result)
+    # A confirmed DELETE means the device wiped itself: it will never answer
+    # again, so flag it permanently (until the entry is edited/re-paired).
+    if (cmd or "").upper() == "DELETE" and result == "ok":
+        devices.set_deleted(device_id, True)
     # If a RING was not actually accepted, drop the optimistic ringing state so the
     # button does not stay on STOP for a device that never started ringing.
     if (cmd or "").upper() == "RING" and result != "ok":

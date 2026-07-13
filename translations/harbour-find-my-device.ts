@@ -152,6 +152,14 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Device deleted and not reachable anymore</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DELETE confirmed: device wiped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>%1: no response</source>
         <translation type="unfinished"></translation>
     </message>

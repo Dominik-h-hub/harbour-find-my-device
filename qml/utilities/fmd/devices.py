@@ -260,6 +260,24 @@ def set_auth_result(device_id, result, conn=None):
     log.info("auth result for %s set to %s", device_id, result)
 
 
+def set_deleted(device_id, deleted, conn=None):
+    """Flag a remote device as remotely wiped (DELETE acked): it will never
+    answer again, so the UI greys its commands permanently. Editing the device
+    entry clears the flag (the id may be reused after a re-setup)."""
+    own = conn is None
+    conn = conn or db.connect()
+    try:
+        conn.execute(
+            "UPDATE devices SET Deleted = ? WHERE Device_Id = ?",
+            (1 if deleted else 0, device_id))
+        if own:
+            conn.commit()
+    finally:
+        if own:
+            conn.close()
+    log.info("deleted flag for %s set to %s", device_id, bool(deleted))
+
+
 def display_label(device):
     """Label to show; fall back to the id when no label is set."""
     label = (device.get("device_label") or "").strip()
@@ -277,6 +295,7 @@ def _row_to_dict(row):
         "pin": deobfuscate(row["Pin"]) if row["Pin"] else None,
         "totp_secret": deobfuscate(row["Totp_Secret"]) if row["Totp_Secret"] else None,
         "last_auth_result": row["Last_Auth_Result"],
+        "deleted": int(row["Deleted"] or 0),
         "last_ack_utc": row["Last_Ack_Utc"],
         "created_utc": row["Created_Utc"],
         "updated_utc": row["Updated_Utc"],

@@ -54,15 +54,18 @@ def _handle_signal(signum, _frame):
 class CommandExecutor(object):
     """Executes commands and reports results. Shared by the MQTT and SMS paths."""
 
-    def __init__(self):
+    def __init__(self, own_id=None):
         self._mqtt = None
+        self._own_id = own_id
 
     def set_mqtt(self, client):
         self._mqtt = client
 
     # -- helpers --
     def own_id(self):
-        return devices.own_device_id()
+        if self._own_id is None:
+            self._own_id = devices.own_device_id()
+        return self._own_id
 
     def own_pin(self):
         own = devices.get_own()
@@ -247,7 +250,7 @@ def main():
     db.init_schema()
     own = devices.ensure_own_device()
     own_id = own["device_id"]
-    executor = CommandExecutor()
+    executor = CommandExecutor(own_id=own_id)
 
     # --- MQTT command channel ---------------------------------------------
     def on_mqtt_command(device_id, payload):

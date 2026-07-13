@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS devices (
     Totp_Secret       TEXT,
     Last_Auth_Result  TEXT    CHECK (Last_Auth_Result IN
                               ('ok', 'auth_failed', 'disabled') OR Last_Auth_Result IS NULL),
+    Deleted           INTEGER NOT NULL DEFAULT 0 CHECK (Deleted IN (0, 1)),
     Last_Ack_Utc      TEXT,
     Created_Utc       TEXT    NOT NULL,
     Updated_Utc       TEXT
@@ -82,6 +83,19 @@ CREATE TABLE IF NOT EXISTS settings (
 """
 
 
+def _migrate(conn):
+    """Upgrade an existing DB in place (CREATE IF NOT EXISTS keeps old tables)."""
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(devices)")]
+    if "Deleted" not in cols:
+        try:
+            conn.execute("ALTER TABLE devices ADD COLUMN Deleted INTEGER "
+                         "NOT NULL DEFAULT 0 CHECK (Deleted IN (0, 1))")
+            log.info("migrated devices table: added Deleted column")
+        except sqlite3.OperationalError as exc:
+            if "duplicate column" not in str(exc).lower():
+                raise
+
+
 def connect(path=None):
     """Open a connection with the project-wide pragmas applied.
 
@@ -101,6 +115,7 @@ def connect(path=None):
     # into connect(). Only the default DB path is auto-ensured.
     if not _schema_ready and path == paths.db_path():
         conn.executescript(_SCHEMA)
+        _migrate(conn)
         conn.commit()
         _schema_ready = True
         log.info("schema ensured at %s (on first connect)", path)
@@ -131,4 +146,5 @@ def init_schema(path=None):
     """Create all tables/indexes/triggers if missing. Safe to call repeatedly."""
     with connection(path) as conn:
         conn.executescript(_SCHEMA)
+        _migrate(conn)
     log.info("schema ensured at %s", path or paths.db_path())

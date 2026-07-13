@@ -152,6 +152,14 @@
         <translation>keine Antwort (Device-Id prüfen)</translation>
     </message>
     <message>
+        <source>Device deleted and not reachable anymore</source>
+        <translation>Gerät gelöscht und nicht mehr erreichbar</translation>
+    </message>
+    <message>
+        <source>DELETE confirmed: device wiped</source>
+        <translation>DELETE bestätigt: Gerät gelöscht</translation>
+    </message>
+    <message>
         <source>%1: no response</source>
         <translation>%1: keine Antwort</translation>
     </message>

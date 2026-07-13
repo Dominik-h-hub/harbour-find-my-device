@@ -22,6 +22,7 @@ import glob
 import json
 import logging
 import os
+import stat
 import subprocess
 import sys
 
@@ -35,7 +36,8 @@ log = logging.getLogger("fmd.priv")
 
 def _do_reboot():
     log.warning("reboot requested")
-    subprocess.call(["/sbin/reboot"])
+    # SFOS 5.1 dropped /sbin/reboot (usrmerge); systemctl works on 5.0 and 5.1.
+    subprocess.call(["/usr/bin/systemctl", "reboot"])
 
 
 def _do_sendsms(req):
@@ -54,7 +56,27 @@ def _do_sendsms(req):
 
 def _process(path):
     try:
-        with open(path) as fh:
+        # Use lstat so we inspect the directory entry itself, not any symlink
+        # target.  Reject symlinks and hard-linked files (nlink > 1 means the
+        # inode is reachable through another name outside the spool dir).
+        st = os.lstat(path)
+        if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1:
+            log.error("rejecting non-regular request file %s", path)
+            return
+        # Require the request to be owned by the same uid that owns the spool
+        # directory (the primary user, uid 100000 on Sailfish OS).
+        spool_uid = os.stat(SPOOL_DIR).st_uid
+        if st.st_uid != spool_uid:
+            log.error(
+                "rejecting request file %s not owned by spool uid %s (uid=%s)",
+                path, spool_uid, st.st_uid,
+            )
+            return
+        flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        fd = os.open(path, flags)
+        with os.fdopen(fd, "r") as fh:
             req = json.load(fh)
     except Exception as exc:
         log.error("bad request file %s: %s", path, exc)

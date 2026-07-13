@@ -45,6 +45,7 @@ SilicaListView {
                     hasPin: d.has_pin ? 1 : 0,
                     authFailed: d.auth_failed ? 1 : 0,
                     noResponse: d.no_response ? 1 : 0,
+                    wiped: d.deleted ? 1 : 0,
                     ringing: d.ringing ? 1 : 0,
                     lastAuthResult: d.last_auth_result,
                     actionsEnabled: d.actions_enabled ? 1 : 0,
@@ -78,7 +79,9 @@ SilicaListView {
         target: Bridge
         onDevicesUpdated: list.reload()
         onCommandResult: {
-            var txt = result === "ok" ? qsTr("%1 acknowledged").arg(cmd)
+            var txt = (result === "ok" && cmd === "DELETE")
+                      ? qsTr("DELETE confirmed: device wiped")
+                    : result === "ok" ? qsTr("%1 acknowledged").arg(cmd)
                     : result === "auth_failed" ? qsTr("%1 failed: wrong PIN").arg(cmd)
                     : result === "disabled" ? qsTr("%1 disabled on target").arg(cmd)
                     : result === "timeout" ? qsTr("%1: no response").arg(cmd)
@@ -126,13 +129,14 @@ SilicaListView {
                         if (lastTime !== "")
                             parts.push(qsTr("Last GPS FIX: %1").arg(list.formatTimestamp(lastTime)));
                         if (battery >= 0) parts.push(battery + "%");
+                        if (wiped === 1) parts.push(qsTr("Device deleted and not reachable anymore"));
                         if (isOwn === 0 && hasPin === 0) parts.push(qsTr("no PIN set"));
                         if (authFailed === 1) parts.push(qsTr("wrong PIN"));
                         if (noResponse === 1) parts.push(qsTr("no response (check device id)"));
                         return parts.length ? parts.join("  ·  ") : qsTr("no data yet");
                     }
-                    // Red when something is wrong (wrong PIN / no response)
-                    color: (authFailed === 1 || noResponse === 1)
+                    // Red when something is wrong (wrong PIN / no response / wiped)
+                    color: (authFailed === 1 || noResponse === 1 || wiped === 1)
                            ? Theme.errorColor : Theme.secondaryColor
                     font.pixelSize: Theme.fontSizeExtraSmall
                     wrapMode: Text.Wrap

@@ -3,8 +3,8 @@ Type=Application
 X-Nemo-Application-Type=silica-qt5
 Icon=harbour-find-my-device
 Exec=sailfish-qml harbour-find-my-device
-Name=Find my?
-Name[de]=Wo ist?
+Name=Radar
+Name[de]=Radar
 
 [X-Sailjail]
 # Sailjail sandboxing is disabled

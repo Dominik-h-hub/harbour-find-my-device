@@ -38,6 +38,10 @@ CAMERA / DELETE over MQTT (HMAC) and SMS (TOTP / backup codes).
 %install
 %qmake5_install
 
+# Copy license files from source to buildroot for %license macro
+install -D -m 0644 %{_sourcedir}/../LICENSE %{buildroot}%{_datadir}/licenses/%{name}-%{version}/LICENSE
+install -D -m 0644 %{_sourcedir}/../NOTICE %{buildroot}%{_datadir}/licenses/%{name}-%{version}/NOTICE
+
 desktop-file-install --delete-original \
         --dir %{buildroot}%{_datadir}/applications \
         %{buildroot}%{_datadir}/applications/*.desktop
@@ -62,7 +66,8 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%license LICENSE NOTICE
+%{_datadir}/licenses/%{name}-%{version}/LICENSE
+%{_datadir}/licenses/%{name}-%{version}/NOTICE
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
