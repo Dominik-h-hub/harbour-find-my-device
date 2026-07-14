@@ -98,6 +98,7 @@ class GpsDaemon(object):
             if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
                 log.info("auto-enabling location services")
                 location_control.set_location_enabled(enable=True)
+                location_control.wait_until_enabled()  # priv service applies it async
                 time.sleep(3)   # allow the provider to start before first fix
             else:
                 log.info("location disabled and auto-enable off; skipping fix")

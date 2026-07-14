@@ -6,11 +6,13 @@ Sailfish OS has no `sudo`, so the (non-root) user daemon cannot escalate directl
 Instead it drops a small JSON request file into a spool directory; a systemd SYSTEM
 service (this script, running as root) is started by a `.path` unit whenever the
 spool is non-empty, and performs the privileged action. This is the whole
-privilege boundary; it can ONLY reboot or send an SMS.
+privilege boundary; it can ONLY reboot, send an SMS, or set the system
+location (GPS) switch.
 
 Spool request files (one JSON object per file):
     {"cmd": "reboot"}
     {"cmd": "sendsms", "to": "+49...", "body": "text (may contain newlines)"}
+    {"cmd": "location", "enable": true}
 
 Every file is deleted after processing (success or failure) so the `.path` unit
 does not retrigger endlessly.
@@ -54,6 +56,19 @@ def _do_sendsms(req):
     log.info("sendsms to %s -> success=%s error=%s", to, res.success, res.error)
 
 
+def _do_location(req):
+    enable = bool(req.get("enable"))
+    # As root, location_control writes the conf files itself (temp + rename with
+    # preserved root:privileged ownership), which is what the Settings GUI's
+    # file watcher needs to pick the change up.
+    if UTILS_DIR not in sys.path:
+        sys.path.insert(0, UTILS_DIR)
+    import location_control
+    results = location_control.set_location_enabled(enable=enable)
+    log.info("location -> enabled=%s (%s)", enable,
+             ", ".join("%s: %s" % (r["path"], r["error"] or "ok") for r in results))
+
+
 def _process(path):
     try:
         # Use lstat so we inspect the directory entry itself, not any symlink
@@ -87,6 +102,8 @@ def _process(path):
             _do_reboot()
         elif cmd == "sendsms":
             _do_sendsms(req)
+        elif cmd == "location":
+            _do_location(req)
         else:
             log.warning("unknown privileged command: %r", cmd)
     except Exception:

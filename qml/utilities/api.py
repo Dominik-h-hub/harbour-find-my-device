@@ -181,7 +181,7 @@ def _apply_settings_side_effects():
     """Reconnect the UI MQTT client and resync the daemons after a settings save.
     Runs in a background thread (see save_settings)"""
     with _settings_apply_lock:
-        _restart_ui_mqtt()
+        _start_ui_mqtt()
         _sync_daemons()
 
 
@@ -397,12 +397,43 @@ def remove_device(device_id):
 # =========================================================================
 # Map
 # =========================================================================
+# Cached network state for the map banner. The actual probe runs in a background
+# thread: get_map_data() is served by the single PyOtherSide worker thread, and a
+# synchronous probe on a just-dropped network can hang in DNS for minutes, which
+# froze the whole app (every Bridge.call queues behind it).
+_NET_TTL_S = 10.0
+_net_state = {"online": True, "checked": 0.0, "probing": False}
+_net_lock = threading.Lock()
+
+
+def _network_online(server, port):
+    """Return the last known online state; refresh it in the background if stale."""
+    now = time.time()
+    with _net_lock:
+        stale = (now - _net_state["checked"]) > _NET_TTL_S
+        if stale and not _net_state["probing"]:
+            _net_state["probing"] = True
+            threading.Thread(target=_probe_network, args=(server, port),
+                             daemon=True).start()
+        return _net_state["online"]
+
+
+def _probe_network(server, port):
+    online = mqtt_client.network_up(server or None, port)
+    with _net_lock:
+        changed = online != _net_state["online"]
+        _net_state.update(online=online, checked=time.time(), probing=False)
+    if changed:
+        # Reload the map page so the offline banner (dis)appears promptly.
+        _emit("mapUpdated")
+
+
 def get_map_data():
     """Markers + status flags for the map page."""
     server = settings.get(settings.MQTT_SERVER)
     port = settings.get_int(settings.MQTT_PORT,
                             8883 if settings.get_bool(settings.MQTT_TLS) else 1883)
-    network_online = mqtt_client.network_up(server or None, port)
+    network_online = _network_online(server, port)
     gps_available = location_control.is_enabled()
 
     markers = []
@@ -441,10 +472,20 @@ def _friendly_fix_error(err):
 
 
 def refresh_location():
-    #ake a one-off own-device GPS fix, store it, publish it (if enabled).
-    # Serialise so the foreground poll and a manual refresh can't fix at once.
-    with _fix_lock:
-        return _do_refresh_location(notify=True)
+    #Take a one-off own-device GPS fix, store it, publish it (if enabled).
+    threading.Thread(target=_refresh_location_worker, daemon=True).start()
+    return {"ok": True}
+
+
+def _refresh_location_worker():
+    try:
+        # Serialise so the foreground poll and a manual refresh can't fix at once.
+        with _fix_lock:
+            _do_refresh_location(notify=True)
+    except Exception as exc:
+        log.error("refresh_location failed: %s", exc)
+        # Always resolve the UI (busy indicator stops on this signal).
+        _emit("locationFix", False, "GPS error")
 
 
 def _do_refresh_location(notify=True):
@@ -456,6 +497,7 @@ def _do_refresh_location(notify=True):
         if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
             _log_ui("auto-enabling location services")
             location_control.set_location_enabled(enable=True)
+            location_control.wait_until_enabled()  # priv service applies it async
             time.sleep(2)  # allow the provider to start before the first fix
         else:
             if notify:
@@ -758,7 +800,7 @@ def get_daemon_status():
 def enable_location_now():
     """Manually enable the system location services (used by the GPS prompt)."""
     location_control.set_location_enabled(enable=True)
-    enabled = location_control.is_enabled()
+    enabled = location_control.wait_until_enabled()  # priv service applies it async
     _log_ui("location enable requested -> enabled=%s" % enabled)
     return {"ok": enabled}
 
@@ -804,8 +846,14 @@ def _start_ui_mqtt():
 
 
 def _restart_ui_mqtt():
-    _start_ui_mqtt()
+    """Restart the UI MQTT client off-thread. Disconnect can wait ~2s on a stuck
+    network thread and connect resolves DNS, neither may stall the PyOtherSide
+    worker (device add/edit/remove call this directly)."""
+    threading.Thread(target=_restart_ui_mqtt_sync, daemon=True).start()
 
+def _restart_ui_mqtt_sync():
+    with _settings_apply_lock:
+        _start_ui_mqtt()
 
 def _on_remote_location(device_id, payload):
     """Store an incoming remote-device location and refresh the map."""

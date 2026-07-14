@@ -222,7 +222,7 @@ SilicaFlickable {
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.primaryColor
             text: overrideText !== "" ? overrideText
-                  : (!root.mapData.network_online ? qsTr("Network offline")
+                  : (!root.mapData.network_online ? qsTr("Internet connection not available")
                   : (!root.mapData.gps_available ? qsTr("GPS not available") : ""))
         }
         Timer { id: bannerTimer; interval: 4000; onTriggered: { statusBanner._sticky = false; bannerLabel.overrideText = ""; } }

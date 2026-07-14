@@ -50,3 +50,17 @@ def reboot():
     if ok:
         log.info("reboot queued for the privileged service")
     return ok
+
+
+def set_location(enable):
+    """Queue a system location on/off change (written as root by the priv service).
+
+    location.conf and its directory are root:privileged on stock Sailfish OS, so
+    only the root service can update them the way the Settings GUI expects
+    (rename with preserved ownership -- see location_control._write_conf).
+    """
+    ok = queue({"cmd": "location", "enable": bool(enable)})
+    if ok:
+        log.info("location %s queued for the privileged service",
+                 "enable" if enable else "disable")
+    return ok

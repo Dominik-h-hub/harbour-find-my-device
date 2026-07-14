@@ -18,6 +18,7 @@ import json
 import logging
 import socket
 import ssl
+import threading
 
 log = logging.getLogger("fmd.mqtt")
 
@@ -62,15 +63,25 @@ def network_up(host=None, port=None, timeout=3.0):
     If host/port are given, tries a TCP connect to the broker; otherwise just
     checks that a route to a public address can be resolved/opened. Returns bool.
     """
-    try:
-        if host:
-            with socket.create_connection((host, int(port or 1883)), timeout=timeout):
-                return True
-        # No broker given: probe a well-known address (no data sent).
-        with socket.create_connection(("8.8.8.8", 53), timeout=timeout):
-            return True
-    except OSError:
-        return False
+    result = []
+
+    def _probe():
+        try:
+            if host:
+                with socket.create_connection((host, int(port or 1883)),
+                                              timeout=timeout):
+                    result.append(True)
+                return
+            # No broker given: probe a well-known address (no data sent).
+            with socket.create_connection(("8.8.8.8", 53), timeout=timeout):
+                result.append(True)
+        except OSError:
+            pass
+
+    t = threading.Thread(target=_probe, daemon=True)
+    t.start()
+    t.join(timeout + 0.5)
+    return bool(result)
 
 
 def _new_paho_client(cid, clean_session=True):
@@ -150,8 +161,23 @@ class FmdMqttClient(object):
     def disconnect(self):
         if self._client is not None:
             try:
-                self._client.loop_stop()
                 self._client.disconnect()
+            except Exception:
+                pass
+            try:
+                # Not loop_stop(): that joins the network thread without a
+                # timeout, and while offline that thread can sit in a DNS lookup
+                # (getaddrinfo) for minutes during auto-reconnect. Signal it to
+                # terminate and abandon it (daemon thread) if it doesn't exit in
+                # time; connect() always builds a fresh client anyway.
+                self._client._thread_terminate = True
+                thread = getattr(self._client, "_thread", None)
+                if thread is not None and thread is not threading.current_thread():
+                    thread.join(2.0)
+                    if thread.is_alive():
+                        log.warning("mqtt network thread still busy; abandoned")
+                    else:
+                        self._client._thread = None
             except Exception:
                 pass
         self._connected = False

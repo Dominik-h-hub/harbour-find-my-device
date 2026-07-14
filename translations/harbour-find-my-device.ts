@@ -257,7 +257,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Network offline</source>
+        <source>Internet connection not available</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

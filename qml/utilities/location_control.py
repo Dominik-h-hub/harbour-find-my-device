@@ -19,7 +19,9 @@ import logging
 import os
 import re
 import shutil
+import stat
 import sys
+import tempfile
 import time
 
 log = logging.getLogger("fmd.location")
@@ -60,6 +62,37 @@ def _read_key(text, key):
     return m.group(1) if m else None
 
 
+def _write_conf(path, text):
+    #Write the conf via temp file + atomic rename, like the Settings GUI does.
+
+    d = os.path.dirname(path) or "."
+    try:
+        fd, tmp = tempfile.mkstemp(prefix=".location.conf.", dir=d)
+    except OSError:
+        # Directory not writable for us (e.g. /etc/location as plain user):
+        # fall back to the in-place rewrite; the GUI watches the /var/lib copy.
+        with open(path, "w") as fh:
+            fh.write(text)
+        return
+    try:
+        with os.fdopen(fd, "w") as fh:
+            fh.write(text)
+        try:
+            st = os.stat(path)
+            os.chmod(tmp, stat.S_IMODE(st.st_mode))
+            if hasattr(os, "chown"):
+                os.chown(tmp, st.st_uid, st.st_gid)  # only effective as root
+        except OSError:
+            pass
+        os.replace(tmp, path)
+    except OSError:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def read_state(path):
     """Return {'path', 'exists', 'enabled', 'gps_enabled', 'agreement'} for a file."""
     state = {"path": path, "exists": os.path.exists(path),
@@ -84,6 +117,24 @@ def is_enabled(paths=DEFAULT_PATHS):
         if read_state(p).get("enabled") == "true":
             return True
     return False
+
+
+def wait_until_enabled(timeout=3.0, poll=0.3, paths=DEFAULT_PATHS):
+    """Wait until is_enabled() turns true; returns the final state.
+
+    After set_location_enabled() the authoritative write may be performed
+    asynchronously by the root priv service, so the flag can lag by a moment.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if is_enabled(paths):
+            return True
+        time.sleep(poll)
+    return is_enabled(paths)
+
+
+def _is_root():
+    return hasattr(os, "geteuid") and os.geteuid() == 0
 
 
 def set_location_enabled(enable=True, accept_agreement=True, enable_gps=True,
@@ -116,8 +167,7 @@ def set_location_enabled(enable=True, accept_agreement=True, enable_gps=True,
             if enable and accept_agreement:
                 text = _set_key(text, KEY_AGREEMENT, "true")
 
-            with open(path, "w") as fh:
-                fh.write(text)
+            _write_conf(path, text)
             res["written"] = True
             log.info("location %s in %s (gps=%s, agreement=%s)",
                      "ENABLED" if enable else "DISABLED", path,
@@ -131,6 +181,20 @@ def set_location_enabled(enable=True, accept_agreement=True, enable_gps=True,
             else:
                 log.error("failed writing %s: %s", path, exc)
         results.append(res)
+
+    # Stock Sailfish has location.conf and its directory owned root:privileged;
+    # a plain app process can at best rewrite the file in place (once the GUI
+    # has written it and left it user-owned), which the Settings GUI's file
+    # watcher does NOT notice. Queue the change to the root priv service too:
+    # it re-writes via rename with preserved ownership, which the GUI (and any
+    # other watcher) picks up. The direct write above stays as best effort so
+    # geoclue sees the change immediately where the file is writable.
+    if not _is_root():
+        try:
+            import priv_client
+            priv_client.set_location(enable)
+        except Exception as exc:
+            log.warning("could not queue location change to priv service: %s", exc)
 
     log.info("location set to enabled=%s; the change is applied when geoclue "
              "next starts (D-Bus activated, no service restart needed)", value)

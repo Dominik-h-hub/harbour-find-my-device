@@ -257,8 +257,8 @@
         <translation>Keine GPS-Ortung</translation>
     </message>
     <message>
-        <source>Network offline</source>
-        <translation>Netzwerk offline</translation>
+        <source>Internet connection not available</source>
+        <translation>Internetverbindung nicht verfügbar</translation>
     </message>
     <message>
         <source>GPS not available</source>

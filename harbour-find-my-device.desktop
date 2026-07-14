@@ -7,6 +7,6 @@ Name=Radar
 Name[de]=Radar
 
 [X-Sailjail]
-# Sailjail sandboxing is disabled
+# Sailjail sandboxing is disabled: daemon-control (ON/OFF) via systemd,location-config write-access, shared db with daemons.
 # access: geoclue, ofono, devicelock, location.conf, WebDAV, MQTT).
 Sandboxing=Disabled
