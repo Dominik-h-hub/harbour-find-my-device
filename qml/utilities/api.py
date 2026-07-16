@@ -742,6 +742,20 @@ _CMD_FEATURE_KEYS = (
 )
 
 
+def _systemd_user_manager():
+    """D-Bus interface to the systemd USER manager.
+
+    Used instead of spawning `systemctl`, which is not reachable from inside
+    the Sailjail sandbox; the FindMyDevice permission grants talking to
+    org.freedesktop.systemd1 on the session bus instead.
+    """
+    import dbus
+    bus = dbus.SessionBus()
+    return bus, dbus.Interface(
+        bus.get_object("org.freedesktop.systemd1", "/org/freedesktop/systemd1"),
+        "org.freedesktop.systemd1.Manager")
+
+
 def _set_daemon_state(unit, wanted):
     """Make the systemd USER unit match `wanted`.
 
@@ -750,12 +764,15 @@ def _set_daemon_state(unit, wanted):
     not wanted, we `stop` it so a disabled feature truly idles. Best-effort: any
     failure is logged, never raised.
     """
-    import subprocess
     action = "restart" if wanted else "stop"
     try:
-        # --no-block: queue the job in systemd and return at once instead of blocking settings reloading
-        subprocess.call(["systemctl", "--user", "--no-block", action, unit],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        _, mgr = _systemd_user_manager()
+        # Job mode "replace" queues the job and returns at once (the D-Bus
+        # equivalent of `systemctl --no-block`), so saving settings never blocks.
+        if wanted:
+            mgr.RestartUnit(unit, "replace")
+        else:
+            mgr.StopUnit(unit, "replace")
         log.info("daemon %s -> %s (wanted=%s)", unit, action, wanted)
     except Exception as exc:
         log.warning("could not %s daemon %s: %s", action, unit, exc)
@@ -778,15 +795,16 @@ def _sync_daemons():
 
 def get_daemon_status():
     """Return {'gps': 'running'|'deactivated'|'failed'|'unknown', 'cmd': ...}."""
-    import subprocess
+    import dbus
     result = {}
     for key, unit in _DAEMONS.items():
         try:
-            out = subprocess.check_output(
-                ["systemctl", "--user", "is-active", unit],
-                stderr=subprocess.STDOUT).decode().strip()
-        except subprocess.CalledProcessError as exc:
-            out = exc.output.decode().strip() if exc.output else "unknown"
+            bus, mgr = _systemd_user_manager()
+            upath = mgr.LoadUnit(unit)
+            props = dbus.Interface(
+                bus.get_object("org.freedesktop.systemd1", upath),
+                "org.freedesktop.DBus.Properties")
+            out = str(props.Get("org.freedesktop.systemd1.Unit", "ActiveState"))
         except Exception:
             out = "unknown"
         result[key] = {

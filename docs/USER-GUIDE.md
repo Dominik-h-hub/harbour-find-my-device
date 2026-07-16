@@ -8,7 +8,7 @@ The main page of the Radar App displays a map view where you can see the locatio
 The default map is NOT interactive. To get a scrollable map you can add your own Openstreetmap-tileserver key for a scrollable map (optional - free account at geoapify.com needed) within the settings.
 
 ### Pull-Down Menu
-If you pull down the map view, you will see a menu with the following options:
+If you pull down the map view, you will see a menu with the following options:,
 - Settings: Opens the settings page where you can configure various options for the app.
 - Update Map: Refreshes (also gets a new GPS fix for your device) the map view from database to show the latest location of your device and any other devices you have added.
 

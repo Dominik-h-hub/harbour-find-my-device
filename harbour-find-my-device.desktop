@@ -7,6 +7,13 @@ Name=Radar
 Name[de]=Radar
 
 [X-Sailjail]
-# Sailjail sandboxing is disabled: daemon-control (ON/OFF) via systemd,location-config write-access, shared db with daemons.
-# access: geoclue, ofono, devicelock, location.conf, WebDAV, MQTT).
-Sandboxing=Disabled
+# Sandboxed with a minimal permission set (shown to the user on first launch):
+#   Internet     - MQTT, map tiles
+#   Location     - geoclue GPS fix, read location.conf
+#   Audio        - ringtone preview in Settings
+#   FindMyDevice - app-specific (sailjail/FindMyDevice.permission): shared DB
+#                  with the daemons, daemon start/stop, priv-helper spool
+# The background daemons are systemd services and run outside this sandbox.
+OrganizationName=harbour-find-my-device
+ApplicationName=harbour-find-my-device
+Permissions=Internet;Location;Audio;FindMyDevice

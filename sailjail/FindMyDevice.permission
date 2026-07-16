@@ -1,0 +1,20 @@
+# -*- mode: sh -*-
+#
+# App-specific Sailjail permission for harbour-find-my-device.
+# Grants the sandboxed GUI exactly the three app-specific accesses that no
+# stock permission covers; everything else comes from Internet/Location/Audio.
+
+# x-sailjail-description = Find My Device services: shared device database, start/stop of the background services and requests to the privileged helper (GPS switch)
+
+### Shared application data (SQLite DB, ring state, photos). The unsandboxed
+### systemd user daemons write the same real path, so the GUI must not be
+### redirected to a sandbox-private copy.
+mkdir     ${HOME}/.local/share/harbour-find-my-device
+whitelist ${HOME}/.local/share/harbour-find-my-device
+
+### Request spool of the privileged root helper (enable GPS, reboot after wipe).
+whitelist /run/harbour-find-my-device
+
+### Start/stop/query the GPS and command daemons. api.py talks to the systemd
+### user manager over D-Bus (spawning `systemctl` does not work in the jail).
+dbus-user.talk org.freedesktop.systemd1
