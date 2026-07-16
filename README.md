@@ -13,15 +13,16 @@
 This app is a native Find-My-Device App for Sailfish OS. It allows you to locate your device on a map, and send some commands to it remotely. 
 The full documentation is available under [docs/](docs/)
 
-<a href="https://github.com/Dominik-h-hub/harbour-find-my-device/releases"><img src="docs/images/get-it-on-logos/get-it-on-jollaStore.png" alt="Get it on Jolla Store" height="80"></a>
+<p align="center">
 <a href="https://openrepos.net"><img src="docs/images/get-it-on-logos/get-it-on-openrepos.png" alt="Get it on OpenRepos" height="55"></a>
-<a href="https://github.com/Dominik-h-hub/harbour-find-my-device/releases"><img src="docs/images/get-it-on-logos/direct-apk-download.png" alt="Get it on GitHub" height="80"></a>
-
+<a href="https://github.com/Dominik-h-hub/harbour-find-my-device/releases"><img src="docs/images/get-it-on-logos/direct-rpm-download.png" alt="Direct RPM Download" height="55"></a>
+<!-- <a href="https://store.jolla.com"><img src="docs/images/get-it-on-logos/get-it-on-jollaStore.png" alt="Get it on the Jolla Store" height="55"></a> -->
+</p>
 ## Features
 
 - Locate your device on a map
-- Publish your device's GPS coordinates via MQTT
-- Send commands to your device remotely via MQTT:
+- Publish your device's GPS coordinates via MQTT (optional - use your own MQTT broker or free public broker)
+- Send commands to your device remotely via MQTT (optional - use your own MQTT broker or free public broker):
   - RING / STOP_RING - Make your device ring for 60 seconds
   - LOCK - Lock your device into lock-screen
   - GPS - get current GPS coordinates and publish via MQTT
@@ -30,16 +31,16 @@ The full documentation is available under [docs/](docs/)
 - Send commands to your device via SMS:
   - RING / STOP_RING - Make your device ring for 60 seconds
   - LOCK - Lock your device into lock-screen
-  - GPS - get current GPS coordinates and reply to sender via SMS
+  - GPS - get current GPS coordinates and reply to sender via SMS (ATTENTION: SMS costs may apply)
   - CAMERA - Take a picture with your front- or back-camera and sent it you a preconfigured webdav upload folder
   - DELETE - Wipe your userdata from your device (/home/<defaultuser | nemo>) - This is NOT a factory reset.
 - Add other Sailfish-OS Devices to your Radar map (need Radar-App installed, MQTT configured and on same MQTT broker)
 - Settings: Enable/Disable single Commands, SMS, MQTT, background-activities, etc.
 - Add TOTP secret to other trusted devices for remote access via SMS
 - Generate Fallback-TOTP codes for remote access via SMS
-- Add own Openstreetmap-tileserver key for scrollable map (optional)
+- Add own Openstreetmap-tileserver key for scrollable map (optional - free account at geoapify.com needed)
 
-<img src="docs/images/main-ui.png" alt="Main UI" width=200px> <img src="docs/images/sitemap-1.png" alt="sitemap view" width=200px> <img src="docs/images/sitemap-2.png" alt="Sitemap view" width=200px>
+<img src="docs/images/map-view.png" alt="Main view" width=200px> <img src="docs/images/devices-view.png" alt="Devices view" width=200px> <img src="docs/images/settings-view-1.png" alt="Settings view" width=200px>
 
 For more screenshots, see [docs/images/](docs/images/) in the GitHub repository.
 

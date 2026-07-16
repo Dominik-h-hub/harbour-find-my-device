@@ -2,7 +2,7 @@
 %define debug_package %{nil}
 
 Name:       harbour-find-my-device
-Summary:    Find My Device for Sailfish OS
+Summary:    Radar App (Find My Device)
 Version:    0.1
 Release:    1
 License:    Apache-2.0
@@ -38,9 +38,15 @@ CAMERA / DELETE over MQTT (HMAC) and SMS (TOTP / backup codes).
 %install
 %qmake5_install
 
-# Copy license files from source to buildroot for %license macro
-install -D -m 0644 %{_sourcedir}/../LICENSE %{buildroot}%{_datadir}/licenses/%{name}-%{version}/LICENSE
-install -D -m 0644 %{_sourcedir}/../NOTICE %{buildroot}%{_datadir}/licenses/%{name}-%{version}/NOTICE
+# License files live inside the app's own share dir: Harbour forbids
+# /usr/share/licenses (only /usr/share/%{name} is allowed for app data).
+install -D -m 0644 %{_sourcedir}/../LICENSE %{buildroot}%{_datadir}/%{name}/LICENSE
+install -D -m 0644 %{_sourcedir}/../NOTICE %{buildroot}%{_datadir}/%{name}/NOTICE
+
+# Python files are modules / started via "python3 <path>" (systemd units), never
+# exec'd directly. Harbour requires them non-executable; this also drops the
+# auto-generated /usr/bin/env and python3 shebang Requires.
+find %{buildroot}%{_datadir}/%{name} -name '*.py' -exec chmod 0644 {} +
 
 desktop-file-install --delete-original \
         --dir %{buildroot}%{_datadir}/applications \
@@ -66,8 +72,8 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%{_datadir}/licenses/%{name}-%{version}/LICENSE
-%{_datadir}/licenses/%{name}-%{version}/NOTICE
+%license %{_datadir}/%{name}/LICENSE
+%license %{_datadir}/%{name}/NOTICE
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png

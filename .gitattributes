@@ -1,0 +1,17 @@
+# Commit all text files with LF line endings (avoids the Sailfish SDK
+# "Files with CRLF line endings found" notice and CRLF-related build issues).
+* text=auto eol=lf
+
+# Windows-only scripts need CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files: never rewrite line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.rpm binary
+*.tar.bz2 binary
+*.qm binary

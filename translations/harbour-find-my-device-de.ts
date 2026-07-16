@@ -77,16 +77,16 @@
 <context>
     <name>CoverPage</name>
     <message>
-        <source>Find My Device</source>
-        <translation>Mein Gerät finden</translation>
-    </message>
-    <message>
         <source>Battery: %1%</source>
         <translation>Akku: %1 %</translation>
     </message>
     <message>
         <source>Uhr</source>
         <translation type="unfinished">Uhr</translation>
+    </message>
+    <message>
+        <source>Radar</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

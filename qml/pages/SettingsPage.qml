@@ -651,7 +651,7 @@ Dialog {
             ListItem {
                 contentHeight: Theme.itemSizeMedium
 
-                onClicked: Qt.openUrlExternally("https://codeberg.org/dominik-h/harbour-find-my-device")
+                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device")
 
                 Label {
                     anchors.left: parent.left
@@ -679,7 +679,7 @@ Dialog {
             ListItem {
                 contentHeight: Theme.itemSizeMedium
 
-                onClicked: Qt.openUrlExternally("https://codeberg.org/dominik-h/harbour-find-my-device")
+                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/tree/main/docs")
 
                 Label {
                     anchors.left: parent.left

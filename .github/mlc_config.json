@@ -1,0 +1,12 @@
+{
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [200, 201, 204, 206, 403, 429],
+  "ignorePatterns": [
+    { "pattern": "^http://localhost" },
+    { "pattern": "^https?://127\\.0\\.0\\.1" },
+    { "pattern": "^https?://192\\.168\\." }
+  ]
+}

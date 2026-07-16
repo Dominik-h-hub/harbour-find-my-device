@@ -37,25 +37,42 @@ CoverBackground {
     }
     // The cover persists across minimise/restore, so Component.onCompleted runs
     // only once and mapUpdated never fires for a background GPS-daemon fix. Re-read
-    // the DB whenever the app goes inactive (i.e. the cover becomes visible) so the
-    // shown values are current.
+    // the DB whenever the app goes inactive (i.e. the cover becomes visible)
     Connections {
         target: Qt.application
         onActiveChanged: if (!Qt.application.active) cover.reload()
     }
     Component.onCompleted: reload()
 
+    // Round launcher icon (installed under /usr/share/icons/hicolor) displayed at the top of the cover.
+    Image {
+        id: appIcon
+        source: "image://theme/harbour-find-my-device"
+        anchors {
+            top: parent.top
+            topMargin: Theme.paddingLarge
+            horizontalCenter: parent.horizontalCenter
+        }
+        width: Math.round(parent.width * 0.5)
+        height: width
+        sourceSize.width: width
+        sourceSize.height: width
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+    }
+
     Column {
         anchors {
             left: parent.left; right: parent.right
             verticalCenter: parent.verticalCenter
+            verticalCenterOffset: Theme.paddingLarge
             margins: Theme.paddingMedium
         }
         spacing: Theme.paddingSmall
 
         Label {
             width: parent.width
-            text: qsTr("Find My Device")
+            text: qsTr("Radar")
             font.pixelSize: Theme.fontSizeMedium
             color: Theme.highlightColor
             truncationMode: TruncationMode.Fade

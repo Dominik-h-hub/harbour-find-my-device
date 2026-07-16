@@ -77,15 +77,15 @@
 <context>
     <name>CoverPage</name>
     <message>
-        <source>Find My Device</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Battery: %1%</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Uhr</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Radar</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

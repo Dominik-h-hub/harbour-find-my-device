@@ -1,7 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtLocation 5.0
-import QtPositioning 5.0
+import QtPositioning 5.2
 import "../components"
 
 // The actual QtLocation map.

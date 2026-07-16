@@ -1,6 +1,3 @@
-# Rename this file as harbour-find-my-device.changes to include changelog
-# entries in your RPM file.
-#
 # Add new changelog entries following the format below.
 # Add newest entries to the top of the list.
 # Separate entries from eachother with a blank line.
@@ -12,7 +9,7 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
-* Sun Apr 13 2014 Jack Tar <jack.tar@example.com> 0.0.1-1
-- Scrubbed the deck
-- Hoisted the sails
-
+* Tue Jul 14 2026 Dominik Heidinger <dominikh@atomicmail.io> 0.1-1
+- Initial implementation of application
+- Added MainPage, Device-Page, Map-Page, Settings-Page
+- Added backend logic for device tracking, commands, and settings management
