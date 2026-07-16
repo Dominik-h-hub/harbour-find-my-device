@@ -33,11 +33,11 @@
     </message>
     <message>
         <source>PIN for remote access (HMAC secret)</source>
-        <translation type="unfinished"></translation>
+        <translation>PIN für Fernzugriff (HMAC-Secret)</translation>
     </message>
     <message>
         <source>e.g. My Jolla Phone</source>
-        <translation type="unfinished"></translation>
+        <translation>z. B. Mein Jolla-Telefon</translation>
     </message>
 </context>
 <context>
@@ -82,11 +82,11 @@
     </message>
     <message>
         <source>Uhr</source>
-        <translation type="unfinished">Uhr</translation>
+        <translation>Uhr</translation>
     </message>
     <message>
         <source>Radar</source>
-        <translation type="unfinished"></translation>
+        <translation>Radar</translation>
     </message>
 </context>
 <context>
@@ -201,23 +201,23 @@
     </message>
     <message>
         <source>RING</source>
-        <translation type="unfinished"></translation>
+        <translation>RING</translation>
     </message>
     <message>
         <source>LOCK</source>
-        <translation type="unfinished"></translation>
+        <translation>LOCK</translation>
     </message>
     <message>
         <source>CAMERA</source>
-        <translation type="unfinished"></translation>
+        <translation>CAMERA</translation>
     </message>
     <message>
         <source>DELETE</source>
-        <translation type="unfinished"></translation>
+        <translation>DELETE</translation>
     </message>
     <message>
         <source>Last GPS FIX: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Letzter GPS-Fix: %1</translation>
     </message>
 </context>
 <context>
@@ -274,286 +274,286 @@
     </message>
     <message>
         <source>Map module not available</source>
-        <translation type="unfinished">Kartenmodul nicht verfügbar</translation>
+        <translation>Kartenmodul nicht verfügbar</translation>
     </message>
     <message>
         <source>Install QtLocation on the device to show the map. Device positions are still listed on the Devices tab.</source>
-        <translation type="unfinished"></translation>
+        <translation>Installiere QtLocation auf dem Gerät, um die Karte anzuzeigen. Die Gerätepositionen werden weiterhin im Tab „Geräte“ aufgelistet.</translation>
     </message>
 </context>
 <context>
     <name>SettingsPage</name>
     <message>
         <source>(not set)</source>
-        <translation type="unfinished"></translation>
+        <translation>(nicht gesetzt)</translation>
     </message>
     <message>
         <source>Settings</source>
-        <translation type="unfinished">Einstellungen</translation>
+        <translation>Einstellungen</translation>
     </message>
     <message>
         <source>Background services</source>
-        <translation type="unfinished"></translation>
+        <translation>Hintergrunddienste</translation>
     </message>
     <message>
         <source>GPS service</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-Dienst</translation>
     </message>
     <message>
         <source>Command service</source>
-        <translation type="unfinished"></translation>
+        <translation>Befehlsdienst</translation>
     </message>
     <message>
         <source>Refresh</source>
-        <translation type="unfinished">Aktualisieren</translation>
+        <translation>Aktualisieren</translation>
     </message>
     <message>
         <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-Dienst: Wird aktiviert, wenn du den Schalter „Hintergrundaktivität“ einschaltest.</translation>
     </message>
     <message>
         <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
-        <translation type="unfinished"></translation>
+        <translation>Befehlsdienst: Wird aktiviert, wenn du mindestens eine Fernaktion oder SMS-Aktion einschaltest.</translation>
     </message>
     <message>
         <source>General</source>
-        <translation type="unfinished"></translation>
+        <translation>Allgemein</translation>
     </message>
     <message>
         <source>Device-Id</source>
-        <translation type="unfinished">Device-Id</translation>
+        <translation>Device-Id</translation>
     </message>
     <message>
         <source>GPS query interval (minutes)</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-Abfrageintervall (Minuten)</translation>
     </message>
     <message>
         <source>Auto-enable location when needed</source>
-        <translation type="unfinished"></translation>
+        <translation>Standort bei Bedarf automatisch aktivieren</translation>
     </message>
     <message>
         <source>Lets the daemon turn on the system location services and accept the agreement. Opt-in.</source>
-        <translation type="unfinished"></translation>
+        <translation>Erlaubt dem Daemon, die Standortdienste des Systems einzuschalten und die Nutzungsbedingungen zu akzeptieren. Opt-in.</translation>
     </message>
     <message>
         <source>MQTT</source>
-        <translation type="unfinished"></translation>
+        <translation>MQTT</translation>
     </message>
     <message>
         <source>Publish coordinates over MQTT</source>
-        <translation type="unfinished"></translation>
+        <translation>Koordinaten über MQTT veröffentlichen</translation>
     </message>
     <message>
         <source>Off = the daemon stores locally but does not publish.</source>
-        <translation type="unfinished"></translation>
+        <translation>Aus = der Daemon speichert lokal, veröffentlicht aber nicht.</translation>
     </message>
     <message>
         <source>MQTT server</source>
-        <translation type="unfinished"></translation>
+        <translation>MQTT-Server</translation>
     </message>
     <message>
         <source>broker.example.com</source>
-        <translation type="unfinished"></translation>
+        <translation>broker.example.com</translation>
     </message>
     <message>
         <source>Use TLS</source>
-        <translation type="unfinished"></translation>
+        <translation>TLS verwenden</translation>
     </message>
     <message>
         <source>MQTT username</source>
-        <translation type="unfinished"></translation>
+        <translation>MQTT-Benutzername</translation>
     </message>
     <message>
         <source>MQTT password</source>
-        <translation type="unfinished"></translation>
+        <translation>MQTT-Passwort</translation>
     </message>
     <message>
         <source>Port</source>
-        <translation type="unfinished"></translation>
+        <translation>Port</translation>
     </message>
     <message>
         <source>Background activity</source>
-        <translation type="unfinished"></translation>
+        <translation>Hintergrundaktivität</translation>
     </message>
     <message>
         <source>Keep reporting the location while the app is closed (the daemon &apos;GPS service&apos; runs).</source>
-        <translation type="unfinished"></translation>
+        <translation>Meldet den Standort weiter, während die App geschlossen ist (der Daemon „GPS-Dienst“ läuft).</translation>
     </message>
     <message>
         <source>Remote actions</source>
-        <translation type="unfinished"></translation>
+        <translation>Fernaktionen</translation>
     </message>
     <message>
         <source>PIN for remote access (HMAC secret)</source>
-        <translation type="unfinished"></translation>
+        <translation>PIN für Fernzugriff (HMAC-Secret)</translation>
     </message>
     <message>
         <source>Allow RING</source>
-        <translation type="unfinished"></translation>
+        <translation>RING erlauben</translation>
     </message>
     <message>
         <source>Device will ring for 60 seconds the below defined tone.</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Gerät klingelt 60 Sekunden lang mit dem unten festgelegten Klingelton.</translation>
     </message>
     <message>
         <source>Ringtone</source>
-        <translation type="unfinished"></translation>
+        <translation>Klingelton</translation>
     </message>
     <message>
         <source>Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>Vorschau</translation>
     </message>
     <message>
         <source>Stop</source>
-        <translation type="unfinished"></translation>
+        <translation>Stopp</translation>
     </message>
     <message>
         <source>Allow remote LOCK</source>
-        <translation type="unfinished"></translation>
+        <translation>LOCK aus der Ferne erlauben</translation>
     </message>
     <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
-        <translation type="unfinished"></translation>
+        <translation>Wenn das Gerät entsperrt ist, wird es in den Sperrbildschirm gesperrt.</translation>
     </message>
     <message>
         <source>Allow remote DELETE (wipe)</source>
-        <translation type="unfinished"></translation>
+        <translation>DELETE (Wipe) aus der Ferne erlauben</translation>
     </message>
     <message>
         <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
-        <translation type="unfinished"></translation>
+        <translation>Löscht alle Userdaten unter „home//&lt;user&gt;//“ und startet das Gerät anschließend neu.</translation>
     </message>
     <message>
         <source>Camera</source>
-        <translation type="unfinished"></translation>
+        <translation>Kamera</translation>
     </message>
     <message>
         <source>Allow remote photo</source>
-        <translation type="unfinished"></translation>
+        <translation>Foto aus der Ferne erlauben</translation>
     </message>
     <message>
         <source>A photo can be captured and uploaded to the configured WebDAV server.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ein Foto kann aufgenommen und auf den konfigurierten WebDAV-Server hochgeladen werden.</translation>
     </message>
     <message>
         <source>WebDAV URL (full upload path) for photo upload</source>
-        <translation type="unfinished"></translation>
+        <translation>WebDAV-URL (vollständiger Upload-Pfad) für den Foto-Upload</translation>
     </message>
     <message>
         <source>WebDAV username</source>
-        <translation type="unfinished"></translation>
+        <translation>WebDAV-Benutzername</translation>
     </message>
     <message>
         <source>WebDAV password</source>
-        <translation type="unfinished"></translation>
+        <translation>WebDAV-Passwort</translation>
     </message>
     <message>
         <source>SMS</source>
-        <translation type="unfinished"></translation>
+        <translation>SMS</translation>
     </message>
     <message>
         <source>+4915123456789</source>
-        <translation type="unfinished"></translation>
+        <translation>+4915123456789</translation>
     </message>
     <message>
         <source>Whitelist (Allowed senders) - one per line</source>
-        <translation type="unfinished"></translation>
+        <translation>Whitelist (erlaubte Absender) - einer pro Zeile</translation>
     </message>
     <message>
         <source>Remote control via SMS</source>
-        <translation type="unfinished"></translation>
+        <translation>Fernsteuerung per SMS</translation>
     </message>
     <message>
         <source>Turn on if you want accept SMS commands from the whitelist. The current TOTP code is required in SMS commands.</source>
-        <translation type="unfinished"></translation>
+        <translation>Einschalten, wenn du SMS-Befehle von der Whitelist akzeptieren möchtest. In SMS-Befehlen ist der aktuelle TOTP-Code erforderlich.</translation>
     </message>
     <message>
         <source>Allow Command GPS</source>
-        <translation type="unfinished"></translation>
+        <translation>Befehl GPS erlauben</translation>
     </message>
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sendet die aktuellen GPS-Koordinaten per SMS an den Absender. Die SMS erscheint NICHT unter den gesendeten Nachrichten, es wird aber eine Benachrichtigung angezeigt.</translation>
     </message>
     <message>
         <source>SMS authentication (TOTP)</source>
-        <translation type="unfinished"></translation>
+        <translation>SMS-Authentifizierung (TOTP)</translation>
     </message>
     <message>
         <source>Enrol this secret in a TOTP authenticator app on a SECOND device. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hinterlege dieses Secret in einer TOTP-Authenticator-App auf einem ZWEITEN Gerät. Der aktuelle Code ist in SMS-Befehlen erforderlich. Bewahre die Backup-Codes sicher auf, um sie ohne Authenticator-App zu nutzen.</translation>
     </message>
     <message>
         <source>TOTP secret</source>
-        <translation type="unfinished"></translation>
+        <translation>TOTP-Secret</translation>
     </message>
     <message>
         <source>Scan with an authenticator app on another device</source>
-        <translation type="unfinished"></translation>
+        <translation>Mit einer Authenticator-App auf einem anderen Gerät scannen</translation>
     </message>
     <message>
         <source>Generate new TOTP secret</source>
-        <translation type="unfinished"></translation>
+        <translation>Neues TOTP-Secret generieren</translation>
     </message>
     <message>
         <source>SMS - Backup Codes</source>
-        <translation type="unfinished"></translation>
+        <translation>SMS - Backup-Codes</translation>
     </message>
     <message>
         <source>If TOTP is not available, backup codes can be used for authentication. Each code can be used only once.</source>
-        <translation type="unfinished"></translation>
+        <translation>Wenn TOTP nicht verfügbar ist, können Backup-Codes zur Authentifizierung verwendet werden. Jeder Code kann nur einmal verwendet werden.</translation>
     </message>
     <message>
         <source>Unused backup codes</source>
-        <translation type="unfinished"></translation>
+        <translation>Unbenutzte Backup-Codes</translation>
     </message>
     <message>
         <source>Regenerate backup codes</source>
-        <translation type="unfinished"></translation>
+        <translation>Backup-Codes neu generieren</translation>
     </message>
     <message>
         <source>Map</source>
-        <translation type="unfinished">Karte</translation>
+        <translation>Karte</translation>
     </message>
     <message>
         <source>The standard OpenStreetMap is not zoomable but you can create a free account at Geoapify to get a free API key for a zoomable map. The key is optional, but without it the map will not be zoomable.</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Standard-OpenStreetMap ist nicht zoombar, aber du kannst ein kostenloses Konto bei Geoapify erstellen, um einen kostenlosen API-Key für eine zoombare Karte zu erhalten. Der Key ist optional, ohne ihn ist die Karte jedoch nicht zoombar.</translation>
     </message>
     <message>
         <source>Tile provider</source>
-        <translation type="unfinished"></translation>
+        <translation>Kartenanbieter</translation>
     </message>
     <message>
         <source>OpenStreetMap Geoapify</source>
-        <translation type="unfinished"></translation>
+        <translation>OpenStreetMap Geoapify</translation>
     </message>
     <message>
         <source>Geoapify API key (optional)</source>
-        <translation type="unfinished"></translation>
+        <translation>Geoapify-API-Key (optional)</translation>
     </message>
     <message>
         <source>About</source>
-        <translation type="unfinished"></translation>
+        <translation>Über</translation>
     </message>
     <message>
         <source>App Version</source>
-        <translation type="unfinished"></translation>
+        <translation>App-Version</translation>
     </message>
     <message>
         <source>Report a bug or request a feature</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler melden oder Feature vorschlagen</translation>
     </message>
     <message>
         <source>Code Repository</source>
-        <translation type="unfinished"></translation>
+        <translation>Code-Repository</translation>
     </message>
     <message>
         <source>OpenStreetMap (no key needed)</source>
-        <translation type="unfinished"></translation>
+        <translation>OpenStreetMap (kein Key erforderlich)</translation>
     </message>
     <message>
         <source>User Manual</source>
-        <translation type="unfinished"></translation>
+        <translation>Benutzerhandbuch</translation>
     </message>
 </context>
 </TS>
