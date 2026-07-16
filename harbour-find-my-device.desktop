@@ -7,13 +7,11 @@ Name=Radar
 Name[de]=Radar
 
 [X-Sailjail]
-# Sandboxed with a minimal permission set (shown to the user on first launch):
-#   Internet     - MQTT, map tiles
-#   Location     - geoclue GPS fix, read location.conf
-#   Audio        - ringtone preview in Settings
-#   FindMyDevice - app-specific (sailjail/FindMyDevice.permission): shared DB
-#                  with the daemons, daemon start/stop, priv-helper spool
-# The background daemons are systemd services and run outside this sandbox.
-OrganizationName=harbour-find-my-device
-ApplicationName=harbour-find-my-device
-Permissions=Internet;Location;Audio;FindMyDevice
+# Sailjail sandboxing is disabled. The GUI needs accesses that stock Sailjail
+# permissions cannot express, and running sandboxed proved unstable:
+#   - shared SQLite DB with the (unsandboxed) systemd user daemons
+#   - start/stop of those daemons (org.freedesktop.systemd1)
+#   - request spool of the privileged root helper (/run/harbour-find-my-device)
+# Stock permissions that would otherwise apply: Internet (MQTT, map tiles),
+# Location (geoclue GPS fix), Audio (ringtone preview).
+Sandboxing=Disabled

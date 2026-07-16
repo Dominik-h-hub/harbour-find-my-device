@@ -43,11 +43,6 @@ CAMERA / DELETE over MQTT (HMAC) and SMS (TOTP / backup codes).
 install -D -m 0644 %{_sourcedir}/../LICENSE %{buildroot}%{_datadir}/%{name}/LICENSE
 install -D -m 0644 %{_sourcedir}/../NOTICE %{buildroot}%{_datadir}/%{name}/NOTICE
 
-# App-specific Sailjail permission so the GUI can run sandboxed (see the
-# [X-Sailjail] section of the .desktop file).
-install -D -m 0644 %{_sourcedir}/../sailjail/FindMyDevice.permission \
-    %{buildroot}%{_sysconfdir}/sailjail/permissions/FindMyDevice.permission
-
 # Python files are modules / started via "python3 <path>" (systemd units), never
 # exec'd directly. Harbour requires them non-executable; this also drops the
 # auto-generated /usr/bin/env and python3 shebang Requires.
@@ -82,7 +77,6 @@ fi
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
-%{_sysconfdir}/sailjail/permissions/FindMyDevice.permission
 /usr/lib/systemd/user/harbour-find-my-device-daemon-gps.service
 /usr/lib/systemd/user/harbour-find-my-device-daemon-cmd.service
 /usr/lib/systemd/system/harbour-find-my-device-priv.service
