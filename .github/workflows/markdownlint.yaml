@@ -1,91 +1,55 @@
 name: Markdown Check
 
-# Runs on every push to a non-main branch and on every PR targeting main,
-# but only when markdown files (or this check's config) changed.
-# build.yaml ignores exactly these paths, so the two workflows never overlap.
+# Runs on every push to a non-main branch and on every PR targeting main.
+# Always checks ALL markdown files in the repository.
 on:
   push:
     branches-ignore:
       - 'main'
-    paths:
-      - '**/*.md'
-      - '.github/markdownlint.yaml'
-      - '.github/mlc_config.json'
-      - '.github/workflows/markdownlint.yaml'
   pull_request:
     branches:
       - 'main'
-    paths:
-      - '**/*.md'
-      - '.github/markdownlint.yaml'
-      - '.github/mlc_config.json'
-      - '.github/workflows/markdownlint.yaml'
   workflow_dispatch:
 
 jobs:
   # ──────────────────────────────────────────────
-  # Lint job – checks markdown style of all files changed relative to main.
+  # Lint job – checks markdown style of all .md files in the repository.
   # Every violation is logged as "file:line rule description [fix hint]".
   # One or more violations fail the job.
   # Rules: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
   # ──────────────────────────────────────────────
   lint:
     name: Markdown Lint
+    # Avoid duplicate runs: on pull_request, only run for forks (push already covers internal branches)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
-      - name: Determine changed markdown files
-        id: changed
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE=$(git merge-base origin/main HEAD 2>/dev/null || true)
-          fi
-          if [ -n "$BASE" ]; then
-            FILES=$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.md')
-          else
-            # No base to diff against (e.g. workflow_dispatch on main): lint everything
-            FILES=$(git ls-files '*.md')
-          fi
-          echo "Changed markdown files:"
-          echo "${FILES:-<none>}"
-          {
-            echo "files<<EOF"
-            echo "$FILES"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Lint changed markdown files
-        if: steps.changed.outputs.files != ''
+      - name: Lint all markdown files
         uses: DavidAnson/markdownlint-cli2-action@v20
         with:
           config: .github/markdownlint.yaml
-          globs: ${{ steps.changed.outputs.files }}
+          globs: '**/*.md'
 
   # ──────────────────────────────────────────────
   # Link check job – verifies every link (external URLs and relative file
-  # paths) in markdown files changed relative to main. Dead links are listed
-  # per file with their HTTP status; any dead link fails the job.
+  # paths) in all .md files. Dead links are listed per file with their
+  # HTTP status; any dead link fails the job.
   # Config: .github/mlc_config.json
   # ──────────────────────────────────────────────
   linkcheck:
     name: Markdown Link Check
+    # Avoid duplicate runs: on pull_request, only run for forks (push already covers internal branches)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
-      - name: Check links in changed markdown files
+      - name: Check links in all markdown files
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
           config-file: '.github/mlc_config.json'
           use-quiet-mode: 'yes'
-          check-modified-files-only: 'yes'
-          base-branch: 'main'
