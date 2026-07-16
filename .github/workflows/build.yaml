@@ -7,14 +7,14 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - '.github/markdownlint.yaml'
+      - '.markdownlint.yaml'
       - '.github/mlc_config.json'
       - '.github/workflows/markdownlint.yaml'
   pull_request:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - '.github/markdownlint.yaml'
+      - '.markdownlint.yaml'
       - '.github/mlc_config.json'
       - '.github/workflows/markdownlint.yaml'
   workflow_dispatch:
