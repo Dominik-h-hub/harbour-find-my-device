@@ -17,6 +17,8 @@ jobs:
   # Every violation is logged as "file:line rule description [fix hint]".
   # One or more violations fail the job.
   # Rules: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+  # Config: .markdownlint.yaml (repo root; name must match markdownlint-cli2's
+  # supported config file names, e.g. ".markdownlint.yaml")
   # ──────────────────────────────────────────────
   lint:
     name: Markdown Lint
@@ -30,7 +32,7 @@ jobs:
       - name: Lint all markdown files
         uses: DavidAnson/markdownlint-cli2-action@v20
         with:
-          config: .github/markdownlint.yaml
+          config: .markdownlint.yaml
           globs: '**/*.md'
 
   # ──────────────────────────────────────────────
