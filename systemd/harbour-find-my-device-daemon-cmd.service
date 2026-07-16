@@ -1,0 +1,13 @@
+[Unit]
+Description=Find My Device - command listener daemon (MQTT + SMS remote control)
+After=network.target dbus.service
+
+[Service]
+Type=simple
+Environment=FMD_LOG_LEVEL=INFO
+ExecStart=/usr/bin/python3 /usr/share/harbour-find-my-device/qml/utilities/daemon_cmd.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

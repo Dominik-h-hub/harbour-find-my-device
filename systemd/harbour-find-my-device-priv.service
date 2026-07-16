@@ -1,0 +1,7 @@
+[Unit]
+Description=Find My Device privileged action processor (reboot / send SMS)
+# Started on demand by harbour-find-my-device-priv.path when the spool is non-empty.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/share/harbour-find-my-device/qml/utilities/priv_service.py

@@ -1,0 +1,16 @@
+# markdownlint configuration for the Markdown Check workflow
+# Full rule list: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+#
+# All default rules are enabled, including:
+#   MD009 - no trailing spaces after text
+#   MD012 - no multiple consecutive blank lines
+#   MD022 - headings must be surrounded by blank lines
+#   MD047 - files must end with a single newline
+
+default: true
+
+# Line length: long descriptive lines are fine in this project's docs
+MD013: false
+
+# Inline HTML: README uses <p align="center">, <img>, <br> for badges/logos
+MD033: false

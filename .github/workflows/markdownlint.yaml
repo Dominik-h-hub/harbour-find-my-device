@@ -1,0 +1,57 @@
+name: Markdown Check
+
+# Runs on every push to a non-main branch and on every PR targeting main.
+# Always checks ALL markdown files in the repository.
+on:
+  push:
+    branches-ignore:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+  workflow_dispatch:
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Lint job – checks markdown style of all .md files in the repository.
+  # Every violation is logged as "file:line rule description [fix hint]".
+  # One or more violations fail the job.
+  # Rules: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+  # Config: .markdownlint.yaml (repo root; name must match markdownlint-cli2's
+  # supported config file names, e.g. ".markdownlint.yaml")
+  # ──────────────────────────────────────────────
+  lint:
+    name: Markdown Lint
+    # Avoid duplicate runs: on pull_request, only run for forks (push already covers internal branches)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Lint all markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          config: .markdownlint.yaml
+          globs: '**/*.md'
+
+  # ──────────────────────────────────────────────
+  # Link check job – verifies every link (external URLs and relative file
+  # paths) in all .md files. Dead links are listed per file with their
+  # HTTP status; any dead link fails the job.
+  # Config: .github/mlc_config.json
+  # ──────────────────────────────────────────────
+  linkcheck:
+    name: Markdown Link Check
+    # Avoid duplicate runs: on pull_request, only run for forks (push already covers internal branches)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check links in all markdown files
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          config-file: '.github/mlc_config.json'
+          use-quiet-mode: 'yes'

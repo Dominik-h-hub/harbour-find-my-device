@@ -1,0 +1,75 @@
+name: Build App
+
+on:
+  push:
+    branches-ignore:
+      - 'main'
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.markdownlint.yaml'
+      - '.github/mlc_config.json'
+      - '.github/workflows/markdownlint.yaml'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.markdownlint.yaml'
+      - '.github/mlc_config.json'
+      - '.github/workflows/markdownlint.yaml'
+  workflow_dispatch:
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Build job – CI only, runs on feature branch pushes and PRs
+  # Never runs on direct pushes to main (releases are handled by release.yaml)
+  # Uses the CODeRUS Buildfish action for Sailfish OS 5.x
+  # Coderepo for target releases: https://github.com/CODeRUS/docker-sailfishos-platform-sdk
+  # https://github.com/CODeRUS/github-sfos-build
+  # Available SDK releases: https://hub.docker.com/r/coderus/sailfishos-platform-sdk/tags
+  # ──────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.arch }})
+    # Avoid duplicate builds: on pull_request, only run for forks (push already covers internal branches)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, armv7hl, i486]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build RPM package
+        uses: coderus/github-sfos-build@sfos5
+        with:
+          release: 5.0.0.43
+          arch: ${{ matrix.arch }}
+
+      - name: "Harbour compliance check and Buildoutput"
+        uses: ./.github/actions/checks
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Determine artifact name
+        id: artifact-name
+        run: |
+          VERSION=$(grep '^Version:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          RELEASE_NUM=$(grep '^Release:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          NAME="harbour-find-my-device-${VERSION}-${RELEASE_NUM}-SNAPSHOT.${{ matrix.arch }}.rpm"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "📦 Artifact name: ${NAME}"
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact-name.outputs.name }}
+          path: |
+            RPMS/*.rpm
+            !RPMS/*-debuginfo-*.rpm
+            !RPMS/*-debugsource-*.rpm
+          retention-days: 30
+          if-no-files-found: error

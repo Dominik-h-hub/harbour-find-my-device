@@ -1,0 +1,247 @@
+# ════════════════════════════════════════════════════════════════════════
+# Sailfish OS Release Workflow – Tag-triggered
+# ════════════════════════════════════════════════════════════════════════
+#
+# Triggers:
+#   • Push of a git tag matching  v*-release  → full GitHub Release
+#   • Push of a git tag matching  v*-beta     → GitHub Pre-Release
+#
+# Tag format:  v<Version>-<Release>-<release|beta>
+#   Examples:  v0.1-3-release   v0.2-1-beta
+#
+# ── Recommended workflow ────────────────────────────────────────────────
+#   1. Create feature branch, develop, push commits
+#   2. Open PR targeting main, go through review
+#   3. Merge PR into main
+#   4. THEN create and push the tag on the merge commit:
+#        git checkout main && git pull
+#        git tag v0.1-3-release
+#        git push origin v0.1-3-release
+#   For beta pre-releases from feature branches:
+#        git tag v0.1-3-beta
+#        git push origin v0.1-3-beta
+#
+# ────────────────────────────────────────────────────────────────────────
+name: Sailfish OS Release
+
+on:
+  push:
+    tags:
+      - 'v*-release'
+      - 'v*-beta'
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Validate job – runs BEFORE the build.
+  # If any check fails the workflow stops immediately.
+  # ──────────────────────────────────────────────
+  validate:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    # expose outputs so build + release jobs can reuse them
+    outputs:
+      tag: ${{ steps.release-info.outputs.tag }}
+      type: ${{ steps.release-info.outputs.type }}
+      prerelease: ${{ steps.release-info.outputs.prerelease }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history required for branch detection
+
+      - name: Determine release type from tag
+        id: release-info
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$TAG" == *-release ]]; then
+            echo "type=release" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "📦 Release type: FULL RELEASE (tag: ${TAG})"
+          elif [[ "$TAG" == *-beta ]]; then
+            echo "type=beta" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "📦 Release type: PRE-RELEASE / BETA (tag: ${TAG})"
+          else
+            echo "::error::Unexpected tag format: ${TAG} – expected *-release or *-beta"
+            exit 1
+          fi
+
+      - name: Validate tag matches spec file (tag ↔ spec consistency)
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          SPEC_VERSION=$(grep '^Version:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          SPEC_RELEASE=$(grep '^Release:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+
+          # Extract version and release number from tag: v<version>-<release_num>-<suffix>
+          # e.g. v0.1-3-release → version=0.1, release_num=3
+          TAG_NO_PREFIX="${TAG#v}"                     # 0.1-3-release
+          TAG_SUFFIX="${TAG_NO_PREFIX##*-}"            # release | beta
+          TAG_WITHOUT_SUFFIX="${TAG_NO_PREFIX%-*}"     # 0.1-3
+          TAG_RELEASE_NUM="${TAG_WITHOUT_SUFFIX##*-}"  # 3
+          TAG_VERSION="${TAG_WITHOUT_SUFFIX%-*}"       # 0.1
+
+          echo "Spec file  → Version: ${SPEC_VERSION}, Release: ${SPEC_RELEASE}"
+          echo "Git tag    → Version: ${TAG_VERSION}, Release: ${TAG_RELEASE_NUM}, Suffix: ${TAG_SUFFIX}"
+
+          if [ "$TAG_VERSION" != "$SPEC_VERSION" ]; then
+            echo "::error::Tag version '${TAG_VERSION}' does not match spec Version '${SPEC_VERSION}'"
+            exit 1
+          fi
+          if [ "$TAG_RELEASE_NUM" != "$SPEC_RELEASE" ]; then
+            echo "::error::Tag release number '${TAG_RELEASE_NUM}' does not match spec Release '${SPEC_RELEASE}'"
+            exit 1
+          fi
+          echo "✅ Tag ${TAG} is consistent with spec file (Version=${SPEC_VERSION}, Release=${SPEC_RELEASE})"
+
+      - name: Verify release tag is on main branch
+        if: steps.release-info.outputs.type == 'release'
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "Checking that tag '${TAG}' points to a commit on the main branch..."
+          if git branch -r --contains "${GITHUB_SHA}" | grep -q 'origin/main'; then
+            echo "✅ Commit ${GITHUB_SHA} is on main branch"
+          else
+            echo "::error::Release tag '${TAG}' does not point to a commit on the main branch."
+            echo "::error::Full releases (*-release) must be created from commits on main."
+            echo "::error::Did you push the tag before merging the PR?"
+            echo "::error::→ Merge the PR first, then tag the merge commit on main:"
+            echo "::error::    git checkout main && git pull"
+            echo "::error::    git tag ${TAG}"
+            echo "::error::    git push origin ${TAG}"
+            echo "::error::For pre-releases from feature branches, use a *-beta tag instead."
+            exit 1
+          fi
+
+      - name: Check for duplicate release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "Checking if release '${TAG}' already exists..."
+          if gh release view "$TAG" --repo "${{ github.repository }}" &>/dev/null; then
+            echo "::error::❌ Release '${TAG}' already exists!"
+            echo "::error::This can happen when a tag was force-pushed or the version in"
+            echo "::error::rpm/harbour-find-my-device.spec was not bumped before creating a new tag."
+            echo "::error::→ Bump Version/Release in the spec file, then create a new tag (e.g. v0.1-4-release)."
+            exit 1
+          fi
+          echo "✅ No existing release for '${TAG}' – proceeding."
+
+  # ──────────────────────────────────────────────
+  # Build job – only starts after validate passes
+  # Uses the CODeRUS Buildfish action for Sailfish OS 5.x
+  # https://github.com/CODeRUS/github-sfos-build
+  # Available SDK releases: https://hub.docker.com/r/coderus/sailfishos-platform-sdk/tags
+  # ──────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.arch }})
+    needs: validate
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, armv7hl, i486]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build RPM package
+        uses: coderus/github-sfos-build@sfos5
+        with:
+          release: 5.0.0.43
+          arch: ${{ matrix.arch }}
+
+      - name: "Harbour compliance check and Buildoutput"
+        uses: ./.github/actions/checks
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Determine artifact name
+        id: artifact-name
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          TAG_NO_PREFIX="${TAG#v}"               # e.g. 0.1-3-release or 0.2-1-beta
+
+          if [[ "$TAG" == *-release ]]; then
+            # v0.1-3-release → harbour-find-my-device-0.1-3.aarch64.rpm
+            PACKAGE_VERSION="${TAG_NO_PREFIX%-release}"
+          elif [[ "$TAG" == *-beta ]]; then
+            # v0.2-1-beta → harbour-find-my-device-0.2-1-beta.aarch64.rpm
+            PACKAGE_VERSION="${TAG_NO_PREFIX}"
+          fi
+
+          NAME="harbour-find-my-device-${PACKAGE_VERSION}.${{ matrix.arch }}.rpm"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "📦 Artifact name: ${NAME}"
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact-name.outputs.name }}
+          path: |
+            RPMS/*.rpm
+            !RPMS/*-debuginfo-*.rpm
+            !RPMS/*-debugsource-*.rpm
+          retention-days: 30
+          if-no-files-found: error
+
+  # ──────────────────────────────────────────────
+  # Release job – creates a GitHub Release from the built artifacts
+  # ──────────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all RPM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-rpms
+          pattern: harbour-find-my-device-*
+          merge-multiple: true
+
+      - name: List release artifacts
+        run: |
+          echo "Release artifacts:"
+          find release-rpms/ -name "*.rpm" -type f -exec ls -lh {} \;
+
+      # pinning to SHA to mitigate possible supply chain attack
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          name: ${{ needs.validate.outputs.tag }}
+          body: |
+            ${{ needs.validate.outputs.type == 'beta' && '> ⚠️ **This is a pre-release (beta).** It may contain incomplete features or known issues. Use at your own risk.' || '' }}
+
+            ## What's Changed
+            
+            See below.
+            
+            ### Packages
+
+            | Architecture | Description |
+            |---|---|
+            | **aarch64** | 64-bit ARM devices |
+            | **armv7hl** | 32-bit ARM devices |
+            | **i486** | Emulator |
+
+            ### Changelog
+
+            See [harbour-find-my-device.changes](https://github.com/${{ github.repository }}/blob/main/rpm/harbour-find-my-device.changes) for details.
+          files: release-rpms/**/*.rpm
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: ${{ needs.validate.outputs.prerelease == 'true' }}

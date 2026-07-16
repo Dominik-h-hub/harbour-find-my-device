@@ -1,0 +1,76 @@
+name: "Harbour compliance check and Buildoutput"
+description: "Validates RPM build output and runs Harbour compliance checks"
+
+inputs:
+  arch:
+    description: "Target architecture (e.g. aarch64, armv7hl, i486)"
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate build output
+      shell: bash
+      run: |
+        echo "Checking for RPM files..."
+        ls -la RPMS/ || { echo "::error::No RPMS directory found – build may have failed"; exit 1; }
+        rpm_count=$(find RPMS/ -name "*.rpm" -not -name "*-debuginfo-*" -not -name "*-debugsource-*" | wc -l)
+        if [ "$rpm_count" -eq 0 ]; then
+          echo "::error::No RPM files produced"
+          exit 1
+        fi
+        echo "✅ Build successful – $rpm_count RPM package(s) produced for ${{ inputs.arch }}"
+        find RPMS/ -name "*.rpm" -not -name "*-debuginfo-*" -not -name "*-debugsource-*"
+
+    - name: Harbour compliance check
+      shell: bash
+      run: |
+        docker run --rm \
+          -v "${{ github.workspace }}/RPMS:/RPMS" \
+          coderus/sailfishos-platform-sdk:5.0.0.43 \
+          bash -c '
+            set -euo pipefail
+
+            # ── locate the real validation script ──
+            VALIDATOR=""
+            for path in \
+              /usr/libexec/sdk-harbour-rpmvalidator/rpmvalidation.sh \
+              /usr/share/sdk-harbour-rpmvalidator/rpmvalidation.sh; do
+              if [ -x "$path" ]; then
+                VALIDATOR="$path"
+                echo "Found validator: $VALIDATOR"
+                break
+              fi
+            done
+
+            if [ -z "$VALIDATOR" ]; then
+              echo "::warning::Harbour validation script not found – falling back to basic RPM check"
+            fi
+
+            # ── run validation on each RPM ──
+            failed=0
+            for rpm in $(find /RPMS -name "*.rpm" \
+                          -not -name "*-debuginfo-*" \
+                          -not -name "*-debugsource-*"); do
+              name=$(basename "$rpm")
+              echo "::group::Checking $name"
+
+              if [ -n "$VALIDATOR" ]; then
+                echo "Running: $VALIDATOR $rpm"
+                if "$VALIDATOR" "$rpm"; then
+                  echo "✅ $name passed harbour validation"
+                else
+                  echo "::error::$name FAILED harbour validation"
+                  failed=1
+                fi
+              else
+                echo "Running basic RPM metadata check..."
+                rpm -qip "$rpm"
+                rpm -qlp "$rpm"
+                echo "✅ $name basic metadata OK (full harbour check unavailable)"
+              fi
+
+              echo "::endgroup::"
+            done
+            exit $failed
+          '

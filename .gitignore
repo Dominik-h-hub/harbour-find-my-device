@@ -37,3 +37,12 @@ requirements.md
 
 /temp
 FindMy_v4.txt
+
+
+# Device/emulator logs and screenshots shared for debugging
+logs.txt
+diagnose-*.txt
+
+# Python bytecode
+__pycache__/
+*.pyc
