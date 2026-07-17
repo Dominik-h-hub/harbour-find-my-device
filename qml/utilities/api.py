@@ -34,6 +34,9 @@ OSM_USER_AGENT = "harbour-find-my-device/1.0 (contact: dominikh@atomicmail.io)"
 
 _ui_mqtt = None
 _ui_lock = threading.Lock()
+# Newest own-device fix that could not be published because the UI client was
+# offline at tick time; flushed on the next (re)connect. Guarded by _ui_lock.
+_pending_location = None
 
 # Serialises the post-save side effects (MQTT reconnect + daemon resync) which run
 # in a background thread so a settings save never blocks the PyOtherSide worker.
@@ -551,11 +554,17 @@ def _publish_own_location(own_id, fix, battery):
         "lat": fix.lat, "lon": fix.lon, "alt": fix.alt,
         "speed": fix.speed, "accuracy": fix.accuracy_h, "battery": battery,
     }
+    global _pending_location
     with _ui_lock:
         if _ui_mqtt and _ui_mqtt.is_connected():
             _ui_mqtt.publish_location(own_id, payload)
+            _pending_location = None
         else:
-            log.warning("UI MQTT not connected; location published by daemon instead")
+            # With background activity off no daemon is running, so nobody else
+            # would publish this fix -- keep it and flush it on reconnect.
+            _pending_location = (own_id, payload)
+            log.warning("UI MQTT not connected; fix stored locally, "
+                        "will publish on reconnect")
 
 
 # =========================================================================
@@ -848,7 +857,8 @@ def _start_ui_mqtt():
             settings.get(settings.MQTT_PASSWORD),
             mqtt_client.client_id(own_id, mqtt_client.ROLE_UI),
             on_location=_on_remote_location,
-            on_ack=_on_remote_ack)
+            on_ack=_on_remote_ack,
+            on_connected=_flush_pending_location)
         if _ui_mqtt.connect():
             # Listen to every remote device's location + ack topics.
             for dev in devices.list_devices():
@@ -861,6 +871,21 @@ def _start_ui_mqtt():
             # device), which lets us refresh the own-device row's STOP button.
             _ui_mqtt.subscribe_ack(own_id)
             log.info("UI MQTT listener started")
+
+
+def _flush_pending_location():
+    """Publish the newest fix that was taken while the UI client was offline.
+
+    Runs in the paho network thread via the on_connected callback, right after
+    the subscriptions were re-applied."""
+    global _pending_location
+    with _ui_lock:
+        if _pending_location is None or _ui_mqtt is None:
+            return
+        own_id, payload = _pending_location
+        log.info("publishing fix taken while offline")
+        if _ui_mqtt.publish_location(own_id, payload):
+            _pending_location = None
 
 
 def _restart_ui_mqtt():

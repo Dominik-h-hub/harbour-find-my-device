@@ -53,6 +53,11 @@ GEOAPIFY_KEY = "geoapify_key"
 # Keys whose values are obfuscated at rest.
 _SECRET_KEYS = frozenset({MQTT_PASSWORD, WEBDAV_PASSWORD})
 
+# Keys additionally masked in log output only (stored in clear -- do not move
+# them into _SECRET_KEYS, that would garble existing installs' stored values).
+# Users share logs for support, so keep API keys and phone numbers out of them.
+_LOG_MASKED_KEYS = _SECRET_KEYS | {GEOAPIFY_KEY, SMS_WHITELIST}
+
 # Defaults applied when a key is missing.
 DEFAULTS = {
     DEVICE_LABEL: "",
@@ -117,7 +122,7 @@ def set(key, value, conn=None):
         if own:
             conn.close()
     # Never log secret values in clear.
-    shown = "***" if key in _SECRET_KEYS else stored
+    shown = "***" if key in _LOG_MASKED_KEYS else stored
     log.info("setting saved: %s = %s", key, shown)
 
 
