@@ -10,7 +10,7 @@
 
 ## Introduction
 
-This app is a native Find-My-Device App for Sailfish OS. It allows you to locate your device on a map, and send some commands to it remotely.
+Radar (Find My Device) is a native find-my-device app for Sailfish OS: see your device's last position on a map and control it remotely via MQTT or SMS — fully self-hosted, no Google or cloud account involved.
 The full documentation is available under [docs/](docs/)
 
 <p align="center">
@@ -62,9 +62,9 @@ General: This is not a Spy-App: Each remote action will be sent as a notificatio
 ## Technical Information
 
 - QT-Version 5.6.3
-- Tested Emulator 5.0.0.62
-- Tested Fairphone 4 5.0.0.62
-- Tested Emulator 5.1.0.11
+- Tested on: 
+  - Emulator - Version: 5.0.0.62, 5.1.0.11
+  - Fairphone 4 - Version: 5.0.0.62
 
 ## Contributing to the project
 
