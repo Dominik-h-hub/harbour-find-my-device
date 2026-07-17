@@ -100,11 +100,13 @@ def read_battery_level():
     return None
 
 
-def _drive_until_fix(loop, best, min_accuracy, timeout):
+def _drive_until_fix(loop, best, min_accuracy, timeout, should_abort=None):
     #Run the GLib loop without MainLoop.run(), so it also works off the main thread.
     context = loop.get_context()
     deadline = time.time() + timeout + 2.0
     while time.time() < deadline:
+        if should_abort is not None and should_abort():
+            break
         context.iteration(True)  # blocks until the next source (poll fires <=2s)
         r = best.get("r")
         if r is None:
@@ -115,12 +117,14 @@ def _drive_until_fix(loop, best, min_accuracy, timeout):
             break
 
 
-def get_fix(timeout=120.0, min_accuracy=None, bus=None):
+def get_fix(timeout=120.0, min_accuracy=None, bus=None, should_abort=None):
     """Obtain one GPS fix.
 
     timeout      : seconds to wait for a (good enough) fix.
     min_accuracy : if set, keep waiting until horizontal accuracy <= this many
                    metres (or timeout, then return the best seen).
+    should_abort : optional callable; when it returns True the wait ends early
+                   (checked between loop iterations, so within ~2s).
     """
     own_bus = bus is None
     mainloop = dbus.mainloop.glib.DBusGMainLoop()
@@ -181,7 +185,7 @@ def get_fix(timeout=120.0, min_accuracy=None, bus=None):
     GLib.timeout_add(50, poll)  # try immediately (often a cached fix)
 
     try:
-        _drive_until_fix(loop, best, min_accuracy, timeout)
+        _drive_until_fix(loop, best, min_accuracy, timeout, should_abort)
     finally:
         try:
             geo.RemoveReference()

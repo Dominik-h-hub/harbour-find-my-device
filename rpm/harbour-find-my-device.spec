@@ -6,7 +6,7 @@ Summary:    Radar App (Find My Device)
 Version:    1.0
 Release:    1
 License:    Apache-2.0
-URL:        https://openrepos.net/
+URL:        https://github.com/Dominik-h-hub/harbour-find-my-device
 Source0:    %{name}-%{version}.tar.bz2
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   pyotherside-qml-plugin-python3-qt5

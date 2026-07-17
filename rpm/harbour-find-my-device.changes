@@ -9,6 +9,13 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Fri Jul 17 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.0-1
+- ADDED: swedish translation provided by @eson57
+- FIX: daemon_cmd - in some cases false user was picked for whipe of device.
+- FIX: Added detailed description why sailjail needs to be off.
+- FIX: Switched dbus services to freedesktop.systemd api
+
+
 * Tue Jul 14 2026 Dominik Heidinger <dominikh@atomicmail.io> 0.1-1
 - Initial implementation of application
 - Added MainPage, Device-Page, Map-Page, Settings-Page

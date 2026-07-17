@@ -40,11 +40,12 @@ _FEATURE_KEY = {
     "GPS": settings.SMS_GPS_ENABLED
 }
 
-_running = {"loop": None}
+_running = {"loop": None, "stopping": False}
 
 
 def _handle_signal(signum, _frame):
     log.info("signal %s received, shutting down", signum)
+    _running["stopping"] = True
     loop = _running.get("loop")
     if loop is not None:
         loop.quit()
@@ -133,7 +134,10 @@ class CommandExecutor(object):
         lat = lon = None
         try:
             import gps_reader
-            fix = gps_reader.get_fix(timeout=90)
+            # should_abort: don't block shutdown for up to 90s, or systemd's stop
+            # timeout SIGKILLs the daemon and leaves the unit in "failed".
+            fix = gps_reader.get_fix(
+                timeout=90, should_abort=lambda: _running["stopping"])
             battery = gps_reader.read_battery_level()
         except Exception as exc:
             log.warning("gps_reader unavailable: %s", exc)
