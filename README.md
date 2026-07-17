@@ -11,7 +11,7 @@
 ## Introduction
 
 Radar (Find My Device) is a native find-my-device app for Sailfish OS: see your device's last position on a map and control it remotely via MQTT or SMS — fully self-hosted, no Google or cloud account involved.
-The full documentation is available under [docs/](docs/)
+The full documentation is available under [docs/](docs/).
 
 <p align="center">
 <a href="https://openrepos.net/content/domih/radar-find-my-device"><img src="docs/images/get-it-on-logos/get-it-on-openrepos.png" alt="Get it on OpenRepos" height="55"></a>
@@ -21,50 +21,41 @@ The full documentation is available under [docs/](docs/)
 
 ## Features
 
-- Locate your device on a map
-- Publish your device's GPS coordinates via MQTT (optional - use your own MQTT broker or free public broker)
-- Send commands to your device remotely via MQTT (optional - use your own MQTT broker or free public broker):
-  - RING / STOP_RING - Make your device ring for 60 seconds
-  - LOCK - Lock your device into lock-screen
-  - GPS - get current GPS coordinates and publish via MQTT
-  - CAMERA - Take a picture with your front- or back-camera and sent it you a preconfigured webdav upload folder
-  - DELETE - Wipe your userdata from your device (/home/<defaultuser | nemo>) - This is NOT a factory reset.
-- Send commands to your device via SMS:
-  - RING / STOP_RING - Make your device ring for 60 seconds
-  - LOCK - Lock your device into lock-screen
-  - GPS - get current GPS coordinates and reply to sender via SMS (ATTENTION: SMS costs may apply)
-  - CAMERA - Take a picture with your front- or back-camera and sent it you a preconfigured webdav upload folder
-  - DELETE - Wipe your userdata from your device (/home/<defaultuser | nemo>) - This is NOT a factory reset.
-- Add other Sailfish-OS Devices to your Radar map (need Radar-App installed, MQTT configured and on same MQTT broker)
-- Settings: Enable/Disable single Commands, SMS, MQTT, background-activities, etc.
-- Add TOTP secret to other trusted devices for remote access via SMS
-- Generate Fallback-TOTP codes for remote access via SMS
-- Add own Openstreetmap-tileserver key for scrollable map (optional - free account at geoapify.com needed)
+- Locate your device on an OpenStreetMap map (optional free Geoapify key needed for a zoomable map)
+- Track other Sailfish OS devices on the same map (Radar app installed + same MQTT broker)
+- Publish your device's GPS position via MQTT (optional — use your own or a free public broker)
+- Remote commands, via MQTT and/or SMS:
+  - RING / STOP_RING — ring the device for 60 seconds
+  - LOCK — lock the device into the lock screen
+  - GPS — report the current position (published via MQTT, or replied by SMS — SMS costs may apply)
+  - CAMERA — take a photo (front or back camera) and upload it to your WebDAV folder
+  - DELETE — wipe all user data (`/home/<defaultuser | nemo>`) and reboot — NOT a factory reset
+- Everything is opt-in: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
 
 <img src="docs/images/map-view.png" alt="Main view" width=200px> <img src="docs/images/devices-view.png" alt="Devices view" width=200px> <img src="docs/images/settings-view-1.png" alt="Settings view" width=200px>
 
 For more screenshots, see [docs/images/](docs/images/) in the GitHub repository.
 
+## Example Client App
+
+An example client app for home use (Flask + Leaflet map + command buttons) is available under [docs/examples/](docs/examples/).
+
 ## Security Information
 
-General: This is not a Spy-App: Each remote action will be sent as a notification to the device. Even failed commands will be sent as a notification to the device.
+This is not a spy app: every remote action — even a failed one — shows a notification on the device. All commands are disabled by default; every single command must be enabled in the settings, a disabled command is never executed.
 
 - MQTT:
-  - To send Commands via MQTT you need to configure a MQTT broker and a username/password for authentication.
-  - Commands needs to be send with valid HMAC secret (one-time-token) based on your configured PIN from the settings. Example: {"cmd": "RING", "token": "29dd05e89e5ac143"}
-  - Every single command needs to be activated in the settings. If a command is disabled, it will not be executed.
+  - Commands require broker authentication (username/password) plus a one-time HMAC token derived from your PIN. Example: `{"cmd": "RING", "token": "29dd05e89e5ac143"}`
 - SMS:
-  - To send Commands via SMS you need to configure a TOTP secret at another trusted device
-  - Whitelist: Only SMS from whitelisted phone numbers will be accepted. You can add trusted phone numbers to the whitelist in the settings.
-  - Commands needs to be send with valid TOTP code based on your configured PIN from the settings. Example: "RING 123456"
-  - Every single command needs to be activated in the settings. If a command is disabled, it will not be executed.
+  - Commands are only accepted from whitelisted phone numbers (configured in the settings).
+  - Each command SMS requires a TOTP code (authenticator app enrolled on a second device) or a one-time backup code, both generated in the settings. Example: `RING 123456`
 
 ## Technical Information
 
-- QT-Version 5.6.3
-- Tested on: 
-  - Emulator - Version: 5.0.0.62, 5.1.0.11
-  - Fairphone 4 - Version: 5.0.0.62
+- Qt 5.6.3 (Sailfish OS Silica UI) + Python 3 backend/daemons
+- Tested on:
+  - Fairphone 4 - Sailfish OS 5.0.0.62
+  - Emulator - Sailfish OS 5.0.0.62, 5.1.0.11
 
 ## Contributing to the project
 
@@ -98,6 +89,10 @@ If you want to contribute translations, please submit them as pull requests agai
   ```
 
 Thanks for your consideration and contribution!
+
+## License
+
+This project is licensed under the Apache License 2.0 - see [LICENSE](LICENSE).
 
 ## Trademark Disclaimer
 
