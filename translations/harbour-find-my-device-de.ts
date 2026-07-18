@@ -472,10 +472,6 @@
         <translation>Befehl GPS erlauben</translation>
     </message>
     <message>
-        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.</source>
-        <translation>Sendet die aktuellen GPS-Koordinaten per SMS an den Absender. Die SMS erscheint NICHT unter den gesendeten Nachrichten, es wird aber eine Benachrichtigung angezeigt.</translation>
-    </message>
-    <message>
         <source>SMS authentication (TOTP)</source>
         <translation>SMS-Authentifizierung (TOTP)</translation>
     </message>
@@ -554,6 +550,10 @@
     <message>
         <source>User Manual</source>
         <translation>Benutzerhandbuch</translation>
+    </message>
+    <message>
+        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

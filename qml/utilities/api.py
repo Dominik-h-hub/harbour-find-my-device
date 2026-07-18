@@ -836,13 +836,20 @@ def enable_location_now():
 # UI MQTT listener (remote-device locations + acks)
 # =========================================================================
 def _start_ui_mqtt():
-    """(Re)start the persistent UI MQTT client based on current settings."""
+    """(Re)start the persistent UI MQTT client based on current settings, or
+    tear a running one down when MQTT is disabled/unconfigured."""
     global _ui_mqtt
-    if not settings.get_bool(settings.MQTT_ENABLED):
-        log.info("MQTT disabled in settings; UI listener not started")
-        return
+    enabled = settings.get_bool(settings.MQTT_ENABLED)
     server = settings.get(settings.MQTT_SERVER)
-    if not server or not mqtt_client.paho_available():
+    if not enabled or not server or not mqtt_client.paho_available():
+        with _ui_lock:
+            was_running = _ui_mqtt is not None
+            if was_running:
+                _ui_mqtt.disconnect()
+                _ui_mqtt = None
+        log.info("MQTT %s; UI listener %s",
+                 "disabled in settings" if not enabled else "not configured",
+                 "stopped" if was_running else "not started")
         return
     tls = settings.get_bool(settings.MQTT_TLS)
     port = settings.get_int(settings.MQTT_PORT, 8883 if tls else 1883)

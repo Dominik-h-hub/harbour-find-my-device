@@ -94,6 +94,15 @@ Thanks for your consideration and contribution!
 
 This project is licensed under the Apache License 2.0 - see [LICENSE](LICENSE).
 
+## AI Information
+
+AI (Claude) was used to:
+- Generate comments in the code
+- Generate technical documentation
+- perform initial POC on Fairphone 4 to find out right d-bus and API calls for this project
+- Code review and refactoring
+- Debugging and testing support
+
 ## Trademark Disclaimer
 
 Sailfish OS and the Sailfish OS logo are trademarks of Jolla Group Ltd.

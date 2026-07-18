@@ -472,10 +472,6 @@
         <translation>Tillåt kommandot GPS</translation>
     </message>
     <message>
-        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.</source>
-        <translation>Skickar aktuella GPS-koordinater via SMS till avsändaren. SMS:et visas INTE under skickade meddelanden, men en avisering visas.</translation>
-    </message>
-    <message>
         <source>SMS authentication (TOTP)</source>
         <translation>SMS-autentisering (TOTP)</translation>
     </message>
@@ -554,6 +550,10 @@
     <message>
         <source>User Manual</source>
         <translation>Användarmanual</translation>
+    </message>
+    <message>
+        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

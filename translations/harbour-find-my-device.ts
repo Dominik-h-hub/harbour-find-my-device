@@ -472,10 +472,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>SMS authentication (TOTP)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -553,6 +549,10 @@
     </message>
     <message>
         <source>User Manual</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

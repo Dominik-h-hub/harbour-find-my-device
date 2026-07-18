@@ -259,7 +259,11 @@ class FmdMqttClient(object):
 
     def _handle_disconnect(self, client, userdata, rc):
         self._connected = False
-        log.warning("mqtt connection lost rc=%s (will auto-reconnect)", rc)
+        if rc == 0:
+            # rc=0 means we called disconnect() ourselves; paho won't reconnect.
+            log.info("mqtt disconnected cleanly (%s)", self.cid)
+        else:
+            log.warning("mqtt connection lost rc=%s (will auto-reconnect)", rc)
 
     def _handle_message(self, client, userdata, msg):
         topic = msg.topic

@@ -88,15 +88,6 @@ journalctl -f -u harbour-find-my-device-priv.service
 journalctl --since "30 min ago" --no-pager _SYSTEMD_USER_UNIT=harbour-find-my-device-daemon-gps.service
 ```
 
-More log output: the daemons read the `FMD_LOG_LEVEL` environment variable (default `INFO`). For a one-off debug run, stop the service and start the daemon in the foreground:
-
-```bash
-systemctl --user stop harbour-find-my-device-daemon-gps.service
-FMD_LOG_LEVEL=DEBUG python3 /usr/share/harbour-find-my-device/qml/utilities/daemon_gps.py
-```
-
-To keep logs across a reboot, enable a persistent journal once: `mkdir -p /var/log/journal && systemctl restart systemd-journald` (costs flash space - volatile is fine for everyday use).
-
 ## Data Locations
 
 | Path                                                       | Content                                    |
