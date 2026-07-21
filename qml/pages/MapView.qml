@@ -118,6 +118,18 @@ SilicaFlickable {
         mapLoader.active = true;
     }
 
+    // Localize a backend GPS error code (see api.py _fix_error_code) for the status banner.
+    function fixErrorText(code) {
+        switch (code) {
+        case "no_fix": return qsTr("No GPS fix yet — Retry at next refresh time");
+        case "gps_unavailable": return qsTr("GPS not available on this device");
+        case "gps_disabled": return qsTr("GPS is disabled");
+        case "gps_reader_unavailable": return qsTr("GPS reader unavailable");
+        case "error": return qsTr("GPS error");
+        default: return qsTr("No GPS fix");
+        }
+    }
+
     Connections {
         target: Bridge
         onMapUpdated: root.reload()
@@ -126,7 +138,9 @@ SilicaFlickable {
         onLocationFix: {
             busyIndicator.running = false;
             if (!success)
-                statusBanner.show(message ? message : qsTr("No GPS fix"));
+                statusBanner.show(root.fixErrorText(message));
+            else
+                statusBanner.clear();
         }
     }
 
@@ -214,7 +228,10 @@ SilicaFlickable {
         color: Theme.rgba(Theme.highlightDimmerColor, 0.9)
         visible: !root.mapData.network_online || !root.mapData.gps_available || statusBanner._sticky
         property bool _sticky: false
-        function show(msg) { bannerLabel.overrideText = msg; _sticky = true; bannerTimer.restart(); }
+        // A GPS-failure banner stays until a fix succeeds (clear()); it must not
+        // vanish after a few seconds while there is still no location.
+        function show(msg) { bannerLabel.overrideText = msg; _sticky = true; }
+        function clear() { _sticky = false; bannerLabel.overrideText = ""; }
         Label {
             id: bannerLabel
             property string overrideText: ""
@@ -225,7 +242,6 @@ SilicaFlickable {
                   : (!root.mapData.network_online ? qsTr("Internet connection not available")
                   : (!root.mapData.gps_available ? qsTr("GPS not available") : ""))
         }
-        Timer { id: bannerTimer; interval: 4000; onTriggered: { statusBanner._sticky = false; bannerLabel.overrideText = ""; } }
     }
 
     BusyIndicator {

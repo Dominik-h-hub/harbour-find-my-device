@@ -23,7 +23,7 @@ After the next GPS fix of the other device, it will appear on your map.
 The main page of the Radar App displays a map view where you can see the location of your device and other devices which you added in the tab "Devices".
 The default OpenStreetMap map is NOT interactive. With a Geoapify tile server key (optional — free account at [geoapify.com](https://www.geoapify.com) needed, see [Settings → Map](#map)) you can tap the map to open a full-screen interactive map (zoom and scroll).
 
-### Pull-Down Menu
+### Map-Page - Pull-Down Menu
 
 If you pull down the map view, you will see a menu with the following options:
 
@@ -53,7 +53,7 @@ Every command is answered by the target device — the result (acknowledged / wr
   <img src="images/devices-view.png" alt="Devices View" width="200">
 </div>
 
-### Long-press context menu
+### Device-Page - Long-press context menu
 
 If you long-press on a remote device in the list, you will see a context menu with the following options:
 
@@ -68,7 +68,7 @@ Your own device only offers "Edit" (change the label).
   <img src="images/edit-device.png" alt="Edit Device" width="200">
 </div>
 
-### Pull-Down Menu
+### Device-Page - Pull-Down Menu
 
 If you pull down the devices page, you will see a menu with the following options:
 

@@ -7,7 +7,7 @@ Signals sent to QML (data[0] = event name):
   ('mapUpdated',)
   ('devicesUpdated',)
   ('commandResult', device_id, cmd, result)
-  ('locationFix', success, message)
+  ('locationFix', success, error_code)  # error_code localized in QML (MapView)
 """
 
 import logging
@@ -62,6 +62,9 @@ _ring_timers = {}         # device_id -> (token, threading.Timer)
 # interval until the user closes it. Lives only in the UI process (dies with it).
 _fg_gps_timer = None      # threading.Timer for the next foreground tick
 _fg_gps_lock = threading.Lock()
+_fg_in_failure = False    # True once a foreground tick failed; reset on next fix.
+                          # Used to show the "no fix" banner only on the first
+                          # failure of an episode, not every interval.
 # Serialises GPS fixes so a foreground tick and a manual "Update map" never drive
 # geoclue concurrently.
 _fix_lock = threading.Lock()
@@ -463,15 +466,14 @@ def get_map_data():
     }
 
 
-def _friendly_fix_error(err):
-    #Turn a raw gps_reader error into a short, user-facing message.
+def _fix_error_code(err):
     e = (err or "").lower()
     if ("geoclue" in e or "serviceunknown" in e or "hybris" in e
             or "provider" in e):
-        return "GPS not available on this device"
+        return "gps_unavailable"
     if "timeout" in e or "timed out" in e or "no fix" in e:
-        return "No GPS fix yet -- try again outdoors"
-    return err or "No GPS fix"
+        return "no_fix"
+    return "no_fix"
 
 
 def refresh_location():
@@ -488,12 +490,17 @@ def _refresh_location_worker():
     except Exception as exc:
         log.error("refresh_location failed: %s", exc)
         # Always resolve the UI (busy indicator stops on this signal).
-        _emit("locationFix", False, "GPS error")
+        _emit("locationFix", False, "error")
 
 
-def _do_refresh_location(notify=True):
-    # notify=False is used by the foreground poll so periodic failures (no fix /
-    # GPS off) don't pop the Map banner every interval; the map/cover still update.
+def _do_refresh_location(notify=True, notify_fail=None):
+    # notify=False is used by the foreground poll so periodic successes don't pop
+    # the Map banner every interval; the map/cover still update. notify_fail
+    # controls the failure banner separately (default: same as notify) so the
+    # foreground poll can announce the first failure of an episode while staying
+    # silent on success -- see _foreground_tick.
+    if notify_fail is None:
+        notify_fail = notify
     own_id = devices.own_device_id()
 
     if not location_control.is_enabled():
@@ -503,8 +510,8 @@ def _do_refresh_location(notify=True):
             location_control.wait_until_enabled()  # priv service applies it async
             time.sleep(2)  # allow the provider to start before the first fix
         else:
-            if notify:
-                _emit("locationFix", False, "GPS is disabled")
+            if notify_fail:
+                _emit("locationFix", False, "gps_disabled")
             _emit("mapUpdated")
             return {"ok": False, "error": "gps_disabled"}
 
@@ -512,8 +519,8 @@ def _do_refresh_location(notify=True):
         import gps_reader  # device-only (dbus/gi)
     except Exception as exc:
         _log_ui("gps_reader unavailable: %s" % exc)
-        if notify:
-            _emit("locationFix", False, "GPS reader unavailable")
+        if notify_fail:
+            _emit("locationFix", False, "gps_reader_unavailable")
         return {"ok": False, "error": "no_gps_reader"}
 
     fix = gps_reader.get_fix(timeout=90)
@@ -521,8 +528,8 @@ def _do_refresh_location(notify=True):
     if not fix.success:
         # Keep the raw error in the log; show a clean message in the UI banner.
         _log_ui("no GPS fix: %s" % fix.error)
-        if notify:
-            _emit("locationFix", False, _friendly_fix_error(fix.error))
+        if notify_fail:
+            _emit("locationFix", False, _fix_error_code(fix.error))
         _emit("mapUpdated")
         return {"ok": False, "error": fix.error or "no_fix"}
 
@@ -577,38 +584,60 @@ def _start_foreground_gps():
         if _fg_gps_timer is not None:
             return
         _log_ui("foreground GPS polling started (background activity off)")
-        _schedule_foreground_tick_locked()
+        # Quick first tick: auto-enable location and the GPS cold start should
+        # begin right away, not one full interval after the app started.
+        _schedule_foreground_tick_locked(delay_s=15)
 
 
 def _stop_foreground_gps():
-    global _fg_gps_timer
+    global _fg_gps_timer, _fg_in_failure
     with _fg_gps_lock:
         if _fg_gps_timer is None:
             return
         _fg_gps_timer.cancel()
         _fg_gps_timer = None
         _log_ui("foreground GPS polling stopped")
+    # Handing off to the background daemon: a stale foreground "no fix" banner no
+    # longer applies (the daemon runs in its own process and cannot drive the UI
+    # banner), so clear it and reset the failure state for the next foreground run.
+    if _fg_in_failure:
+        _fg_in_failure = False
+        _emit("locationFix", True, "")
 
 
-def _schedule_foreground_tick_locked():
-    """Arm the next foreground tick. Caller must hold _fg_gps_lock."""
+def _schedule_foreground_tick_locked(delay_s=None):
+    """Arm the next foreground tick (after the configured interval, or after
+    delay_s seconds if given). Caller must hold _fg_gps_lock."""
     global _fg_gps_timer
-    minutes = settings.get_int(settings.GPS_INTERVAL_MIN, 5)
-    if minutes < 1:
-        minutes = 1
-    _fg_gps_timer = threading.Timer(minutes * 60, _foreground_tick)
+    if delay_s is None:
+        minutes = settings.get_int(settings.GPS_INTERVAL_MIN, 5)
+        if minutes < 1:
+            minutes = 1
+        delay_s = minutes * 60
+    _fg_gps_timer = threading.Timer(delay_s, _foreground_tick)
     _fg_gps_timer.daemon = True
     _fg_gps_timer.start()
 
 
 def _foreground_tick():
+    global _fg_in_failure
     # If background activity got turned on meanwhile, the daemon now handles it.
     if settings.get_bool(settings.BACKGROUND_ENABLED):
         _stop_foreground_gps()
         return
     try:
+        log.info("foreground GPS tick: fetching fix")
+        # Announce a failure only on the first tick of a failure episode, not on
+        # every interval; a successful fix re-arms the banner for the next one.
         with _fix_lock:
-            res = _do_refresh_location(notify=False)
+            res = _do_refresh_location(notify=False,
+                                       notify_fail=not _fg_in_failure)
+        ok = res.get("ok", False)
+        # Recovered from a failure episode: clear the persistent "no fix" banner
+        # (foreground successes are otherwise silent, so nothing else clears it).
+        if ok and _fg_in_failure:
+            _emit("locationFix", True, "")
+        _fg_in_failure = not ok
         log.info("foreground GPS tick: %s", res)
     except Exception as exc:
         log.error("foreground GPS tick failed: %s", exc)

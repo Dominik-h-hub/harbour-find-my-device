@@ -280,6 +280,26 @@
         <source>Install QtLocation on the device to show the map. Device positions are still listed on the Devices tab.</source>
         <translation>Installera QtLocation på enheten för att visa kartan. Enheternas positioner visas fortfarande under fliken Enheter.</translation>
     </message>
+    <message>
+        <source>No GPS fix yet — Retry at next refresh time</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS not available on this device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS is disabled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS reader unavailable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS error</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SettingsPage</name>

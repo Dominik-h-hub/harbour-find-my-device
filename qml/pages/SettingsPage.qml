@@ -679,7 +679,7 @@ Dialog {
             ListItem {
                 contentHeight: Theme.itemSizeMedium
 
-                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/tree/main/docs")
+                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/blob/main/docs/USER-GUIDE.md")
 
                 Label {
                     anchors.left: parent.left

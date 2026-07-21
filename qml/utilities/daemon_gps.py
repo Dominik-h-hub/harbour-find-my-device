@@ -124,6 +124,8 @@ class GpsDaemon(object):
         db.init_schema()
         devices.ensure_own_device()
         log.info("GPS daemon started")
+        if settings.get_bool(settings.BACKGROUND_ENABLED):
+            self._ensure_mqtt()
         while _running["go"]:
             try:
                 if settings.get_bool(settings.BACKGROUND_ENABLED):

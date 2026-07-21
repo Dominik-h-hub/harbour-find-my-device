@@ -11,7 +11,8 @@
 ## Introduction
 
 Radar (Find My Device) is a native find-my-device app for Sailfish OS: see your device's last position on a map and control it remotely via MQTT or SMS — fully self-hosted, no Google or cloud account involved.
-The full documentation is available under [docs/](docs/).
+
+For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical internals (daemons, logs, MQTT topics, token generation) see the [Technical Infos](docs/TECHNICAL-INFOS.md).
 
 <p align="center">
 <a href="https://openrepos.net/content/domih/radar-find-my-device"><img src="docs/images/get-it-on-logos/get-it-on-openrepos.png" alt="Get it on OpenRepos" height="55"></a>
@@ -21,16 +22,17 @@ The full documentation is available under [docs/](docs/).
 
 ## Features
 
-- Locate your device on an OpenStreetMap map (optional free Geoapify key needed for a zoomable map)
-- Track other Sailfish OS devices on the same map (Radar app installed + same MQTT broker)
-- Publish your device's GPS position via MQTT (optional — use your own or a free public broker)
-- Remote commands, via MQTT and/or SMS:
+- **Locate your device** on an OpenStreetMap map (optional free Geoapify key needed for a zoomable map)
+- **Track other Sailfish OS devices** on the same map (Radar app installed + same MQTT broker)
+- **Publish your device's GPS position** via MQTT (optional — use your own or a free public broker)
+- **Remote commands**, via MQTT and/or SMS:
   - RING / STOP_RING — ring the device for 60 seconds
   - LOCK — lock the device into the lock screen
   - GPS — report the current position (published via MQTT, or replied by SMS — SMS costs may apply)
   - CAMERA — take a photo (front or back camera) and upload it to your WebDAV folder
   - DELETE — wipe all user data (`/home/<defaultuser | nemo>`) and reboot — NOT a factory reset
-- Everything is opt-in: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
+- **Everything is opt-in**: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
+- **Translations**: EN, DE, SV
 
 <img src="docs/images/map-view.png" alt="Main view" width=200px> <img src="docs/images/devices-view.png" alt="Devices view" width=200px> <img src="docs/images/settings-view-1.png" alt="Settings view" width=200px>
 
@@ -97,6 +99,7 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](LICENSE).
 ## AI Information
 
 AI (Claude) was used to:
+
 - Generate comments in the code
 - Generate technical documentation
 - perform initial POC on Fairphone 4 to find out right d-bus and API calls for this project

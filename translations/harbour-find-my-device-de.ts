@@ -29,7 +29,7 @@
     </message>
     <message>
         <source>The PIN must match the remote device&apos;s own PIN. The same MQTT server as configured in Settings is used to reach it.</source>
-        <translation>Die PIN muss mit der eigenen PIN des anderen Geräts übereinstimmen. Zum Erreichen wird derselbe MQTT-Server wie in den Einstellungen verwendet.</translation>
+        <translation>Die PIN muss mit der PIN des anderen Geräts übereinstimmen. Es wird derselbe MQTT-Server wie in den Einstellungen verwendet.</translation>
     </message>
     <message>
         <source>PIN for remote access (HMAC secret)</source>
@@ -37,7 +37,7 @@
     </message>
     <message>
         <source>e.g. My Jolla Phone</source>
-        <translation>z. B. Mein Jolla-Telefon</translation>
+        <translation>z. B. Mein Jolla-Phone</translation>
     </message>
 </context>
 <context>
@@ -48,7 +48,7 @@
     </message>
     <message>
         <source>Write these down now. Each code works once and is shown only here. They replace the TOTP code in an SMS command when you have no authenticator app.</source>
-        <translation>Notiere sie jetzt. Jeder Code funktioniert genau einmal und wird nur hier angezeigt. Sie ersetzen den TOTP-Code in einem SMS-Befehl, wenn du keine Authenticator-App hast.</translation>
+        <translation>Speichere die Backup-Codes jetzt. Jeder Code funktioniert genau einmal und wird nur hier angezeigt. Diese ersetzen den TOTP-Code in einem SMS-Command falls keine Authenticator-App vorhanden ist.</translation>
     </message>
     <message>
         <source>Copy all</source>
@@ -109,7 +109,7 @@
     </message>
     <message>
         <source>Commands</source>
-        <translation>Befehle</translation>
+        <translation>Commands</translation>
     </message>
     <message>
         <source>Could not send %1: %2</source>
@@ -266,7 +266,7 @@
     </message>
     <message>
         <source>No location yet</source>
-        <translation>Noch kein Standort</translation>
+        <translation>Noch kein Standort verfügbar</translation>
     </message>
     <message>
         <source>Pull down and tap &apos;Update map&apos;</source>
@@ -279,6 +279,26 @@
     <message>
         <source>Install QtLocation on the device to show the map. Device positions are still listed on the Devices tab.</source>
         <translation>Installiere QtLocation auf dem Gerät, um die Karte anzuzeigen. Die Gerätepositionen werden weiterhin im Tab „Geräte“ aufgelistet.</translation>
+    </message>
+    <message>
+        <source>No GPS fix yet — Retry at next refresh time</source>
+        <translation>Noch kein GPS-FIX — Retry bei nächstem FIX</translation>
+    </message>
+    <message>
+        <source>GPS not available on this device</source>
+        <translation>GPS auf diesem Gerät nicht verfügbar</translation>
+    </message>
+    <message>
+        <source>GPS is disabled</source>
+        <translation>GPS ist deaktiviert</translation>
+    </message>
+    <message>
+        <source>GPS reader unavailable</source>
+        <translation>GPS-Reader nicht verfügbar</translation>
+    </message>
+    <message>
+        <source>GPS error</source>
+        <translation>GPS-Fehler</translation>
     </message>
 </context>
 <context>
@@ -301,7 +321,7 @@
     </message>
     <message>
         <source>Command service</source>
-        <translation>Befehlsdienst</translation>
+        <translation>Command-Dienst</translation>
     </message>
     <message>
         <source>Refresh</source>
@@ -309,11 +329,11 @@
     </message>
     <message>
         <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
-        <translation>GPS-Dienst: Wird aktiviert, wenn du den Schalter „Hintergrundaktivität“ einschaltest.</translation>
+        <translation>GPS-Dienst: Wird aktiviert, wenn der Schalter „Hintergrundaktivität“ eingeschaltet ist.</translation>
     </message>
     <message>
         <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
-        <translation>Befehlsdienst: Wird aktiviert, wenn du mindestens eine Fernaktion oder SMS-Aktion einschaltest.</translation>
+        <translation>Command-Dienst: Wird aktiviert, wenn mindestens eine Fernaktion oder SMS-Aktion eingeschaltet ist.</translation>
     </message>
     <message>
         <source>General</source>
@@ -333,7 +353,7 @@
     </message>
     <message>
         <source>Lets the daemon turn on the system location services and accept the agreement. Opt-in.</source>
-        <translation>Erlaubt dem Daemon, die Standortdienste des Systems einzuschalten und die Nutzungsbedingungen zu akzeptieren. Opt-in.</translation>
+        <translation>Erlaubt dem Daemon, selbstständig die Standortdienste des Systems einzuschalten und die Nutzungsbedingungen zu akzeptieren. Opt-in.</translation>
     </message>
     <message>
         <source>MQTT</source>
@@ -341,11 +361,11 @@
     </message>
     <message>
         <source>Publish coordinates over MQTT</source>
-        <translation>Koordinaten über MQTT veröffentlichen</translation>
+        <translation>Koordinaten über MQTT pushen</translation>
     </message>
     <message>
         <source>Off = the daemon stores locally but does not publish.</source>
-        <translation>Aus = der Daemon speichert lokal, veröffentlicht aber nicht.</translation>
+        <translation>Aus = Der Daemon speichert lokal, pusht aber nicht.</translation>
     </message>
     <message>
         <source>MQTT server</source>
@@ -377,7 +397,7 @@
     </message>
     <message>
         <source>Keep reporting the location while the app is closed (the daemon &apos;GPS service&apos; runs).</source>
-        <translation>Meldet den Standort weiter, während die App geschlossen ist (der Daemon „GPS-Dienst“ läuft).</translation>
+        <translation>Meldet den Standort weiterhin, während die App geschlossen ist (der Daemon „GPS-Dienst“ läuft).</translation>
     </message>
     <message>
         <source>Remote actions</source>
@@ -389,7 +409,7 @@
     </message>
     <message>
         <source>Allow RING</source>
-        <translation>RING erlauben</translation>
+        <translation>Command „RING“ erlauben</translation>
     </message>
     <message>
         <source>Device will ring for 60 seconds the below defined tone.</source>
@@ -409,7 +429,7 @@
     </message>
     <message>
         <source>Allow remote LOCK</source>
-        <translation>LOCK aus der Ferne erlauben</translation>
+        <translation>Command „LOCK“ erlauben</translation>
     </message>
     <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
@@ -417,7 +437,7 @@
     </message>
     <message>
         <source>Allow remote DELETE (wipe)</source>
-        <translation>DELETE (Wipe) aus der Ferne erlauben</translation>
+        <translation>Command „DELETE“ (Wipe) erlauben</translation>
     </message>
     <message>
         <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
@@ -429,7 +449,7 @@
     </message>
     <message>
         <source>Allow remote photo</source>
-        <translation>Foto aus der Ferne erlauben</translation>
+        <translation>Command „CAMERA“ erlauben </translation>
     </message>
     <message>
         <source>A photo can be captured and uploaded to the configured WebDAV server.</source>
@@ -457,19 +477,19 @@
     </message>
     <message>
         <source>Whitelist (Allowed senders) - one per line</source>
-        <translation>Whitelist (erlaubte Absender) - einer pro Zeile</translation>
+        <translation>Whitelist (erlaubte Absender) - eine Handynummer pro Zeile</translation>
     </message>
     <message>
         <source>Remote control via SMS</source>
-        <translation>Fernsteuerung per SMS</translation>
+        <translation>Remote-Commands per SMS</translation>
     </message>
     <message>
         <source>Turn on if you want accept SMS commands from the whitelist. The current TOTP code is required in SMS commands.</source>
-        <translation>Einschalten, wenn du SMS-Befehle von der Whitelist akzeptieren möchtest. In SMS-Befehlen ist der aktuelle TOTP-Code erforderlich.</translation>
+        <translation>Einschalten, wenn SMS-Commands von der Whitelist akzeptiert werden sollen. In SMS-Commands ist der aktuelle TOTP-Code erforderlich.</translation>
     </message>
     <message>
         <source>Allow Command GPS</source>
-        <translation>Befehl GPS erlauben</translation>
+        <translation>Command „GPS“ erlauben</translation>
     </message>
     <message>
         <source>SMS authentication (TOTP)</source>
@@ -477,7 +497,7 @@
     </message>
     <message>
         <source>Enrol this secret in a TOTP authenticator app on a SECOND device. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation>Hinterlege dieses Secret in einer TOTP-Authenticator-App auf einem ZWEITEN Gerät. Der aktuelle Code ist in SMS-Befehlen erforderlich. Bewahre die Backup-Codes sicher auf, um sie ohne Authenticator-App zu nutzen.</translation>
+        <translation>Hinterlege dieses Secret in einer TOTP-Authenticator-App auf einem ZWEITEN Gerät. Der aktuelle Code ist in SMS-Commands erforderlich. Bewahre die Backup-Codes sicher auf, um sie ohne Authenticator-App zu nutzen.</translation>
     </message>
     <message>
         <source>TOTP secret</source>
@@ -497,7 +517,7 @@
     </message>
     <message>
         <source>If TOTP is not available, backup codes can be used for authentication. Each code can be used only once.</source>
-        <translation>Wenn TOTP nicht verfügbar ist, können Backup-Codes zur Authentifizierung verwendet werden. Jeder Code kann nur einmal verwendet werden.</translation>
+        <translation>Wenn TOTP nicht verfügbar ist, können Backup-Codes zur Authentifizierung verwendet werden. Jeder Code ist einmal verwendbar.</translation>
     </message>
     <message>
         <source>Unused backup codes</source>
@@ -513,11 +533,11 @@
     </message>
     <message>
         <source>The standard OpenStreetMap is not zoomable but you can create a free account at Geoapify to get a free API key for a zoomable map. The key is optional, but without it the map will not be zoomable.</source>
-        <translation>Die Standard-OpenStreetMap ist nicht zoombar, aber du kannst ein kostenloses Konto bei Geoapify erstellen, um einen kostenlosen API-Key für eine zoombare Karte zu erhalten. Der Key ist optional, ohne ihn ist die Karte jedoch nicht zoombar.</translation>
+        <translation>Die Standard-OpenStreetMap bietet keine Zoomfunktion. Für eine zoombare Karte wird ein kostenloser API-Schlüssel von Geoapify benötigt, der über ein kostenfreies Konto erstellt werden kann. Ohne diesen Schlüssel ist kein Zoom möglich.</translation>
     </message>
     <message>
         <source>Tile provider</source>
-        <translation>Kartenanbieter</translation>
+        <translation>OSM-Kartenanbieter</translation>
     </message>
     <message>
         <source>OpenStreetMap Geoapify</source>
@@ -537,7 +557,7 @@
     </message>
     <message>
         <source>Report a bug or request a feature</source>
-        <translation>Fehler melden oder Feature vorschlagen</translation>
+        <translation>Fehler melden / Feature anfordern</translation>
     </message>
     <message>
         <source>Code Repository</source>
@@ -553,7 +573,7 @@
     </message>
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sendet die aktuellen GPS-Koordinaten per SMS an den Absender. Die SMS erscheint NICHT unter den gesendeten Nachrichten, aber eine Benachrichtigung wird angezeigt. ACHTUNG: SMS-Kosten können anfallen.</translation>
     </message>
 </context>
 </TS>
