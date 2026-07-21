@@ -280,6 +280,26 @@
         <source>Install QtLocation on the device to show the map. Device positions are still listed on the Devices tab.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>No GPS fix yet — Retry at next refresh time</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS not available on this device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS is disabled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS reader unavailable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS error</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SettingsPage</name>
@@ -472,10 +492,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>SMS authentication (TOTP)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -553,6 +569,10 @@
     </message>
     <message>
         <source>User Manual</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

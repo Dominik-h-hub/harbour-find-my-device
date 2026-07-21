@@ -423,7 +423,7 @@ Dialog {
             TextSwitch {
                 id: smsGpsSwitch
                 text: qsTr("Allow Command GPS")
-                description: qsTr("Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.")
+                description: qsTr("Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.")
             }
 
             // --- SMS two-factor (TOTP + backup codes) ------------------------
@@ -679,7 +679,7 @@ Dialog {
             ListItem {
                 contentHeight: Theme.itemSizeMedium
 
-                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/tree/main/docs")
+                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/blob/main/docs/USER-GUIDE.md")
 
                 Label {
                     anchors.left: parent.left

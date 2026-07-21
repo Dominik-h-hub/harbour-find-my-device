@@ -280,6 +280,26 @@
         <source>Install QtLocation on the device to show the map. Device positions are still listed on the Devices tab.</source>
         <translation>Installera QtLocation på enheten för att visa kartan. Enheternas positioner visas fortfarande under fliken Enheter.</translation>
     </message>
+    <message>
+        <source>No GPS fix yet — Retry at next refresh time</source>
+        <translation>Ingen GPS-signal än — Försök igen vid nästa uppdatering</translation>
+    </message>
+    <message>
+        <source>GPS not available on this device</source>
+        <translation>GPS är inte tillgängligt på denna enhet</translation>
+    </message>
+    <message>
+        <source>GPS is disabled</source>
+        <translation>GPS är inaktiverat</translation>
+    </message>
+    <message>
+        <source>GPS reader unavailable</source>
+        <translation>GPS-läsaren är inte tillgänglig</translation>
+    </message>
+    <message>
+        <source>GPS error</source>
+        <translation>GPS-fel</translation>
+    </message>
 </context>
 <context>
     <name>SettingsPage</name>
@@ -472,10 +492,6 @@
         <translation>Tillåt kommandot GPS</translation>
     </message>
     <message>
-        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown.</source>
-        <translation>Skickar aktuella GPS-koordinater via SMS till avsändaren. SMS:et visas INTE under skickade meddelanden, men en avisering visas.</translation>
-    </message>
-    <message>
         <source>SMS authentication (TOTP)</source>
         <translation>SMS-autentisering (TOTP)</translation>
     </message>
@@ -554,6 +570,10 @@
     <message>
         <source>User Manual</source>
         <translation>Användarmanual</translation>
+    </message>
+    <message>
+        <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
+        <translation>Skickar aktuella GPS-koordinater via SMS till avsändaren. SMS:et visas INTE bland skickade meddelanden, men en avisering visas. OBSERVERA: SMS-kostnader kan tillkomma.</translation>
     </message>
 </context>
 </TS>

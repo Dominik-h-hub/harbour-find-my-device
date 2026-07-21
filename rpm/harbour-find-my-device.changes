@@ -9,6 +9,16 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Tue Jul 21 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.0-1
+- ADDED: swedish translation provided by @eson57
+- FIX: daemon_cmd - in some cases false user was picked for wipe of device.
+- FIX: Added detailed description why sailjail needs to be off.
+- FIX: Switched dbus services to freedesktop.systemd api
+- FIX: mqtt client was not closed when publish was changed to 0
+- FIX: Long delay for first FIX after appstart
+- ADDED: Show bannner when GPS FIX was not successfully after 90s.
+- FIX: GPS-Daemon starts to connect to MQTT now on startup and not after GPS-FIX.
+
 * Tue Jul 14 2026 Dominik Heidinger <dominikh@atomicmail.io> 0.1-1
 - Initial implementation of application
 - Added MainPage, Device-Page, Map-Page, Settings-Page

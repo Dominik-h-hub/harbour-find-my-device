@@ -105,7 +105,12 @@ class GpsDaemon(object):
                 return
 
         import gps_reader  # imported here so an early import error doesn't kill boot
-        fix = gps_reader.get_fix(timeout=90)
+        # should_abort: leave the up-to-90s fix wait as soon as SIGTERM arrives,
+        # otherwise systemd's stop timeout (90s) SIGKILLs us -> unit state "failed".
+        fix = gps_reader.get_fix(timeout=90,
+                                 should_abort=lambda: not _running["go"])
+        if not _running["go"]:
+            return
         battery = gps_reader.read_battery_level()
         if not fix.success:
             log.warning("no GPS fix: %s", fix.error)
@@ -119,6 +124,8 @@ class GpsDaemon(object):
         db.init_schema()
         devices.ensure_own_device()
         log.info("GPS daemon started")
+        if settings.get_bool(settings.BACKGROUND_ENABLED):
+            self._ensure_mqtt()
         while _running["go"]:
             try:
                 if settings.get_bool(settings.BACKGROUND_ENABLED):

@@ -1,0 +1,31 @@
+name: Mirror to Codeberg
+
+# Mirrors the main branch (full commit history) and all tags to
+# https://codeberg.org/dominik-h/harbour-find-my-device
+# Runs on every push to main and on every pushed tag.
+# Auth: repository secret CODEBERG_TOKEN (Codeberg access token, write:repository).
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history incl. all branches and tags - required for a real mirror
+          fetch-depth: 0
+
+      - name: Push main and tags to Codeberg
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          git remote add codeberg "https://dominik-h:${CODEBERG_TOKEN}@codeberg.org/dominik-h/harbour-find-my-device.git"
+          git push --force codeberg refs/remotes/origin/main:refs/heads/main
+          git push --force codeberg --tags

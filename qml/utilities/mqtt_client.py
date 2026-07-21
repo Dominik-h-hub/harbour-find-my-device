@@ -35,6 +35,13 @@ ROLE_PUB = "pub"
 ROLE_CMD = "cmd"
 ROLE_UI = "ui"
 
+# Keepalive: Sailfish suspends the CPU while the display is off, which freezes
+# the paho network thread -- no PINGREQ leaves the device while it sleeps, and
+# the broker drops the connection after 1.5x keepalive (45s meant a kick +
+# full TLS reconnect every ~67s). 900s keeps the session alive across suspend
+# as long as anything (e.g. a GPS tick) wakes the device within ~22 minutes.
+KEEPALIVE_S = 900
+
 
 # --- topic helpers ---------------------------------------------------------
 def topic_location(device_id):
@@ -106,12 +113,14 @@ class FmdMqttClient(object):
                                             fmd/<id> location topic.
     on_ack(device_id, payload_dict)      -- called for any subscribed
                                             fmd/<id>/cmd/ack topic.
+    on_connected()                       -- called after every (re)connect, once
+                                            the subscriptions are re-applied.
     Subscriptions are remembered and re-applied on reconnect.
     """
 
     def __init__(self, server, port, tls, username, password, cid,
                  on_command=None, on_location=None, on_ack=None,
-                 clean_session=True):
+                 clean_session=True, on_connected=None):
         self.server = server
         self.port = int(port)
         self.tls = bool(tls)
@@ -121,6 +130,7 @@ class FmdMqttClient(object):
         self.on_command = on_command
         self.on_location = on_location
         self.on_ack = on_ack
+        self.on_connected = on_connected
         self._client = None
         self._connected = False
         self._subs = set()              # set of (topic, kind)
@@ -151,7 +161,8 @@ class FmdMqttClient(object):
             self._client.reconnect_delay_set(min_delay=1, max_delay=60)
             log.info("connecting to mqtt %s:%d (tls=%s) as %s",
                      self.server, self.port, self.tls, self.cid)
-            self._client.connect_async(self.server, self.port, keepalive=45)
+            self._client.connect_async(self.server, self.port,
+                                       keepalive=KEEPALIVE_S)
             self._client.loop_start()
             return True
         except Exception as exc:
@@ -237,13 +248,22 @@ class FmdMqttClient(object):
             for topic, _kind in self._subs:
                 client.subscribe(topic, qos=QOS)
                 log.info("re-subscribed %s", topic)
+            if self.on_connected is not None:
+                try:
+                    self.on_connected()
+                except Exception:
+                    log.exception("on_connected callback failed")
         else:
             self._connected = False
             log.error("mqtt connect refused rc=%s", rc)
 
     def _handle_disconnect(self, client, userdata, rc):
         self._connected = False
-        log.warning("mqtt connection lost rc=%s (will auto-reconnect)", rc)
+        if rc == 0:
+            # rc=0 means we called disconnect() ourselves; paho won't reconnect.
+            log.info("mqtt disconnected cleanly (%s)", self.cid)
+        else:
+            log.warning("mqtt connection lost rc=%s (will auto-reconnect)", rc)
 
     def _handle_message(self, client, userdata, msg):
         topic = msg.topic

@@ -7,7 +7,7 @@ Signals sent to QML (data[0] = event name):
   ('mapUpdated',)
   ('devicesUpdated',)
   ('commandResult', device_id, cmd, result)
-  ('locationFix', success, message)
+  ('locationFix', success, error_code)  # error_code localized in QML (MapView)
 """
 
 import logging
@@ -34,6 +34,9 @@ OSM_USER_AGENT = "harbour-find-my-device/1.0 (contact: dominikh@atomicmail.io)"
 
 _ui_mqtt = None
 _ui_lock = threading.Lock()
+# Newest own-device fix that could not be published because the UI client was
+# offline at tick time; flushed on the next (re)connect. Guarded by _ui_lock.
+_pending_location = None
 
 # Serialises the post-save side effects (MQTT reconnect + daemon resync) which run
 # in a background thread so a settings save never blocks the PyOtherSide worker.
@@ -59,6 +62,9 @@ _ring_timers = {}         # device_id -> (token, threading.Timer)
 # interval until the user closes it. Lives only in the UI process (dies with it).
 _fg_gps_timer = None      # threading.Timer for the next foreground tick
 _fg_gps_lock = threading.Lock()
+_fg_in_failure = False    # True once a foreground tick failed; reset on next fix.
+                          # Used to show the "no fix" banner only on the first
+                          # failure of an episode, not every interval.
 # Serialises GPS fixes so a foreground tick and a manual "Update map" never drive
 # geoclue concurrently.
 _fix_lock = threading.Lock()
@@ -460,15 +466,14 @@ def get_map_data():
     }
 
 
-def _friendly_fix_error(err):
-    #Turn a raw gps_reader error into a short, user-facing message.
+def _fix_error_code(err):
     e = (err or "").lower()
     if ("geoclue" in e or "serviceunknown" in e or "hybris" in e
             or "provider" in e):
-        return "GPS not available on this device"
+        return "gps_unavailable"
     if "timeout" in e or "timed out" in e or "no fix" in e:
-        return "No GPS fix yet -- try again outdoors"
-    return err or "No GPS fix"
+        return "no_fix"
+    return "no_fix"
 
 
 def refresh_location():
@@ -485,12 +490,17 @@ def _refresh_location_worker():
     except Exception as exc:
         log.error("refresh_location failed: %s", exc)
         # Always resolve the UI (busy indicator stops on this signal).
-        _emit("locationFix", False, "GPS error")
+        _emit("locationFix", False, "error")
 
 
-def _do_refresh_location(notify=True):
-    # notify=False is used by the foreground poll so periodic failures (no fix /
-    # GPS off) don't pop the Map banner every interval; the map/cover still update.
+def _do_refresh_location(notify=True, notify_fail=None):
+    # notify=False is used by the foreground poll so periodic successes don't pop
+    # the Map banner every interval; the map/cover still update. notify_fail
+    # controls the failure banner separately (default: same as notify) so the
+    # foreground poll can announce the first failure of an episode while staying
+    # silent on success -- see _foreground_tick.
+    if notify_fail is None:
+        notify_fail = notify
     own_id = devices.own_device_id()
 
     if not location_control.is_enabled():
@@ -500,8 +510,8 @@ def _do_refresh_location(notify=True):
             location_control.wait_until_enabled()  # priv service applies it async
             time.sleep(2)  # allow the provider to start before the first fix
         else:
-            if notify:
-                _emit("locationFix", False, "GPS is disabled")
+            if notify_fail:
+                _emit("locationFix", False, "gps_disabled")
             _emit("mapUpdated")
             return {"ok": False, "error": "gps_disabled"}
 
@@ -509,8 +519,8 @@ def _do_refresh_location(notify=True):
         import gps_reader  # device-only (dbus/gi)
     except Exception as exc:
         _log_ui("gps_reader unavailable: %s" % exc)
-        if notify:
-            _emit("locationFix", False, "GPS reader unavailable")
+        if notify_fail:
+            _emit("locationFix", False, "gps_reader_unavailable")
         return {"ok": False, "error": "no_gps_reader"}
 
     fix = gps_reader.get_fix(timeout=90)
@@ -518,8 +528,8 @@ def _do_refresh_location(notify=True):
     if not fix.success:
         # Keep the raw error in the log; show a clean message in the UI banner.
         _log_ui("no GPS fix: %s" % fix.error)
-        if notify:
-            _emit("locationFix", False, _friendly_fix_error(fix.error))
+        if notify_fail:
+            _emit("locationFix", False, _fix_error_code(fix.error))
         _emit("mapUpdated")
         return {"ok": False, "error": fix.error or "no_fix"}
 
@@ -551,11 +561,17 @@ def _publish_own_location(own_id, fix, battery):
         "lat": fix.lat, "lon": fix.lon, "alt": fix.alt,
         "speed": fix.speed, "accuracy": fix.accuracy_h, "battery": battery,
     }
+    global _pending_location
     with _ui_lock:
         if _ui_mqtt and _ui_mqtt.is_connected():
             _ui_mqtt.publish_location(own_id, payload)
+            _pending_location = None
         else:
-            log.warning("UI MQTT not connected; location published by daemon instead")
+            # With background activity off no daemon is running, so nobody else
+            # would publish this fix -- keep it and flush it on reconnect.
+            _pending_location = (own_id, payload)
+            log.warning("UI MQTT not connected; fix stored locally, "
+                        "will publish on reconnect")
 
 
 # =========================================================================
@@ -568,38 +584,60 @@ def _start_foreground_gps():
         if _fg_gps_timer is not None:
             return
         _log_ui("foreground GPS polling started (background activity off)")
-        _schedule_foreground_tick_locked()
+        # Quick first tick: auto-enable location and the GPS cold start should
+        # begin right away, not one full interval after the app started.
+        _schedule_foreground_tick_locked(delay_s=15)
 
 
 def _stop_foreground_gps():
-    global _fg_gps_timer
+    global _fg_gps_timer, _fg_in_failure
     with _fg_gps_lock:
         if _fg_gps_timer is None:
             return
         _fg_gps_timer.cancel()
         _fg_gps_timer = None
         _log_ui("foreground GPS polling stopped")
+    # Handing off to the background daemon: a stale foreground "no fix" banner no
+    # longer applies (the daemon runs in its own process and cannot drive the UI
+    # banner), so clear it and reset the failure state for the next foreground run.
+    if _fg_in_failure:
+        _fg_in_failure = False
+        _emit("locationFix", True, "")
 
 
-def _schedule_foreground_tick_locked():
-    """Arm the next foreground tick. Caller must hold _fg_gps_lock."""
+def _schedule_foreground_tick_locked(delay_s=None):
+    """Arm the next foreground tick (after the configured interval, or after
+    delay_s seconds if given). Caller must hold _fg_gps_lock."""
     global _fg_gps_timer
-    minutes = settings.get_int(settings.GPS_INTERVAL_MIN, 5)
-    if minutes < 1:
-        minutes = 1
-    _fg_gps_timer = threading.Timer(minutes * 60, _foreground_tick)
+    if delay_s is None:
+        minutes = settings.get_int(settings.GPS_INTERVAL_MIN, 5)
+        if minutes < 1:
+            minutes = 1
+        delay_s = minutes * 60
+    _fg_gps_timer = threading.Timer(delay_s, _foreground_tick)
     _fg_gps_timer.daemon = True
     _fg_gps_timer.start()
 
 
 def _foreground_tick():
+    global _fg_in_failure
     # If background activity got turned on meanwhile, the daemon now handles it.
     if settings.get_bool(settings.BACKGROUND_ENABLED):
         _stop_foreground_gps()
         return
     try:
+        log.info("foreground GPS tick: fetching fix")
+        # Announce a failure only on the first tick of a failure episode, not on
+        # every interval; a successful fix re-arms the banner for the next one.
         with _fix_lock:
-            res = _do_refresh_location(notify=False)
+            res = _do_refresh_location(notify=False,
+                                       notify_fail=not _fg_in_failure)
+        ok = res.get("ok", False)
+        # Recovered from a failure episode: clear the persistent "no fix" banner
+        # (foreground successes are otherwise silent, so nothing else clears it).
+        if ok and _fg_in_failure:
+            _emit("locationFix", True, "")
+        _fg_in_failure = not ok
         log.info("foreground GPS tick: %s", res)
     except Exception as exc:
         log.error("foreground GPS tick failed: %s", exc)
@@ -742,6 +780,20 @@ _CMD_FEATURE_KEYS = (
 )
 
 
+def _systemd_user_manager():
+    """D-Bus interface to the systemd USER manager.
+
+    Used instead of spawning `systemctl`, which is not reachable from inside
+    the Sailjail sandbox; the FindMyDevice permission grants talking to
+    org.freedesktop.systemd1 on the session bus instead.
+    """
+    import dbus
+    bus = dbus.SessionBus()
+    return bus, dbus.Interface(
+        bus.get_object("org.freedesktop.systemd1", "/org/freedesktop/systemd1"),
+        "org.freedesktop.systemd1.Manager")
+
+
 def _set_daemon_state(unit, wanted):
     """Make the systemd USER unit match `wanted`.
 
@@ -750,12 +802,15 @@ def _set_daemon_state(unit, wanted):
     not wanted, we `stop` it so a disabled feature truly idles. Best-effort: any
     failure is logged, never raised.
     """
-    import subprocess
     action = "restart" if wanted else "stop"
     try:
-        # --no-block: queue the job in systemd and return at once instead of blocking settings reloading
-        subprocess.call(["systemctl", "--user", "--no-block", action, unit],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        _, mgr = _systemd_user_manager()
+        # Job mode "replace" queues the job and returns at once (the D-Bus
+        # equivalent of `systemctl --no-block`), so saving settings never blocks.
+        if wanted:
+            mgr.RestartUnit(unit, "replace")
+        else:
+            mgr.StopUnit(unit, "replace")
         log.info("daemon %s -> %s (wanted=%s)", unit, action, wanted)
     except Exception as exc:
         log.warning("could not %s daemon %s: %s", action, unit, exc)
@@ -778,15 +833,16 @@ def _sync_daemons():
 
 def get_daemon_status():
     """Return {'gps': 'running'|'deactivated'|'failed'|'unknown', 'cmd': ...}."""
-    import subprocess
+    import dbus
     result = {}
     for key, unit in _DAEMONS.items():
         try:
-            out = subprocess.check_output(
-                ["systemctl", "--user", "is-active", unit],
-                stderr=subprocess.STDOUT).decode().strip()
-        except subprocess.CalledProcessError as exc:
-            out = exc.output.decode().strip() if exc.output else "unknown"
+            bus, mgr = _systemd_user_manager()
+            upath = mgr.LoadUnit(unit)
+            props = dbus.Interface(
+                bus.get_object("org.freedesktop.systemd1", upath),
+                "org.freedesktop.DBus.Properties")
+            out = str(props.Get("org.freedesktop.systemd1.Unit", "ActiveState"))
         except Exception:
             out = "unknown"
         result[key] = {
@@ -809,13 +865,20 @@ def enable_location_now():
 # UI MQTT listener (remote-device locations + acks)
 # =========================================================================
 def _start_ui_mqtt():
-    """(Re)start the persistent UI MQTT client based on current settings."""
+    """(Re)start the persistent UI MQTT client based on current settings, or
+    tear a running one down when MQTT is disabled/unconfigured."""
     global _ui_mqtt
-    if not settings.get_bool(settings.MQTT_ENABLED):
-        log.info("MQTT disabled in settings; UI listener not started")
-        return
+    enabled = settings.get_bool(settings.MQTT_ENABLED)
     server = settings.get(settings.MQTT_SERVER)
-    if not server or not mqtt_client.paho_available():
+    if not enabled or not server or not mqtt_client.paho_available():
+        with _ui_lock:
+            was_running = _ui_mqtt is not None
+            if was_running:
+                _ui_mqtt.disconnect()
+                _ui_mqtt = None
+        log.info("MQTT %s; UI listener %s",
+                 "disabled in settings" if not enabled else "not configured",
+                 "stopped" if was_running else "not started")
         return
     tls = settings.get_bool(settings.MQTT_TLS)
     port = settings.get_int(settings.MQTT_PORT, 8883 if tls else 1883)
@@ -830,7 +893,8 @@ def _start_ui_mqtt():
             settings.get(settings.MQTT_PASSWORD),
             mqtt_client.client_id(own_id, mqtt_client.ROLE_UI),
             on_location=_on_remote_location,
-            on_ack=_on_remote_ack)
+            on_ack=_on_remote_ack,
+            on_connected=_flush_pending_location)
         if _ui_mqtt.connect():
             # Listen to every remote device's location + ack topics.
             for dev in devices.list_devices():
@@ -843,6 +907,21 @@ def _start_ui_mqtt():
             # device), which lets us refresh the own-device row's STOP button.
             _ui_mqtt.subscribe_ack(own_id)
             log.info("UI MQTT listener started")
+
+
+def _flush_pending_location():
+    """Publish the newest fix that was taken while the UI client was offline.
+
+    Runs in the paho network thread via the on_connected callback, right after
+    the subscriptions were re-applied."""
+    global _pending_location
+    with _ui_lock:
+        if _pending_location is None or _ui_mqtt is None:
+            return
+        own_id, payload = _pending_location
+        log.info("publishing fix taken while offline")
+        if _ui_mqtt.publish_location(own_id, payload):
+            _pending_location = None
 
 
 def _restart_ui_mqtt():

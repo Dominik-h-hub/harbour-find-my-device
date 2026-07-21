@@ -7,6 +7,11 @@ Name=Radar
 Name[de]=Radar
 
 [X-Sailjail]
-# Sailjail sandboxing is disabled: daemon-control (ON/OFF) via systemd,location-config write-access, shared db with daemons.
-# access: geoclue, ofono, devicelock, location.conf, WebDAV, MQTT).
+# Sailjail sandboxing is disabled. The GUI needs accesses that stock Sailjail
+# permissions cannot express, and running sandboxed proved unstable:
+#   - shared SQLite DB with the (unsandboxed) systemd user daemons
+#   - start/stop of those daemons (org.freedesktop.systemd1)
+#   - request spool of the privileged root helper (/run/harbour-find-my-device)
+# Stock permissions that would otherwise apply: Internet (MQTT, map tiles),
+# Location (geoclue GPS fix), Audio (ringtone preview).
 Sandboxing=Disabled

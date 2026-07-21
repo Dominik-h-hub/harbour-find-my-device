@@ -100,12 +100,16 @@ def read_battery_level():
     return None
 
 
-def _drive_until_fix(loop, best, min_accuracy, timeout):
-    #Run the GLib loop without MainLoop.run(), so it also works off the main thread.
-    context = loop.get_context()
+def _drive_until_fix(context, best, min_accuracy, timeout, should_abort=None):
+    # Drive a PRIVATE main context (not MainLoop.run()) so this works off the main
+    # thread. In the UI process the Qt/Silica event loop owns the process-default
+    # GLib context on the main thread; iterating THAT from a worker thread blocks
+    # forever in g_main_context_acquire.
     deadline = time.time() + timeout + 2.0
     while time.time() < deadline:
-        context.iteration(True)  # blocks until the next source (poll fires <=2s)
+        if should_abort is not None and should_abort():
+            break
+        context.iteration(True)
         r = best.get("r")
         if r is None:
             continue
@@ -115,85 +119,102 @@ def _drive_until_fix(loop, best, min_accuracy, timeout):
             break
 
 
-def get_fix(timeout=120.0, min_accuracy=None, bus=None):
+def get_fix(timeout=120.0, min_accuracy=None, bus=None, should_abort=None):
     """Obtain one GPS fix.
 
     timeout      : seconds to wait for a (good enough) fix.
     min_accuracy : if set, keep waiting until horizontal accuracy <= this many
                    metres (or timeout, then return the best seen).
+    should_abort : optional callable; when it returns True the wait ends early
+                   (checked between loop iterations, so within ~2s).
     """
     own_bus = bus is None
-    mainloop = dbus.mainloop.glib.DBusGMainLoop()
+    # Own a PRIVATE main context and make it this thread's default BEFORE the bus
+    # connection is created, so the dbus watches and our poll sources bind to it
+    # rather than to the process-default context (owned by Qt on the UI thread).
+    context = GLib.MainContext()
+    context.push_thread_default()
     try:
-        bus = bus or make_session_bus(mainloop=mainloop)
-        obj = bus.get_object(PROVIDER_NAME, PROVIDER_PATH)
-    except Exception as exc:
-        return FixResult(False, None, None, None, None, None, None, None,
-                         "cannot reach geoclue provider: %s" % exc)
-
-    geo = dbus.Interface(obj, IFACE_GEOCLUE)
-    pos = dbus.Interface(obj, IFACE_POSITION)
-    try:
-        geo.AddReference()
-    except Exception as exc:
-        log.warning("AddReference failed: %s", exc)
-
-    loop = GLib.MainLoop()
-    best = {"r": None}
-
-    def consider(fields, lat, lon, alt, acc):
-        fields = int(fields)
-        if not (fields & (F_LAT | F_LON)):
-            return
-        acc_h = float(acc[1]) if acc and len(acc) >= 2 else None
-        t = time.time()
-        speed = None
+        mainloop = dbus.mainloop.glib.DBusGMainLoop()
         try:
-            vf, vts, vspeed, vdir, vclimb = dbus.Interface(
-                obj, IFACE_VELOCITY).GetVelocity()
-            if int(vf) & V_SPEED:
-                speed = float(vspeed)
-        except Exception:
-            pass
-        r = FixResult(True, float(lat), float(lon),
-                      float(alt) if fields & F_ALT else None,
-                      acc_h, speed, iso_utc(t), iso_local(t), None)
-        best["r"] = r
-        if min_accuracy is None or (acc_h is not None and acc_h <= min_accuracy):
-            GLib.timeout_add(50, loop.quit)
-
-    bus.add_signal_receiver(
-        lambda fields, ts, lat, lon, alt, acc: consider(fields, lat, lon, alt, acc),
-        dbus_interface=IFACE_POSITION, signal_name="PositionChanged")
-
-    def poll():
-        if best["r"] and (min_accuracy is None):
-            return False
-        try:
-            fields, ts, lat, lon, alt, acc = pos.GetPosition()
-            consider(fields, lat, lon, alt, acc)
+            bus = bus or make_session_bus(mainloop=mainloop)
+            obj = bus.get_object(PROVIDER_NAME, PROVIDER_PATH)
         except Exception as exc:
-            log.debug("GetPosition: %s", exc)
-        return True
+            return FixResult(False, None, None, None, None, None, None, None,
+                             "cannot reach geoclue provider: %s" % exc)
 
-    GLib.timeout_add(2000, poll)
-    GLib.timeout_add(int(timeout * 1000), lambda: (loop.quit(), False)[-1])
-    GLib.timeout_add(50, poll)  # try immediately (often a cached fix)
-
-    try:
-        _drive_until_fix(loop, best, min_accuracy, timeout)
-    finally:
+        geo = dbus.Interface(obj, IFACE_GEOCLUE)
+        pos = dbus.Interface(obj, IFACE_POSITION)
         try:
-            geo.RemoveReference()
-        except Exception:
-            pass
+            geo.AddReference()
+        except Exception as exc:
+            log.warning("AddReference failed: %s", exc)
 
-    if best["r"]:
-        r = best["r"]
-        log.info("fix: lat=%.6f lon=%.6f acc=%sm", r.lat, r.lon, r.accuracy_h)
-        return r
-    return FixResult(False, None, None, None, None, None, None, None,
-                     "no fix within %ss" % timeout)
+        best = {"r": None}
+
+        def consider(fields, lat, lon, alt, acc):
+            fields = int(fields)
+            if not (fields & (F_LAT | F_LON)):
+                return
+            acc_h = float(acc[1]) if acc and len(acc) >= 2 else None
+            t = time.time()
+            speed = None
+            try:
+                vf, vts, vspeed, vdir, vclimb = dbus.Interface(
+                    obj, IFACE_VELOCITY).GetVelocity()
+                if int(vf) & V_SPEED:
+                    speed = float(vspeed)
+            except Exception:
+                pass
+            # Early exit (a good enough fix) is handled by _drive_until_fix, which
+            # sees best after the next iteration -- no loop.quit needed.
+            best["r"] = FixResult(True, float(lat), float(lon),
+                                  float(alt) if fields & F_ALT else None,
+                                  acc_h, speed, iso_utc(t), iso_local(t), None)
+
+        bus.add_signal_receiver(
+            lambda fields, ts, lat, lon, alt, acc: consider(fields, lat, lon, alt, acc),
+            dbus_interface=IFACE_POSITION, signal_name="PositionChanged")
+
+        def poll():
+            if best["r"] and (min_accuracy is None):
+                return False
+            try:
+                fields, ts, lat, lon, alt, acc = pos.GetPosition()
+                consider(fields, lat, lon, alt, acc)
+            except Exception as exc:
+                log.debug("GetPosition: %s", exc)
+            return True
+
+        # Poll sources on OUR context (GLib.timeout_add would target the process
+        # default context instead). The synchronous GetPosition() in poll() is the
+        # reliable path; PositionChanged signals are a best-effort bonus. Keep the
+        # source refs so they are not garbage-collected while attached.
+        sources = []
+        for interval in (50, 2000):   # 50ms: often a cached fix; 2s: keep polling
+            src = GLib.timeout_source_new(interval)
+            src.set_callback(lambda *_a: poll())
+            src.attach(context)
+            sources.append(src)
+
+        try:
+            _drive_until_fix(context, best, min_accuracy, timeout, should_abort)
+        finally:
+            for src in sources:
+                src.destroy()
+            try:
+                geo.RemoveReference()
+            except Exception:
+                pass
+
+        if best["r"]:
+            r = best["r"]
+            log.info("fix: lat=%.6f lon=%.6f acc=%sm", r.lat, r.lon, r.accuracy_h)
+            return r
+        return FixResult(False, None, None, None, None, None, None, None,
+                         "no fix within %ss" % timeout)
+    finally:
+        context.pop_thread_default()
 
 
 def _main(argv=None):
