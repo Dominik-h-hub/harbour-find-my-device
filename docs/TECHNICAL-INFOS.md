@@ -67,7 +67,7 @@ systemctl --user restart harbour-find-my-device-daemon-cmd.service
 systemctl --user stop harbour-find-my-device-daemon-gps.service
 ```
 
-The settings page shows the live state of both daemons (running / deactivated / failed) straight from `systemctl --user is-active`.
+The settings page shows the live state of both daemons (running / deactivated / failed) via systemd (equivalent to `systemctl --user is-active`)
 
 ## Reading Logs on the Device
 

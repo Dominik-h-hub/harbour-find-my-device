@@ -282,23 +282,23 @@
     </message>
     <message>
         <source>No GPS fix yet — Retry at next refresh time</source>
-        <translation type="unfinished"></translation>
+        <translation>Ingen GPS-signal än — Försök igen vid nästa uppdatering</translation>
     </message>
     <message>
         <source>GPS not available on this device</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS är inte tillgängligt på denna enhet</translation>
     </message>
     <message>
         <source>GPS is disabled</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS är inaktiverat</translation>
     </message>
     <message>
         <source>GPS reader unavailable</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-läsaren är inte tillgänglig</translation>
     </message>
     <message>
         <source>GPS error</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-fel</translation>
     </message>
 </context>
 <context>
@@ -573,7 +573,7 @@
     </message>
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
-        <translation type="unfinished"></translation>
+        <translation>Skickar aktuella GPS-koordinater via SMS till avsändaren. SMS:et visas INTE bland skickade meddelanden, men en avisering visas. OBSERVERA: SMS-kostnader kan tillkomma.</translation>
     </message>
 </context>
 </TS>
