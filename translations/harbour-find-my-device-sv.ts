@@ -73,6 +73,10 @@
         <source>Cancel</source>
         <translation>Avbryt</translation>
     </message>
+    <message>
+        <source>Note: Request for deletion will be sent after you press the button below. Wipe will be preformed only, if DELETE command is activated on remote device. Otherwise it will be declined.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>CoverPage</name>
@@ -81,12 +85,12 @@
         <translation>Batteri: %1%</translation>
     </message>
     <message>
-        <source>Uhr</source>
-        <translation>Klocka</translation>
-    </message>
-    <message>
         <source>Radar</source>
         <translation>Radar</translation>
+    </message>
+    <message>
+        <source>local time</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -168,10 +172,6 @@
         <translation>Ingen data ännu</translation>
     </message>
     <message>
-        <source>Uhr</source>
-        <translation>Klocka</translation>
-    </message>
-    <message>
         <source>RING</source>
         <translation>RING</translation>
     </message>
@@ -218,6 +218,10 @@
     <message>
         <source>Last GPS FIX: %1</source>
         <translation>Senaste GPS-FIX: %1</translation>
+    </message>
+    <message>
+        <source>local time</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -408,10 +412,6 @@
         <translation>PIN-kod för fjärråtkomst (HMAC-nyckel)</translation>
     </message>
     <message>
-        <source>Allow RING</source>
-        <translation>Tillåt RINGNING</translation>
-    </message>
-    <message>
         <source>Device will ring for 60 seconds the below defined tone.</source>
         <translation>Enheten ringer i 60 sekunder med den ton som anges nedan.</translation>
     </message>
@@ -428,16 +428,8 @@
         <translation>Stopp</translation>
     </message>
     <message>
-        <source>Allow remote LOCK</source>
-        <translation>Tillåt FJÄRRLÅSNING</translation>
-    </message>
-    <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
         <translation>Om enheten är olåst kommer den att låsas till låsskärmen.</translation>
-    </message>
-    <message>
-        <source>Allow remote DELETE (wipe)</source>
-        <translation>Tillåt FJÄRRBORTTAGNING (radering)</translation>
     </message>
     <message>
         <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
@@ -446,10 +438,6 @@
     <message>
         <source>Camera</source>
         <translation>Kamera</translation>
-    </message>
-    <message>
-        <source>Allow remote photo</source>
-        <translation>Tillåt fjärrfoto</translation>
     </message>
     <message>
         <source>A photo can be captured and uploaded to the configured WebDAV server.</source>
@@ -486,10 +474,6 @@
     <message>
         <source>Turn on if you want accept SMS commands from the whitelist. The current TOTP code is required in SMS commands.</source>
         <translation>Aktivera denna funktion om du vill ta emot SMS-kommandon från vitlistan. Den aktuella TOTP-koden krävs i SMS-kommandon.</translation>
-    </message>
-    <message>
-        <source>Allow Command GPS</source>
-        <translation>Tillåt kommandot GPS</translation>
     </message>
     <message>
         <source>SMS authentication (TOTP)</source>
@@ -574,6 +558,34 @@
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
         <translation>Skickar aktuella GPS-koordinater via SMS till avsändaren. SMS:et visas INTE bland skickade meddelanden, men en avisering visas. OBSERVERA: SMS-kostnader kan tillkomma.</translation>
+    </message>
+    <message>
+        <source>Allow command RING</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command LOCK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command DELETE (wipe)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command CAMERA</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command GPS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add a translation</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

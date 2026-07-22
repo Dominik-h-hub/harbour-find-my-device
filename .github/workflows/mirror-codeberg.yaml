@@ -26,6 +26,23 @@ jobs:
         env:
           CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
         run: |
-          git remote add codeberg "https://dominik-h:${CODEBERG_TOKEN}@codeberg.org/dominik-h/harbour-find-my-device.git"
-          git push --force codeberg refs/remotes/origin/main:refs/heads/main
-          git push --force codeberg --tags
+          git remote add codeberg https://codeberg.org/dominik-h/harbour-find-my-device.git
+          git config --local http.https://codeberg.org/.extraheader "Authorization: token ${CODEBERG_TOKEN}"
+
+          echo "Pushing main branch to Codeberg..."
+          for i in {1..3}; do
+            git push --force codeberg refs/remotes/origin/main:refs/heads/main && break || {
+              if [ $i -eq 3 ]; then exit 1; fi
+              echo "Push failed (attempt $i/3). Retrying in 5s..."
+              sleep 5
+            }
+          done
+
+          echo "Pushing tags to Codeberg..."
+          for i in {1..3}; do
+            git push --force codeberg --tags && break || {
+              if [ $i -eq 3 ]; then exit 1; fi
+              echo "Push tags failed (attempt $i/3). Retrying in 5s..."
+              sleep 5
+            }
+          done

@@ -9,6 +9,9 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Tue Jul 28 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.1-1
+- FIX
+
 * Tue Jul 21 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.0-1
 - ADDED: swedish translation provided by @eson57
 - FIX: daemon_cmd - in some cases false user was picked for wipe of device.

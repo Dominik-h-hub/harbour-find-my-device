@@ -3,7 +3,7 @@
 
 Name:       harbour-find-my-device
 Summary:    Radar App (Find My Device)
-Version:    1.0
+Version:    1.1
 Release:    1
 License:    Apache-2.0
 URL:        https://github.com/Dominik-h-hub/harbour-find-my-device

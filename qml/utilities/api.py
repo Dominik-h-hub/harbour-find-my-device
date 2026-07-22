@@ -11,6 +11,7 @@ Signals sent to QML (data[0] = event name):
 """
 
 import logging
+import logging.handlers
 import threading
 import time
 
@@ -26,8 +27,12 @@ except Exception:
     _HAVE_PYOTHERSIDE = False
 
 log = logging.getLogger("fmd.api")
+_fh = logging.handlers.RotatingFileHandler(
+    "/tmp/fmd-app.log", maxBytes=1_000_000, backupCount=3)
+_fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
 logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+                    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+                    handlers=[logging.StreamHandler(), _fh])
 
 # OSM zero-config default User-Agent.
 OSM_USER_AGENT = "harbour-find-my-device/1.0 (contact: dominikh@atomicmail.io)"

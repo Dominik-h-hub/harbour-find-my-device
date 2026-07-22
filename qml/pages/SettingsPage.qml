@@ -335,7 +335,7 @@ Dialog {
 
             TextSwitch {
                 id: ringSwitch
-                text: qsTr("Allow RING")
+                text: qsTr("Allow command RING")
                 description: qsTr("Device will ring for 60 seconds the below defined tone.")
             }
             // Ringtone picker for the RING sound. Plays the chosen file on a loop
@@ -351,32 +351,46 @@ Dialog {
                     }
                 }
             }
-            Row {
+            Column {
                 width: parent.width
-                spacing: Theme.paddingMedium
+                spacing: Theme.paddingSmall
                 visible: ringSwitch.checked && ringToneModel.count > 0
-                Button {
-                    text: qsTr("Preview")
-                    onClicked: {
-                        var idx = ringToneCombo.currentIndex;
-                        if (idx >= 0 && idx < ringToneModel.count)
-                            Bridge.call("preview_ring_tone",
-                                [ringToneModel.get(idx).path], function () {});
+
+                Row {
+                    width: parent.width
+                    spacing: Theme.paddingMedium
+                    Button {
+                        text: qsTr("Preview")
+                        onClicked: {
+                            var idx = ringToneCombo.currentIndex;
+                            if (idx >= 0 && idx < ringToneModel.count)
+                                Bridge.call("preview_ring_tone",
+                                    [ringToneModel.get(idx).path], function () {});
+                        }
+                    }
+                    Button {
+                        text: qsTr("Stop")
+                        onClicked: Bridge.call("stop_ring_preview", [], function () {})
                     }
                 }
-                Button {
-                    text: qsTr("Stop")
-                    onClicked: Bridge.call("stop_ring_preview", [], function () {})
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryColor
+                    text: qsTr("Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.")
                 }
             }
             TextSwitch {
                 id: lockSwitch
-                text: qsTr("Allow remote LOCK")
+                text: qsTr("Allow command LOCK")
                 description: qsTr("If device is unlocked, it will be locked into lock screen.")
             }
             TextSwitch {
                 id: deleteSwitch
-                text: qsTr("Allow remote DELETE (wipe)")
+                text: qsTr("Allow command DELETE (wipe)")
                 description: qsTr("Will delete all userdata stored under 'home//<user>//' and reboot device afterwards.")
             }
 
@@ -384,7 +398,7 @@ Dialog {
             SectionHeader { text: qsTr("Camera") }
             TextSwitch {
                 id: cameraSwitch
-                text: qsTr("Allow remote photo")
+                text: qsTr("Allow command CAMERA")
                 description: qsTr("A photo can be captured and uploaded to the configured WebDAV server.")
             }
             TextField {
@@ -422,7 +436,7 @@ Dialog {
             }
             TextSwitch {
                 id: smsGpsSwitch
-                text: qsTr("Allow Command GPS")
+                text: qsTr("Allow command GPS")
                 description: qsTr("Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.")
             }
 
@@ -623,13 +637,41 @@ Dialog {
             ListItem {
                 contentHeight: Theme.itemSizeMedium
 
-                onClicked: Qt.openUrlExternally("https://forum.sailfishos.org/")
+                onClicked: Qt.openUrlExternally("https://forum.sailfishos.org/t/radar-app-find-my-device/30944")
 
                 Label {
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.horizontalPageMargin
                     anchors.verticalCenter: parent.verticalCenter
                     text: qsTr("Report a bug or request a feature")
+                    color: Theme.primaryColor
+                }
+                Image {
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    source: "image://theme/icon-m-right"
+                    width: Theme.iconSizeSmall
+                    height: Theme.iconSizeSmall
+                }
+            }
+
+            Separator {
+                width: parent.width
+                color: Theme.primaryColor
+                horizontalAlignment: Qt.AlignHCenter
+            }
+
+            ListItem {
+                contentHeight: Theme.itemSizeMedium
+
+                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/tree/main/translations")
+
+                Label {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.horizontalPageMargin
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Add a translation")
                     color: Theme.primaryColor
                 }
                 Image {

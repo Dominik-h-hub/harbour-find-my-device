@@ -44,6 +44,17 @@ Page {
                          + "longer be possible. Do you really want to continue?")
             }
 
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                color: Theme.errorColor
+                font.pixelSize: Theme.fontSizeMedium
+                text: qsTr("Note: Request for deletion will be sent after you press "
+                    + "the button below. Wipe will be preformed only, if DELETE command "
+                    + "is activated on remote device. Otherwise it will be declined.")
+            }
+
             // Destructive button: a red chip the user must press on purpose.
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter

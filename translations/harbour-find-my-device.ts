@@ -73,6 +73,10 @@
         <source>Cancel</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Note: Request for deletion will be sent after you press the button below. Wipe will be preformed only, if DELETE command is activated on remote device. Otherwise it will be declined.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>CoverPage</name>
@@ -81,11 +85,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Uhr</source>
+        <source>Radar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Radar</source>
+        <source>local time</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -168,10 +172,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Uhr</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>RING</source>
         <translation type="unfinished"></translation>
     </message>
@@ -217,6 +217,10 @@
     </message>
     <message>
         <source>Last GPS FIX: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>local time</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -408,10 +412,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Allow RING</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Device will ring for 60 seconds the below defined tone.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -428,15 +428,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Allow remote LOCK</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Allow remote DELETE (wipe)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -445,10 +437,6 @@
     </message>
     <message>
         <source>Camera</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Allow remote photo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -485,10 +473,6 @@
     </message>
     <message>
         <source>Turn on if you want accept SMS commands from the whitelist. The current TOTP code is required in SMS commands.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Allow Command GPS</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -573,6 +557,34 @@
     </message>
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command RING</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command LOCK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command DELETE (wipe)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command CAMERA</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command GPS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add a translation</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

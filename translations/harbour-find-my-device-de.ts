@@ -73,6 +73,10 @@
         <source>Cancel</source>
         <translation>Abbrechen</translation>
     </message>
+    <message>
+        <source>Note: Request for deletion will be sent after you press the button below. Wipe will be preformed only, if DELETE command is activated on remote device. Otherwise it will be declined.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>CoverPage</name>
@@ -81,12 +85,12 @@
         <translation>Akku: %1 %</translation>
     </message>
     <message>
-        <source>Uhr</source>
-        <translation>Uhr</translation>
-    </message>
-    <message>
         <source>Radar</source>
         <translation>Radar</translation>
+    </message>
+    <message>
+        <source>local time</source>
+        <translation>Uhr</translation>
     </message>
 </context>
 <context>
@@ -168,10 +172,6 @@
         <translation>noch keine Daten</translation>
     </message>
     <message>
-        <source>Uhr</source>
-        <translation>Uhr</translation>
-    </message>
-    <message>
         <source>STOP</source>
         <translation>STOPP</translation>
     </message>
@@ -218,6 +218,10 @@
     <message>
         <source>Last GPS FIX: %1</source>
         <translation>Letzter GPS-Fix: %1</translation>
+    </message>
+    <message>
+        <source>local time</source>
+        <translation>Uhr</translation>
     </message>
 </context>
 <context>
@@ -408,10 +412,6 @@
         <translation>PIN für Fernzugriff (HMAC-Secret)</translation>
     </message>
     <message>
-        <source>Allow RING</source>
-        <translation>Command „RING“ erlauben</translation>
-    </message>
-    <message>
         <source>Device will ring for 60 seconds the below defined tone.</source>
         <translation>Das Gerät klingelt 60 Sekunden lang mit dem unten festgelegten Klingelton.</translation>
     </message>
@@ -428,16 +428,8 @@
         <translation>Stopp</translation>
     </message>
     <message>
-        <source>Allow remote LOCK</source>
-        <translation>Command „LOCK“ erlauben</translation>
-    </message>
-    <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
         <translation>Wenn das Gerät entsperrt ist, wird es in den Sperrbildschirm gesperrt.</translation>
-    </message>
-    <message>
-        <source>Allow remote DELETE (wipe)</source>
-        <translation>Command „DELETE“ (Wipe) erlauben</translation>
     </message>
     <message>
         <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
@@ -446,10 +438,6 @@
     <message>
         <source>Camera</source>
         <translation>Kamera</translation>
-    </message>
-    <message>
-        <source>Allow remote photo</source>
-        <translation>Command „CAMERA“ erlauben </translation>
     </message>
     <message>
         <source>A photo can be captured and uploaded to the configured WebDAV server.</source>
@@ -486,10 +474,6 @@
     <message>
         <source>Turn on if you want accept SMS commands from the whitelist. The current TOTP code is required in SMS commands.</source>
         <translation>Einschalten, wenn SMS-Commands von der Whitelist akzeptiert werden sollen. In SMS-Commands ist der aktuelle TOTP-Code erforderlich.</translation>
-    </message>
-    <message>
-        <source>Allow Command GPS</source>
-        <translation>Command „GPS“ erlauben</translation>
     </message>
     <message>
         <source>SMS authentication (TOTP)</source>
@@ -574,6 +558,34 @@
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
         <translation>Sendet die aktuellen GPS-Koordinaten per SMS an den Absender. Die SMS erscheint NICHT unter den gesendeten Nachrichten, aber eine Benachrichtigung wird angezeigt. ACHTUNG: SMS-Kosten können anfallen.</translation>
+    </message>
+    <message>
+        <source>Allow command RING</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command LOCK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command DELETE (wipe)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command CAMERA</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Allow command GPS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add a translation</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

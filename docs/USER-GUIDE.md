@@ -45,12 +45,13 @@ You can send the following commands to a remote device (if a PIN was set for it 
 - RING / STOP: Makes the device ring for 60 seconds (or stops the ringing).
 - LOCK: Locks the device into the lock screen.
 - CAMERA: Takes a picture with the back camera of the device and uploads it to the preconfigured WebDAV upload folder. Works only if the command is enabled on the other device.
-- DELETE: Wipes the user data from the device (`/home/<defaultuser | nemo>`) — this is NOT a factory reset. Afterwards, the device will reboot and cannot be tracked anymore.
+- DELETE: Wipes the user data from the device (`/home/<defaultuser | nemo>`) — this is NOT a factory reset. Afterwards, the device will reboot and cannot be tracked anymore. If you klick on the DELETE button, a confirmation dialog appears to prevent accidental deletion. After you confirmed the deletion request will be sent to the remote device. If commmand is not activated on remote device, it will decline the request and you get a in-app notification.
 
 Every command is answered by the target device — the result (acknowledged / wrong PIN / disabled on target / no response) is shown as a banner and in the device status line.
 
 <div class="row">
   <img src="images/devices-view.png" alt="Devices View" width="200">
+  <img src="images/delete-device-confirmation.png" alt="Delete Device Confirmation" width="200">
 </div>
 
 ### Device-Page - Long-press context menu
@@ -120,7 +121,7 @@ The app starts and stops the daemons automatically whenever you save the setting
 ### Remote actions
 
 - PIN for remote access (HMAC secret): The PIN of YOUR device — anyone who wants to send remote commands to your device must enter this PIN when adding your device on their phone. It is the basis for the HMAC token generation (see [Technical Infos](TECHNICAL-INFOS.md#command-authentication-hmac-token)).
-- Allow RING: If enabled, the RING command can be sent to your device remotely. You can choose the ringtone as well (with preview).
+- Allow RING: If enabled, the RING command can be sent to your device remotely. You can choose the ringtone as well (with preview). Note: Preview RING will use current device volume, real RING command will ring at 100% volume (ignoring muted devices).
 - Allow remote LOCK: If enabled, the LOCK command can be sent to your device remotely.
 - Allow remote DELETE (wipe): If enabled, the DELETE command can be sent to your device remotely. User data will be wiped and the device will reboot.
 

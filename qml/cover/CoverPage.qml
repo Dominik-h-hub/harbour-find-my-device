@@ -24,11 +24,11 @@ CoverBackground {
         });
     }
 
-    // Render an ISO timestamp (e.g. "2026-06-26T19:09:24+02:00") as YYYY-MM-DD HH:MM Uhr.
+    // Render an ISO timestamp (e.g. "2026-06-26T19:09:24+02:00") as YYYY-MM-DD HH:MM local time.
     function formatTimestamp(iso) {
         if (!iso || iso.length < 16)
             return iso || "";
-        return iso.substr(0, 10) + " " + iso.substr(11, 5) + " " + qsTr("Uhr");
+        return iso.substr(0, 10) + " " + iso.substr(11, 5) + " " + qsTr("local time");
     }
 
     Connections {
