@@ -449,7 +449,7 @@ Dialog {
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Theme.secondaryColor
                 text: qsTr("Enrol this secret in a TOTP authenticator app "
-                         + "on a SECOND device. The current code is required "
+                         + "on OTHER devices. The current code is required "
                          + "in SMS commands. Keep backup codes safe for use "
                          + "without an authenticator app.")
             }
