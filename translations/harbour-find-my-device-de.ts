@@ -173,7 +173,7 @@
     </message>
     <message>
         <source>STOP</source>
-        <translation>STOPP</translation>
+        <translation>STOP</translation>
     </message>
     <message>
         <source>Photo (front camera)</source>
