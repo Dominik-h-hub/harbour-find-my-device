@@ -88,10 +88,6 @@
         <source>Radar</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <source>local time</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>DevicesView</name>
@@ -217,10 +213,6 @@
     </message>
     <message>
         <source>Last GPS FIX: %1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>local time</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -480,10 +472,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enrol this secret in a TOTP authenticator app on a SECOND device. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>TOTP secret</source>
         <translation type="unfinished"></translation>
     </message>
@@ -585,6 +573,10 @@
     </message>
     <message>
         <source>Add a translation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

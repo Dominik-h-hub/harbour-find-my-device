@@ -63,7 +63,7 @@ SilicaListView {
     function formatTimestamp(iso) {
         if (!iso || iso.length < 16)
             return iso || "";
-        return iso.substr(0, 10) + " " + iso.substr(11, 5) + " " + qsTr("local time");
+        return iso.substr(0, 10) + " " + iso.substr(11, 5);
     }
 
     function sendCommand(deviceId, cmd, arg) {
