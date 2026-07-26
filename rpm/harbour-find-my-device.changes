@@ -9,8 +9,11 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
-* Tue Jul 28 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.1-1
-- FIX
+* Sun Jul 26 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.1-1
+- FIX: Improve MQTT connection robustness across WLAN/mobile handovers
+- FIX: Add rotating file logs under /tmp/
+- ADDED: Enhancement of descriptions and texts.
+- ADDED: french translation provided by @EnigmaTriton
 
 * Tue Jul 21 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.0-1
 - ADDED: swedish translation provided by @eson57
