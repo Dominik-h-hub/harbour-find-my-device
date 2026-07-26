@@ -35,7 +35,7 @@ logging.basicConfig(level=logging.INFO,
                     handlers=[logging.StreamHandler(), _fh])
 
 # OSM zero-config default User-Agent.
-OSM_USER_AGENT = "harbour-find-my-device/1.0 (contact: dominikh@atomicmail.io)"
+OSM_USER_AGENT = "harbour-find-my-device/1.1 (contact: dominikh@atomicmail.io)"
 
 _ui_mqtt = None
 _ui_lock = threading.Lock()

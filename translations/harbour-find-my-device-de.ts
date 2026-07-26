@@ -75,7 +75,7 @@
     </message>
     <message>
         <source>Note: Request for deletion will be sent after you press the button below. Wipe will be performed only if DELETE command is activated on remote device. Otherwise it will be declined.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hinweis: Die Anfrage zur Löschung wird gesendet, nachdem du die Schaltfläche unten gedrückt hast. Die Löschung wird nur durchgeführt, wenn der DELETE-Befehl auf dem entfernten Gerät aktiviert ist. Andernfalls wird sie abgelehnt.</translation>
     </message>
 </context>
 <context>
@@ -549,35 +549,35 @@
     </message>
     <message>
         <source>Allow command RING</source>
-        <translation type="unfinished"></translation>
+        <translation>Command „RING“ erlauben</translation>
     </message>
     <message>
         <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hinweis: Der Vorschau-Sound wird mit der aktuellen Systemlautstärke abgespielt, der Remote-Command wird mit 100% Lautstärke abgespielt, unabhängig davon, ob das Gerät stummgeschaltet ist.</translation>
     </message>
     <message>
         <source>Allow command LOCK</source>
-        <translation type="unfinished"></translation>
+        <translation>Command „LOCK“ erlauben</translation>
     </message>
     <message>
         <source>Allow command DELETE (wipe)</source>
-        <translation type="unfinished"></translation>
+        <translation>Command „DELETE“ (Löschen) erlauben</translation>
     </message>
     <message>
         <source>Allow command CAMERA</source>
-        <translation type="unfinished"></translation>
+        <translation>Command „CAMERA“ erlauben</translation>
     </message>
     <message>
         <source>Allow command GPS</source>
-        <translation type="unfinished"></translation>
+        <translation>Command „GPS“ erlauben</translation>
     </message>
     <message>
         <source>Add a translation</source>
-        <translation type="unfinished"></translation>
+        <translation>Übersetzung hinzufügen</translation>
     </message>
     <message>
         <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation type="unfinished"></translation>
+        <translation>Hinterlege dieses Secret in einer TOTP-Authenticator-App auf einem ANDEREN Gerät. Der aktuelle Code ist in SMS-Commands erforderlich. Bewahre die Backup-Codes sicher auf, um sie ohne Authenticator-App zu nutzen.</translation>
     </message>
 </context>
 </TS>

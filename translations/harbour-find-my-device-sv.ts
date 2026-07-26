@@ -75,7 +75,7 @@
     </message>
     <message>
         <source>Note: Request for deletion will be sent after you press the button below. Wipe will be performed only if DELETE command is activated on remote device. Otherwise it will be declined.</source>
-        <translation type="unfinished"></translation>
+        <translation>Obs: Begäran om radering skickas när du trycker på knappen nedan. Rensningen utförs endast om DELETE-kommandot är aktiverat på fjärrenheten. Annars avvisas den.</translation>
     </message>
 </context>
 <context>
@@ -549,35 +549,35 @@
     </message>
     <message>
         <source>Allow command RING</source>
-        <translation type="unfinished"></translation>
+        <translation>Tillåt kommandot RING</translation>
     </message>
     <message>
         <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
-        <translation type="unfinished"></translation>
+        <translation>Obs: Förhandsgranskningsljudet spelas upp med den aktuella systemvolymen, fjärrkommandot spelas upp med 100% volym, oavsett om enheten är tystad.</translation>
     </message>
     <message>
         <source>Allow command LOCK</source>
-        <translation type="unfinished"></translation>
+        <translation>Tillåt kommandot LÅS</translation>
     </message>
     <message>
         <source>Allow command DELETE (wipe)</source>
-        <translation type="unfinished"></translation>
+        <translation>Tillåt kommandot TA BORT (rensning)</translation>
     </message>
     <message>
         <source>Allow command CAMERA</source>
-        <translation type="unfinished"></translation>
+        <translation>Tillåt kommandot KAMERA</translation>
     </message>
     <message>
         <source>Allow command GPS</source>
-        <translation type="unfinished"></translation>
+        <translation>Tillåt kommandot GPS</translation>
     </message>
     <message>
         <source>Add a translation</source>
-        <translation type="unfinished"></translation>
+        <translation>Lägg till en översättning</translation>
     </message>
     <message>
         <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation type="unfinished"></translation>
+        <translation>Registrera denna hemlighet i en TOTP-autentiseringsapp på ANDRA enheter. Den aktuella koden krävs i SMS-kommandon. Förvara reservkoderna säkert för användning utan en autentiseringsapp.</translation>
     </message>
 </context>
 </TS>

@@ -51,7 +51,7 @@ Page {
                 color: Theme.errorColor
                 font.pixelSize: Theme.fontSizeMedium
                 text: qsTr("Note: Request for deletion will be sent after you press "
-                    + "the button below. Wipe will be preformed only, if DELETE command "
+                    + "the button below. Wipe will be performed only if DELETE command "
                     + "is activated on remote device. Otherwise it will be declined.")
             }
 
