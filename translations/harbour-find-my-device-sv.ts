@@ -73,16 +73,16 @@
         <source>Cancel</source>
         <translation>Avbryt</translation>
     </message>
+    <message>
+        <source>Note: Request for deletion will be sent after you press the button below. Wipe will be performed only if DELETE command is activated on remote device. Otherwise it will be declined.</source>
+        <translation>Obs: Begäran om radering skickas när du trycker på knappen nedan. Rensningen utförs endast om DELETE-kommandot är aktiverat på fjärrenheten. Annars avvisas den.</translation>
+    </message>
 </context>
 <context>
     <name>CoverPage</name>
     <message>
         <source>Battery: %1%</source>
         <translation>Batteri: %1%</translation>
-    </message>
-    <message>
-        <source>Uhr</source>
-        <translation>Klocka</translation>
     </message>
     <message>
         <source>Radar</source>
@@ -166,10 +166,6 @@
     <message>
         <source>no data yet</source>
         <translation>Ingen data ännu</translation>
-    </message>
-    <message>
-        <source>Uhr</source>
-        <translation>Klocka</translation>
     </message>
     <message>
         <source>RING</source>
@@ -408,10 +404,6 @@
         <translation>PIN-kod för fjärråtkomst (HMAC-nyckel)</translation>
     </message>
     <message>
-        <source>Allow RING</source>
-        <translation>Tillåt RINGNING</translation>
-    </message>
-    <message>
         <source>Device will ring for 60 seconds the below defined tone.</source>
         <translation>Enheten ringer i 60 sekunder med den ton som anges nedan.</translation>
     </message>
@@ -428,16 +420,8 @@
         <translation>Stopp</translation>
     </message>
     <message>
-        <source>Allow remote LOCK</source>
-        <translation>Tillåt FJÄRRLÅSNING</translation>
-    </message>
-    <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
         <translation>Om enheten är olåst kommer den att låsas till låsskärmen.</translation>
-    </message>
-    <message>
-        <source>Allow remote DELETE (wipe)</source>
-        <translation>Tillåt FJÄRRBORTTAGNING (radering)</translation>
     </message>
     <message>
         <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
@@ -446,10 +430,6 @@
     <message>
         <source>Camera</source>
         <translation>Kamera</translation>
-    </message>
-    <message>
-        <source>Allow remote photo</source>
-        <translation>Tillåt fjärrfoto</translation>
     </message>
     <message>
         <source>A photo can be captured and uploaded to the configured WebDAV server.</source>
@@ -488,16 +468,8 @@
         <translation>Aktivera denna funktion om du vill ta emot SMS-kommandon från vitlistan. Den aktuella TOTP-koden krävs i SMS-kommandon.</translation>
     </message>
     <message>
-        <source>Allow Command GPS</source>
-        <translation>Tillåt kommandot GPS</translation>
-    </message>
-    <message>
         <source>SMS authentication (TOTP)</source>
         <translation>SMS-autentisering (TOTP)</translation>
-    </message>
-    <message>
-        <source>Enrol this secret in a TOTP authenticator app on a SECOND device. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation>Registrera den här koden i en TOTP-autentiseringsapp på en ANDRA enhet. Den aktuella koden krävs i SMS-kommandon. Förvara reservkoderna på ett säkert ställe så att du kan använda dem utan autentiseringsappen.</translation>
     </message>
     <message>
         <source>TOTP secret</source>
@@ -574,6 +546,38 @@
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
         <translation>Skickar aktuella GPS-koordinater via SMS till avsändaren. SMS:et visas INTE bland skickade meddelanden, men en avisering visas. OBSERVERA: SMS-kostnader kan tillkomma.</translation>
+    </message>
+    <message>
+        <source>Allow command RING</source>
+        <translation>Tillåt kommandot RING</translation>
+    </message>
+    <message>
+        <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
+        <translation>Obs: Förhandsgranskningsljudet spelas upp med den aktuella systemvolymen, fjärrkommandot spelas upp med 100% volym, oavsett om enheten är tystad.</translation>
+    </message>
+    <message>
+        <source>Allow command LOCK</source>
+        <translation>Tillåt kommandot LÅS</translation>
+    </message>
+    <message>
+        <source>Allow command DELETE (wipe)</source>
+        <translation>Tillåt kommandot TA BORT (rensning)</translation>
+    </message>
+    <message>
+        <source>Allow command CAMERA</source>
+        <translation>Tillåt kommandot KAMERA</translation>
+    </message>
+    <message>
+        <source>Allow command GPS</source>
+        <translation>Tillåt kommandot GPS</translation>
+    </message>
+    <message>
+        <source>Add a translation</source>
+        <translation>Lägg till en översättning</translation>
+    </message>
+    <message>
+        <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
+        <translation>Registrera denna hemlighet i en TOTP-autentiseringsapp på ANDRA enheter. Den aktuella koden krävs i SMS-kommandon. Förvara reservkoderna säkert för användning utan en autentiseringsapp.</translation>
     </message>
 </context>
 </TS>

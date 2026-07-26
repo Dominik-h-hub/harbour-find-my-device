@@ -45,12 +45,13 @@ You can send the following commands to a remote device (if a PIN was set for it 
 - RING / STOP: Makes the device ring for 60 seconds (or stops the ringing).
 - LOCK: Locks the device into the lock screen.
 - CAMERA: Takes a picture with the back camera of the device and uploads it to the preconfigured WebDAV upload folder. Works only if the command is enabled on the other device.
-- DELETE: Wipes the user data from the device (`/home/<defaultuser | nemo>`) — this is NOT a factory reset. Afterwards, the device will reboot and cannot be tracked anymore.
+- DELETE: Wipes the user data from the device (`/home/<defaultuser | nemo>`) — this is NOT a factory reset. Afterwards, the device will reboot and cannot be tracked anymore. If you click on the DELETE button, a confirmation dialog appears to prevent accidental deletion. After you confirmed the deletion request will be sent to the remote device. If command is not activated on remote device, it will decline the request and you get an in-app notification.
 
 Every command is answered by the target device — the result (acknowledged / wrong PIN / disabled on target / no response) is shown as a banner and in the device status line.
 
 <div class="row">
   <img src="images/devices-view.png" alt="Devices View" width="200">
+  <img src="images/delete-device-confirmation.png" alt="Delete Device Confirmation" width="200">
 </div>
 
 ### Device-Page - Long-press context menu
@@ -120,13 +121,13 @@ The app starts and stops the daemons automatically whenever you save the setting
 ### Remote actions
 
 - PIN for remote access (HMAC secret): The PIN of YOUR device — anyone who wants to send remote commands to your device must enter this PIN when adding your device on their phone. It is the basis for the HMAC token generation (see [Technical Infos](TECHNICAL-INFOS.md#command-authentication-hmac-token)).
-- Allow RING: If enabled, the RING command can be sent to your device remotely. You can choose the ringtone as well (with preview).
-- Allow remote LOCK: If enabled, the LOCK command can be sent to your device remotely.
-- Allow remote DELETE (wipe): If enabled, the DELETE command can be sent to your device remotely. User data will be wiped and the device will reboot.
+- Allow command RING: If enabled, the RING command can be sent to your device remotely. You can choose the ringtone as well (with preview). Note: Preview RING will use current device volume, real RING command will ring at 100% volume (ignoring muted devices).
+- Allow command LOCK: If enabled, the LOCK command can be sent to your device remotely.
+- Allow command DELETE (wipe): If enabled, the DELETE command can be sent to your device remotely. User data will be wiped and the device will reboot.
 
 ### Camera
 
-- Allow remote photo: If enabled, the CAMERA command can be sent to your device remotely. Photos will be uploaded to the configured WebDAV folder.
+- Allow command CAMERA: If enabled, the CAMERA command can be sent to your device remotely. Photos will be uploaded to the configured WebDAV folder.
 - WebDAV URL: The URL of your WebDAV folder where photos taken by the CAMERA command will be uploaded. Use the full upload path, e.g., `https://webdav.example.com/uploads/`
 - WebDAV username: The username for your WebDAV folder
 - WebDAV password: The password for your WebDAV folder
@@ -139,7 +140,7 @@ The app starts and stops the daemons automatically whenever you save the setting
 
 - Whitelist (Allowed senders): A list of phone numbers that are allowed to send remote commands via SMS. Only commands from these numbers will be accepted. Enter one number per line (national and international formats of the same number both match).
 - Remote control via SMS: If enabled, the app will accept remote commands via SMS from whitelisted numbers. Each command requires a TOTP code or a one-time backup code (see the next two sections).
-- Allow Command GPS: If enabled, the GPS command can be sent to your device via SMS — the current coordinates are sent back by SMS to the sender (SMS costs may apply; the reply does not show up under sent messages, but a notification is shown).
+- Allow command GPS: If enabled, the GPS command can be sent to your device via SMS — the current coordinates are sent back by SMS to the sender (SMS costs may apply; the reply does not show up under sent messages, but a notification is shown).
 
 A command SMS is `KEYWORD [front|back] CODE`, for example `RING 123456` or `CAMERA front 123456` — see the [Technical Infos](TECHNICAL-INFOS.md#sms-command-format) for details.
 

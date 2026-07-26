@@ -63,7 +63,7 @@
     </message>
     <message>
         <source>WARNING: You are about to delete all user data from your device. This cannot be undone. After the user data has been deleted the device will reboot. Locating it will no longer be possible. Do you really want to continue?</source>
-        <translation>ATTENTION&#xa0;: Vous vous apprêtez à effacer toutes les données utilisateur de votre appareil. Cette action ne peut pas être annulée. Après l’effacement des données utilisateur l’appareil redémarrera. Il ne sera plus possible de le localiser. Souhaitez-vous vraiment continuer&#xa0;?</translation>
+        <translation>ATTENTION : Vous vous apprêtez à effacer toutes les données utilisateur de votre appareil. Cette action ne peut pas être annulée. Après l’effacement des données utilisateur l’appareil redémarrera. Il ne sera plus possible de le localiser. Souhaitez-vous vraiment continuer ?</translation>
     </message>
     <message>
         <source>Delete user data now</source>
@@ -73,16 +73,16 @@
         <source>Cancel</source>
         <translation>Annuler</translation>
     </message>
+    <message>
+        <source>Note: Request for deletion will be sent after you press the button below. Wipe will be performed only if DELETE command is activated on remote device. Otherwise it will be declined.</source>
+        <translation>Note : La demande d’effacement sera envoyée immédiatement après appui sur le bouton ci-dessous. L’effacement ne sera effectif que si la commande « DELETE » est activée sur l’appareil distant. Il sera refusé dans le cas contraire.</translation>
+    </message>
 </context>
 <context>
     <name>CoverPage</name>
     <message>
         <source>Battery: %1%</source>
-        <translation>Batterie&#xa0;: %1%</translation>
-    </message>
-    <message>
-        <source>Uhr</source>
-        <translation>&#xa0;</translation>
+        <translation>Batterie : %1%</translation>
     </message>
     <message>
         <source>Radar</source>
@@ -113,7 +113,7 @@
     </message>
     <message>
         <source>Could not send %1: %2</source>
-        <translation>Échec d’envoi %1&#xa0;: %2</translation>
+        <translation>Échec d’envoi %1 : %2</translation>
     </message>
     <message>
         <source>%1 sent</source>
@@ -125,7 +125,7 @@
     </message>
     <message>
         <source>%1 failed: wrong PIN</source>
-        <translation>%1 rejeté&#xa0;:mauvais code PIN</translation>
+        <translation>%1 rejeté : mauvais code PIN</translation>
     </message>
     <message>
         <source>%1 disabled on target</source>
@@ -133,7 +133,7 @@
     </message>
     <message>
         <source>%1: %2</source>
-        <translation>%1&#xa0;: %2</translation>
+        <translation>%1 : %2</translation>
     </message>
     <message>
         <source>(this device)</source>
@@ -157,19 +157,15 @@
     </message>
     <message>
         <source>DELETE confirmed: device wiped</source>
-        <translation>DELETE confirmé&#xa0;: appareil effacé</translation>
+        <translation>DELETE confirmé : appareil effacé</translation>
     </message>
     <message>
         <source>%1: no response</source>
-        <translation>%1&#xa0;: pas de réponse</translation>
+        <translation>%1 : pas de réponse</translation>
     </message>
     <message>
         <source>no data yet</source>
         <translation>pas encore de données</translation>
-    </message>
-    <message>
-        <source>Uhr</source>
-        <translation>&#xa0;</translation>
     </message>
     <message>
         <source>RING</source>
@@ -217,7 +213,7 @@
     </message>
     <message>
         <source>Last GPS FIX: %1</source>
-        <translation>Dernier positionnement GPS&#xa0;: %1</translation>
+        <translation>Dernier positionnement GPS : %1</translation>
     </message>
 </context>
 <context>
@@ -270,7 +266,7 @@
     </message>
     <message>
         <source>Pull down and tap &apos;Update map&apos;</source>
-        <translation>Tirer vers le bas et sélectionner «&#xa0;Mettre à jour la carte&#xa0;»</translation>
+        <translation>Tirer vers le bas et sélectionner « Mettre à jour la carte »</translation>
     </message>
     <message>
         <source>Map module not available</source>
@@ -329,11 +325,11 @@
     </message>
     <message>
         <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
-        <translation>Service GPS&#xa0;: Activé lorsque l’interrupteur «&#xa0;Activité d’arrière-plan&#xa0;» est allumé.</translation>
+        <translation>Service GPS : Activé lorsque l’interrupteur « Activité d’arrière-plan » est allumé.</translation>
     </message>
     <message>
         <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
-        <translation>Service de commande&#xa0;: Activé lorsqu’au moins une action distante ou par SMS est activée.</translation>
+        <translation>Service de commande : Activé lorsqu’au moins une action distante ou par SMS est activée.</translation>
     </message>
     <message>
         <source>General</source>
@@ -408,10 +404,6 @@
         <translation>Code PIN pour l’accès distant (secret HMAC)</translation>
     </message>
     <message>
-        <source>Allow RING</source>
-        <translation>Autoriser la commande «&#xa0;RING&#xa0;»</translation>
-    </message>
-    <message>
         <source>Device will ring for 60 seconds the below defined tone.</source>
         <translation>L’appareil sonnera pendant 60 secondes en utilisant la sonnerie sélectionnée.</translation>
     </message>
@@ -428,28 +420,16 @@
         <translation>Stop</translation>
     </message>
     <message>
-        <source>Allow remote LOCK</source>
-        <translation>Autoriser le verrouillage à distance</translation>
-    </message>
-    <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
         <translation>Si l’appareil est déverrouillé, il sera verrouillé sur l’écran de code de sécurité.</translation>
     </message>
     <message>
-        <source>Allow remote DELETE (wipe)</source>
-        <translation>Autoriser l’effacement à distance</translation>
-    </message>
-    <message>
         <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
-        <translation>Efface toutes les données utilisateur stockées dans «&#xa0;home//&lt;user&gt;//&#xa0;» et redémarre l’appareil ensuite.</translation>
+        <translation>Efface toutes les données utilisateur stockées dans « home//&lt;user&gt;// » et redémarre l’appareil ensuite.</translation>
     </message>
     <message>
         <source>Camera</source>
         <translation>Caméra</translation>
-    </message>
-    <message>
-        <source>Allow remote photo</source>
-        <translation>Autoriser la prise de photo à distance</translation>
     </message>
     <message>
         <source>A photo can be captured and uploaded to the configured WebDAV server.</source>
@@ -488,16 +468,8 @@
         <translation>Activer pour accepter les commandes par SMS depuis la liste blanche. Le code TOTP courant est nécessaire dans les commandes SMS.</translation>
     </message>
     <message>
-        <source>Allow Command GPS</source>
-        <translation>Autoriser la localisation</translation>
-    </message>
-    <message>
         <source>SMS authentication (TOTP)</source>
         <translation>Authentification SMS (TOTP)</translation>
-    </message>
-    <message>
-        <source>Enrol this secret in a TOTP authenticator app on a SECOND device. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation>Enrôlez ce secret dans l’application d’authentification TOTP sur un AUTRE appareil. Le code courant est nécessaire dans la commande SMS. Conservez les codes de sauvegarde dans un endroit sécurisé pour l’utilisation sans application d’authentification.</translation>
     </message>
     <message>
         <source>TOTP secret</source>
@@ -573,7 +545,39 @@
     </message>
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
-        <translation>Envoie les coordonnées GPS actuelles par SMS à l’expéditeur. Le SMS ne sera PAS visible dans les messages envoyés mais une notification sera visible. ATTENTION&#xa0;: des coûts d’envoi de SMS peuvent s’appliquer.</translation>
+        <translation>Envoie les coordonnées GPS actuelles par SMS à l’expéditeur. Le SMS ne sera PAS visible dans les messages envoyés mais une notification sera visible. ATTENTION : des coûts d’envoi de SMS peuvent s’appliquer.</translation>
+    </message>
+    <message>
+        <source>Allow command RING</source>
+        <translation>Autoriser la commande RING</translation>
+    </message>
+    <message>
+        <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
+        <translation>Note : l’aperçu de la sonnerie sera joué au volume courant du système. La commande distante sera jouée à 100% du volume, ignorant un appareil silencieux.</translation>
+    </message>
+    <message>
+        <source>Allow command LOCK</source>
+        <translation>Autoriser la commande LOCK (verrouillage)</translation>
+    </message>
+    <message>
+        <source>Allow command DELETE (wipe)</source>
+        <translation>Autoriser la commande DELETE (effacement)</translation>
+    </message>
+    <message>
+        <source>Allow command CAMERA</source>
+        <translation>Autoriser la commande CAMERA</translation>
+    </message>
+    <message>
+        <source>Allow command GPS</source>
+        <translation>Autoriser la commande GPS</translation>
+    </message>
+    <message>
+        <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
+        <translation>Enrôlez ce secret dans l’application d’authentification TOTP sur un AUTRE appareil. Le code courant est nécessaire dans la commande SMS. Conservez les codes de sauvegarde dans un endroit sécurisé pour l’utilisation sans application d’authentification.</translation>
+    </message>
+    <message>
+        <source>Add a translation</source>
+        <translation>Ajouter une traduction</translation>
     </message>
 </context>
 </TS>

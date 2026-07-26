@@ -42,6 +42,31 @@ ROLE_UI = "ui"
 # as long as anything (e.g. a GPS tick) wakes the device within ~22 minutes.
 KEEPALIVE_S = 900
 
+# OS-level TCP keepalive. The MQTT keepalive above is deliberately long, but a
+# WLAN<->mobile handover left the old socket "half-open".
+TCP_KEEPIDLE_S = 60      # start probing after 60s idle
+TCP_KEEPINTVL_S = 15     # then probe every 15s
+TCP_KEEPCNT = 4          # give up (socket dead) after 4 missed probes (~120s total)
+
+
+def _enable_tcp_keepalive(sock):
+    """Turn on OS TCP keepalive with a short idle so a half-open socket left by a
+    network handover is detected in ~2 min instead of waiting out KEEPALIVE_S."""
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    except (OSError, AttributeError):
+        return
+    for opt_name, value in (("TCP_KEEPIDLE", TCP_KEEPIDLE_S),
+                            ("TCP_KEEPINTVL", TCP_KEEPINTVL_S),
+                            ("TCP_KEEPCNT", TCP_KEEPCNT)):
+        opt = getattr(socket, opt_name, None)
+        if opt is None:
+            continue
+        try:
+            sock.setsockopt(socket.IPPROTO_TCP, opt, value)
+        except OSError:
+            pass
+
 
 # --- topic helpers ---------------------------------------------------------
 def topic_location(device_id):
@@ -158,6 +183,7 @@ class FmdMqttClient(object):
             self._client.on_connect = self._handle_connect
             self._client.on_disconnect = self._handle_disconnect
             self._client.on_message = self._handle_message
+            self._client.on_socket_open = self._handle_socket_open
             self._client.reconnect_delay_set(min_delay=1, max_delay=60)
             log.info("connecting to mqtt %s:%d (tls=%s) as %s",
                      self.server, self.port, self.tls, self.cid)
@@ -241,6 +267,12 @@ class FmdMqttClient(object):
             return False
 
     # -- paho callbacks --
+    def _handle_socket_open(self, client, userdata, sock):
+        """Called by paho for every new (re)connect socket, including each
+        auto-reconnect. Enable kernel TCP keepalive so a half-open socket from a
+        WLAN<->mobile handover is detected promptly instead of after KEEPALIVE_S."""
+        _enable_tcp_keepalive(sock)
+
     def _handle_connect(self, client, userdata, flags, rc):
         if rc == 0:
             self._connected = True

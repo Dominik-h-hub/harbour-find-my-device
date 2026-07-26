@@ -15,6 +15,7 @@ ExecStart: python3 /usr/share/harbour-find-my-device/qml/utilities/daemon_gps.py
 """
 
 import logging
+import logging.handlers
 import os
 import signal
 import sys
@@ -151,9 +152,13 @@ class GpsDaemon(object):
 
 
 def main():
+    _fh = logging.handlers.RotatingFileHandler(
+        "/tmp/fmd-gps.log", maxBytes=1_000_000, backupCount=3)
+    _fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     logging.basicConfig(
         level=getattr(logging, os.environ.get("FMD_LOG_LEVEL", "INFO"), logging.INFO),
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(), _fh])
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
     GpsDaemon().run()

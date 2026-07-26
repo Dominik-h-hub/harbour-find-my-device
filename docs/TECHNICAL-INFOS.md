@@ -71,7 +71,30 @@ The settings page shows the live state of both daemons (running / deactivated / 
 
 ## Reading Logs on the Device
 
-Sailfish OS keeps the journal volatile (in RAM, lost on reboot) and there is no separate user journal - everything lands in the system journal, readable as root only. So: SSH into the device, become root with `devel-su`, then:
+The app and both daemons write logs to **rotating files under `/tmp/`** and additionally to **stdout** (visible in journalctl and the IDE debugger). The rotating files survive network changes and are easier to tail over SSH.
+
+### Log Files (recommended for debugging)
+
+SSH into the device (as `defaultuser` or `root`), then:
+
+```bash
+# Watch all three logs live (GPS daemon, command daemon, QML app)
+tail -f /tmp/fmd-gps.log /tmp/fmd-cmd.log /tmp/fmd-app.log
+
+# Or individually
+tail -f /tmp/fmd-gps.log
+tail -f /tmp/fmd-cmd.log
+tail -f /tmp/fmd-app.log
+
+# Read the last 50 lines
+tail -n 50 /tmp/fmd-gps.log
+```
+
+Each log rotates at 1 MB (max. 3 backups: `.log`, `.log.1`, `.log.2`, `.log.3`).
+
+### journalctl (alternative, requires root)
+
+Sailfish OS keeps the journal volatile (in RAM, lost on reboot) and there is no separate user journal - everything lands in the system journal, readable as root only. SSH into the device, become root with `devel-su`, then:
 
 ```bash
 # everything from the app + both daemons, live
@@ -88,6 +111,8 @@ journalctl -f -u harbour-find-my-device-priv.service
 journalctl --since "30 min ago" --no-pager _SYSTEMD_USER_UNIT=harbour-find-my-device-daemon-gps.service
 ```
 
+**Note:** journalctl may miss entries for user services on some SailfishOS versions - the log files are more reliable.
+
 ## Data Locations
 
 | Path                                                       | Content                                    |
@@ -95,6 +120,7 @@ journalctl --since "30 min ago" --no-pager _SYSTEMD_USER_UNIT=harbour-find-my-de
 | `~/.local/share/harbour-find-my-device/findmydevice.db`    | SQLite DB: settings, devices, GPS fixes    |
 | `~/.local/share/harbour-find-my-device/photos/`            | camera captures before WebDAV upload       |
 | `/run/harbour-find-my-device/spool/`                       | privileged action request spool (volatile) |
+| `/tmp/fmd-gps.log`, `/tmp/fmd-cmd.log`, `/tmp/fmd-app.log`| rotating log files (max 1 MB, 3 backups)  |
 | `/usr/share/harbour-find-my-device/`                       | installed app files (QML + Python)         |
 
 ## MQTT Topics
