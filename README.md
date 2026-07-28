@@ -34,6 +34,21 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
 - **Everything is opt-in**: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
 - **Translations**: EN, DE, SV
 
+## Two Packages: App + Background Service
+
+Since v1.2 the project ships as two RPMs (required for Jolla Store / Harbour
+compliance):
+
+- **`harbour-find-my-device`** — the app itself, fully sandboxed (Sailjail).
+  Works standalone: map, device management, foreground position updates while
+  the app is open, TOTP/backup codes.
+- **`harbour-find-my-device-daemon`** — the background services (remote
+  commands via MQTT/SMS, background tracking, privileged helper for
+  reboot/SMS). Not sandboxed, therefore not in the Jolla Store. The app RPM
+  bundles it: the Settings page offers a one-tap install through the system
+  installer. On OpenRepos and SailfishOS:Chum it can also be installed as a
+  separate package.
+
 <img src="docs/images/map-view.png" alt="Main view" width=200px> <img src="docs/images/devices-view.png" alt="Devices view" width=200px> <img src="docs/images/settings-view-1.png" alt="Settings view" width=200px>
 
 For more screenshots, see [docs/images/](docs/images/) in the GitHub repository.
@@ -55,9 +70,25 @@ This is not a spy app: every remote action — even a failed one — shows a not
 ## Technical Information
 
 - Qt 5.6.3 (Sailfish OS Silica UI) + Python 3 backend/daemons
+- Two-RPM model: sandboxed store app + separate daemon package (see [Technical Infos](docs/TECHNICAL-INFOS.md))
 - Tested on:
   - Fairphone 4 - Sailfish OS 5.0.0.62
   - Emulator - Sailfish OS 5.0.0.62, 5.1.0.11
+
+### Building
+
+The version is maintained **only** in `rpm/harbour-find-my-device.spec`
+(`Version:` / `Release:`); the daemon spec inherits it at build time and both
+packages write a `VERSION` file that app and daemons read at runtime. When
+building locally with the Sailfish SDK, disable the SDK's automatic
+git-describe versioning so the spec version applies: `sfdk config
+no-fix-version` (or `mb2 --no-fix-version`). Release tags must match the spec
+version (`v<Version>-<Release>-release`) - the release CI enforces this.
+
+CI build order: the noarch daemon RPM is built first (plain `rpmbuild`, no
+compilation), then each app build picks it up from `daemon-rpm/RPMS/` and
+embeds it under `/usr/share/harbour-find-my-device/daemon/`. The app RPM is
+gated by the official [sdk-harbour-rpmvalidator](https://github.com/sailfishos/sdk-harbour-rpmvalidator).
 
 ## Contributing to the project
 

@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 Environment=FMD_LOG_LEVEL=INFO
-ExecStart=/usr/bin/python3 /usr/share/harbour-find-my-device/qml/utilities/daemon_gps.py
+ExecStart=/usr/bin/python3 /usr/share/harbour-find-my-device-daemon/daemon_gps.py
 Restart=on-failure
 RestartSec=10
 

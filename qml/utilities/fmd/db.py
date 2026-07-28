@@ -14,7 +14,6 @@ from . import paths
 log = logging.getLogger("fmd.db")
 
 _BUSY_TIMEOUT_MS = 5000
-_schema_ready = False
 
 # ---------------------------------------------------------------------------
 # Schema
@@ -80,6 +79,14 @@ CREATE TABLE IF NOT EXISTS settings (
     Key   TEXT PRIMARY KEY,
     Value TEXT
 );
+
+-- transient cross-process state (daemon heartbeats, settings generation,
+-- privileged-action requests). Separate from `settings` so runtime records
+-- never appear in the user-facing settings dump. See fmd/runtime.py.
+CREATE TABLE IF NOT EXISTS runtime (
+    Key   TEXT PRIMARY KEY,
+    Value TEXT
+);
 """
 
 
@@ -102,7 +109,6 @@ def connect(path=None):
     Caller is responsible for closing it (or use the `connection()` context
     manager). Row access is by name via sqlite3.Row.
     """
-    global _schema_ready
     path = path or paths.db_path()
     conn = sqlite3.connect(path, timeout=_BUSY_TIMEOUT_MS / 1000.0)
     conn.row_factory = sqlite3.Row
@@ -110,15 +116,20 @@ def connect(path=None):
     conn.execute("PRAGMA journal_mode = WAL;")
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.execute("PRAGMA busy_timeout = %d;" % _BUSY_TIMEOUT_MS)
-    # First connection in this process: make sure the schema exists. Applied
+    # Make sure the schema exists. Checked per connection via sqlite_master (a
+    # cheap read) instead of a process-wide flag: three long-running processes
+    # share this file and it can be replaced underneath a process (e.g. by the
+    # one-time data migration), which a cached flag would never notice. Applied
     # directly on this connection (not via init_schema) to avoid recursing back
-    # into connect(). Only the default DB path is auto-ensured.
-    if not _schema_ready and path == paths.db_path():
+    # into connect().
+    have_schema = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='runtime'"
+    ).fetchone() is not None
+    if not have_schema:
         conn.executescript(_SCHEMA)
         _migrate(conn)
         conn.commit()
-        _schema_ready = True
-        log.info("schema ensured at %s (on first connect)", path)
+        log.info("schema ensured at %s (on connect)", path)
     return conn
 
 

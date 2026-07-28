@@ -6,18 +6,36 @@ For a feature overview see the [README](../README.md), for the app usage see the
 
 ## Architecture Overview
 
-The app consists of four parts which all share one SQLite database:
+Since v1.2 the project ships as **two RPM packages**:
+
+| Package | Content | Distribution |
+|---|---|---|
+| `harbour-find-my-device` | Sandboxed GUI app (Sailjail ON, stock permissions) | Jolla Store / OpenRepos / Chum |
+| `harbour-find-my-device-daemon` | GPS daemon, command daemon, privileged root helper, systemd units | Bundled inside the app RPM (in-app sideload install), OpenRepos, Chum |
+
+This split exists because Harbour (the Jolla Store QA) forbids systemd units,
+RPM scriptlets and disabled sandboxing in store packages. The app is fully
+usable without the daemon package (map, foreground tracking while open,
+settings, TOTP); remote commands, SMS control and background tracking need the
+daemon package, which the app offers to install from its Settings page
+(Harbour-approved sideload flow: the bundled RPM is copied to `~/Downloads`
+and opened with the system installer).
+
+All parts share one SQLite database:
 
 ```text
 +---------------------------+       +--------------------------------------+
 | GUI app (Silica QML +     |       | GPS daemon (systemd user service)    |
 | Python via PyOtherSide)   |       | periodic GPS fix -> DB -> MQTT       |
+| SANDBOXED (Sailjail)      |       | unsandboxed, package: -daemon        |
 +------------+--------------+       +------------------+-------------------+
              |                                         |
              v                                         v
-      +-------------------------------------------------------+
-      | SQLite DB  ~/.local/share/harbour-find-my-device/     |
-      +-------------------------------------------------------+
+   +----------------------------------------------------------------+
+   | SQLite DB                                                      |
+   | ~/.local/share/harbour-find-my-device/harbour-find-my-device/  |
+   | (settings, devices, GPS fixes, daemon heartbeats, generation)  |
+   +----------------------------------------------------------------+
              ^                                         ^
              |                                         |
 +------------+--------------+       +------------------+-------------------+
@@ -27,39 +45,62 @@ The app consists of four parts which all share one SQLite database:
 +---------------------------+       +--------------------------------------+
 ```
 
-- The GUI is started via `sailfish-qml` (QML-only app, Python backend loaded through PyOtherSide). Sailjail sandboxing is disabled because the app shares the SQLite DB with the unsandboxed daemons, starts/stops them via systemd and talks to the privileged root helper.
-- The daemons read their switches from the DB - every feature is opt-in, a daemon idles (or is stopped) when its feature is disabled in the settings.
+- The GUI is started via `sailfish-qml` (QML-only app, Python backend loaded
+  through PyOtherSide) and runs **sandboxed** with the stock Sailjail
+  permissions `Internet;Location;Audio;Downloads`. It never talks to systemd,
+  never imports dbus/gi and never touches the privileged spool.
+- GUI <-> daemon coordination happens exclusively through the shared DB:
+  - the GUI bumps a **settings generation counter** after every save; the
+    daemons poll it and reconfigure themselves,
+  - the daemons write **heartbeats** (timestamp, active/idle state, package
+    version) every 30 s; the Settings page derives the daemon status purely
+    from these records,
+  - privileged wishes of the GUI (e.g. "enable system location") are queued in
+    the DB and forwarded by the command daemon to the root helper.
+- Every feature is opt-in; a daemon idles (connections down, short poll timer)
+  when its features are disabled - it is never started/stopped from outside.
 
 ## The Daemons
 
+All daemon files are installed by the `harbour-find-my-device-daemon` package
+under `/usr/share/harbour-find-my-device-daemon/`.
+
 ### GPS daemon - `harbour-find-my-device-daemon-gps.service`
 
-`ExecStart: python3 /usr/share/harbour-find-my-device/qml/utilities/daemon_gps.py`
+`ExecStart: python3 /usr/share/harbour-find-my-device-daemon/daemon_gps.py`
 
-- Runs as systemd USER service, enabled when you switch on "Background activity" in the settings.
+- Runs as systemd USER service, permanently enabled; it actively polls GPS
+  only while "Background activity" is switched on in the settings and idles
+  otherwise.
 - Periodically obtains a GPS fix (via geoclue on the D-Bus session), stores it in the SQLite DB and - if MQTT is enabled - publishes it retained to `fmd/<device-id>`.
-- The poll interval is the "GPS query interval (minutes)" from the settings; while the background switch is off the daemon is stopped and the running GUI app polls instead (positions keep being published until you close the app).
+- The poll interval is the "GPS query interval (minutes)" from the settings; while the background switch is off the daemon idles and the running GUI app polls instead via QtPositioning (positions keep being published until you close the app).
 - Optionally switches the system location services on before a fix ("Auto-enable location when needed" setting, opt-in) - this goes through the privileged action processor.
 
 ### Command daemon - `harbour-find-my-device-daemon-cmd.service`
 
-`ExecStart: python3 /usr/share/harbour-find-my-device/qml/utilities/daemon_cmd.py`
+`ExecStart: python3 /usr/share/harbour-find-my-device-daemon/daemon_cmd.py`
 
-- Runs as systemd USER service, enabled when at least one remote action or SMS action is switched on in the settings.
+- Runs as systemd USER service, permanently enabled; it listens only while at
+  least one remote action or SMS action is switched on in the settings and
+  idles otherwise. Settings changes are picked up automatically (generation
+  counter), no restart needed.
 - MQTT channel: subscribes `fmd/<own-id>/cmd`, verifies the HMAC token (see below), executes the command and publishes the result to `fmd/<own-id>/cmd/ack`.
 - SMS channel: listens to incoming SMS via ofono (D-Bus). A command SMS must come from a whitelisted number AND carry a valid TOTP code or one-time backup code.
+- Also forwards the sandboxed GUI's queued "enable system location" requests to the privileged helper.
 - Every executed action - even a failed one - posts a notification on the device (this is not a spy app).
 
 ### Privileged action processor - `harbour-find-my-device-priv.service`
 
-`ExecStart: python3 /usr/share/harbour-find-my-device/qml/utilities/priv_service.py`
+`ExecStart: python3 /usr/share/harbour-find-my-device-daemon/priv_service.py`
 
 - Sailfish OS has no `sudo`, so the user daemons cannot escalate directly. Instead they drop a small JSON request file into the spool directory `/run/harbour-find-my-device/spool`; a systemd SYSTEM service (running as root) is started by a `.path` unit whenever the spool is non-empty.
 - This is the whole privilege boundary - it can ONLY reboot the device, send an SMS (raw ofono) and toggle the system location switch. Every request file is deleted after processing.
 
 ### Managing the daemons manually
 
-The app starts/stops the user daemons itself whenever you save the settings. For debugging you can drive them by hand (as `defaultuser`):
+The daemons are enabled at install time (`systemctl --global enable`) and are
+never started/stopped by the app - they steer themselves from the settings.
+For debugging you can drive them by hand (as `defaultuser`):
 
 ```bash
 systemctl --user status harbour-find-my-device-daemon-gps.service
@@ -67,7 +108,9 @@ systemctl --user restart harbour-find-my-device-daemon-cmd.service
 systemctl --user stop harbour-find-my-device-daemon-gps.service
 ```
 
-The settings page shows the live state of both daemons (running / deactivated / failed) via systemd (equivalent to `systemctl --user is-active`)
+The settings page shows the state of both daemons (`running` / `idle` /
+`not installed or not running`) derived purely from the heartbeat records in
+the DB - a heartbeat younger than 90 s counts as alive.
 
 ## Reading Logs on the Device
 
@@ -117,11 +160,19 @@ journalctl --since "30 min ago" --no-pager _SYSTEMD_USER_UNIT=harbour-find-my-de
 
 | Path                                                       | Content                                    |
 | ---------------------------------------------------------- | ------------------------------------------ |
-| `~/.local/share/harbour-find-my-device/findmydevice.db`    | SQLite DB: settings, devices, GPS fixes    |
-| `~/.local/share/harbour-find-my-device/photos/`            | camera captures before WebDAV upload       |
+| `~/.local/share/harbour-find-my-device/harbour-find-my-device/findmydevice.db` | SQLite DB: settings, devices, GPS fixes, daemon heartbeats |
+| `~/.local/share/harbour-find-my-device/harbour-find-my-device/photos/` | camera captures before WebDAV upload |
 | `/run/harbour-find-my-device/spool/`                       | privileged action request spool (volatile) |
 | `/tmp/fmd-gps.log`, `/tmp/fmd-cmd.log`, `/tmp/fmd-app.log`| rotating log files (max 1 MB, 3 backups)  |
-| `/usr/share/harbour-find-my-device/`                       | installed app files (QML + Python)         |
+| `/usr/share/harbour-find-my-device/`                       | installed app files (QML + Python + bundled daemon RPM under `daemon/`) |
+| `/usr/share/harbour-find-my-device-daemon/`                | installed daemon files (Python + VERSION)  |
+
+The nested data directory is the Sailjail layout
+(`~/.local/share/<OrganizationName>/<ApplicationName>/`): inside the sandbox it
+is the app's real data dir, and the unsandboxed daemons use exactly the same
+absolute path. A pre-1.2 DB in the old flat location
+(`~/.local/share/harbour-find-my-device/findmydevice.db`) is migrated
+automatically on first start.
 
 ## MQTT Topics
 

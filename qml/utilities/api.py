@@ -15,8 +15,7 @@ import logging.handlers
 import threading
 import time
 
-from fmd import db, devices, gpsstore, settings, tokens
-import location_control
+from fmd import db, devices, gpsstore, runtime, settings, tokens
 import mqtt_client
 
 try:
@@ -99,33 +98,27 @@ def init_app():
     own = devices.ensure_own_device()
     _log_ui("app initialized (own device %s)" % own["device_id"])
     _start_ui_mqtt()
-    _sync_daemons()
+    _apply_foreground_gps()
     return {
         "own_device_id": own["device_id"],
         "own_label": devices.display_label(own),
-        "gps_enabled": location_control.is_enabled(),
+        "gps_enabled": _location_enabled(),
         "tile_provider": settings.get(settings.TILE_PROVIDER),
         "geoapify_key": settings.get(settings.GEOAPIFY_KEY),
         "osm_user_agent": OSM_USER_AGENT,
         "app_version": app_version(),
     }
 
-#App-Version fallback if its not available via .spec file
+#App-Version fallback if the VERSION file written by the .spec is missing
 _APP_VERSION_FALLBACK = "0.1"
+_APP_VERSION_FILE = "/usr/share/harbour-find-my-device/VERSION"
 
 
 def app_version():
-    #Version string for the Settings 'App Version' row from .spec file.
-    try:
-        import subprocess
-        out = subprocess.check_output(
-            ["rpm", "-q", "--qf", "%{VERSION}-%{RELEASE}", "harbour-find-my-device"],
-            stderr=subprocess.DEVNULL).decode().strip()
-        if out and "not installed" not in out:
-            return out
-    except Exception:
-        pass
-    return _APP_VERSION_FALLBACK
+    #Version string for the Settings 'App Version' row. The spec writes a
+    #VERSION file into the app's own share dir (readable under Sailjail);
+    #no rpm(1) call -- that is not available inside the sandbox.
+    return runtime.read_version_file(_APP_VERSION_FILE) or _APP_VERSION_FALLBACK
 
 
 def get_map_config():
@@ -155,7 +148,7 @@ def get_settings():
     data["totp_uri"] = (tokens.totp_uri(own["totp_secret"], own["device_label"])
                         if own.get("totp_secret") else "")
     data["backup_codes_unused"] = tokens.count_unused_backup_codes()
-    data["gps_enabled"] = location_control.is_enabled()
+    data["gps_enabled"] = _location_enabled()
     data["osm_user_agent"] = OSM_USER_AGENT
     return data
 
@@ -189,11 +182,14 @@ def save_settings(values):
 
 
 def _apply_settings_side_effects():
-    """Reconnect the UI MQTT client and resync the daemons after a settings save.
-    Runs in a background thread (see save_settings)"""
+    """Reconnect the UI MQTT client and signal the daemons after a settings save.
+    Runs in a background thread (see save_settings). The daemons are NOT
+    controlled via systemd (impossible under Sailjail): they poll the settings
+    generation counter and reconfigure themselves."""
     with _settings_apply_lock:
+        runtime.bump_generation()
         _start_ui_mqtt()
-        _sync_daemons()
+        _apply_foreground_gps()
 
 
 def rotate_totp_secret():
@@ -267,19 +263,26 @@ def list_ring_tones():
     return {"current": current, "tones": tones}
 
 
-def preview_ring_tone(path):
-    """Audition a ringtone file once (Settings preview). Plays in the UI process."""
-    import ring_control
-    ok = ring_control.preview(path)
-    _log_ui("ringtone preview: %s -> %s" % (path, "ok" if ok else "failed"))
-    return {"ok": ok}
+# NOTE: the ringtone preview plays in QML (QtMultimedia Audio element in the
+# Settings page). The former python preview used GStreamer via gi, which is
+# not allowed in the sandboxed GUI process (Harbour rules).
 
 
-def stop_ring_preview():
-    """Stop a running ringtone preview."""
-    import ring_control
-    ring_control.stop_preview()
-    return {"ok": True}
+def _own_ringing():
+    """True if the command daemon currently rings this device.
+
+    Reads the cross-process ring state file the daemon maintains in the shared
+    data dir (see ring_control.py in the daemon package); the GUI must not
+    import ring_control itself (GStreamer/gi)."""
+    import os
+    from fmd import paths
+    state = os.path.join(paths.data_dir(), "ring_active")
+    try:
+        with open(state) as fh:
+            until = float(fh.read().strip() or "0")
+    except (OSError, ValueError):
+        return False
+    return time.time() < until
 
 
 # =========================================================================
@@ -290,12 +293,7 @@ def list_devices():
     webdav_ok = bool(settings.get(settings.WEBDAV_URL)
                      and settings.get(settings.WEBDAV_USERNAME))
     result = []
-    own_ringing = False
-    try:
-        import ring_control
-        own_ringing = ring_control.is_ringing()
-    except Exception:
-        own_ringing = False
+    own_ringing = _own_ringing()
     for dev in devices.list_devices():
         fix = gpsstore.get_latest(dev["device_id"])
         has_pin = bool(dev.get("pin"))
@@ -434,9 +432,42 @@ def _probe_network(server, port):
     with _net_lock:
         changed = online != _net_state["online"]
         _net_state.update(online=online, checked=time.time(), probing=False)
+    # Handover check piggybacks on this existing background probe (no extra
+    # timer): if the kernel would now route to the broker from a different
+    # source address than the live UI socket uses, that socket is stranded.
+    if online and _handover_detected(server, port):
+        log.info("network handover detected; restarting UI MQTT client")
+        with _net_lock:
+            _net_state["checked"] = 0.0  # invalidate: re-probe promptly
+        _restart_ui_mqtt()
     if changed:
         # Reload the map page so the offline banner (dis)appears promptly.
         _emit("mapUpdated")
+
+
+def _handover_detected(server, port):
+    """True if the UI client's socket no longer matches the preferred route.
+
+    Conservative: any inability to determine an address (DNS failure, no
+    socket, no route) means "skip", never "handover"."""
+    if not server:
+        return False
+    try:
+        import net_watch
+        with _ui_lock:
+            client = _ui_mqtt
+        if client is None:
+            return False
+        current = client.local_ip()
+        if current is None:
+            return False
+        preferred = net_watch.preferred_src_ip(server, port)
+        if preferred is None:
+            return False
+        return preferred != current
+    except Exception:
+        log.exception("handover check failed")
+        return False
 
 
 def get_map_data():
@@ -445,7 +476,7 @@ def get_map_data():
     port = settings.get_int(settings.MQTT_PORT,
                             8883 if settings.get_bool(settings.MQTT_TLS) else 1883)
     network_online = _network_online(server, port)
-    gps_available = location_control.is_enabled()
+    gps_available = _location_enabled()
 
     markers = []
     for row in gpsstore.get_latest_all():
@@ -469,6 +500,100 @@ def get_map_data():
         "geoapify_key": settings.get(settings.GEOAPIFY_KEY),
         "osm_user_agent": OSM_USER_AGENT,
     }
+
+
+# --- location availability (read-only, sandbox-safe) -----------------------
+# The GUI must not import dbus/gi or touch the priv spool. It only READS the
+# system location switch from the well-known config files; if they are not
+# visible inside the sandbox, assume location is available and let the QML
+# PositionSource find out (worst case: a "no fix" banner after the timeout).
+_LOCATION_CONF_PATHS = ("/var/lib/location/location.conf",
+                        "/etc/location/location.conf")
+
+
+def _location_enabled():
+    readable = False
+    import re
+    for path in _LOCATION_CONF_PATHS:
+        try:
+            with open(path, "r") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        readable = True
+        if re.search(r"^enabled\s*=\s*true\s*$", text, re.MULTILINE):
+            return True
+    return not readable  # unreadable (sandbox) -> assume enabled
+
+
+def _read_battery_level():
+    """Best-effort battery percentage (0-100) or None. Same sources as the
+    daemon's gps_reader, but duplicated here so the GUI needs no gi/dbus."""
+    import glob
+    candidates = ["/run/state/namespaces/Battery/ChargePercentage"]
+    candidates += sorted(glob.glob("/sys/class/power_supply/*/capacity"))
+    for p in candidates:
+        try:
+            with open(p) as fh:
+                return int(float(fh.read().strip()))
+        except Exception:
+            continue
+    return None
+
+
+# --- QML foreground fix (QtPositioning via PositionSource) ------------------
+# The sandboxed GUI cannot use gps_reader (dbus/gi). Instead it asks the QML
+# side for a fix: _qml_fix() emits 'requestGpsFix', GpsSource.qml activates a
+# PositionSource and reports back through qml_fix_result(). The calling worker
+# thread blocks on an event until the result (or timeout) arrives.
+class _QmlFix(object):
+    def __init__(self, ok, error=None, lat=None, lon=None, alt=None,
+                 speed=None, accuracy_h=None):
+        self.success = ok
+        self.error = error
+        self.lat, self.lon, self.alt = lat, lon, alt
+        self.speed, self.accuracy_h = speed, accuracy_h
+        self.timestamp_utc = devices.iso_utc()
+        self.timestamp_local = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+_qml_fix_state = {"seq": 0, "result": None}
+_qml_fix_event = threading.Event()
+_qml_fix_seq_lock = threading.Lock()
+
+
+def _qml_fix(timeout=90):
+    """Request one GPS fix from the QML PositionSource; blocks the caller."""
+    if not _HAVE_PYOTHERSIDE:
+        return _QmlFix(False, error="no QML runtime (off-device)")
+    with _qml_fix_seq_lock:
+        _qml_fix_state["seq"] += 1
+        seq = _qml_fix_state["seq"]
+        _qml_fix_state["result"] = None
+        _qml_fix_event.clear()
+    _emit("requestGpsFix", seq, int(timeout * 1000))
+    if not _qml_fix_event.wait(timeout + 10):
+        return _QmlFix(False, error="timeout waiting for QML fix")
+    result = _qml_fix_state["result"]
+    if result is None or result[0] != seq:
+        return _QmlFix(False, error="superseded fix request")
+    return result[1]
+
+
+def qml_fix_result(seq, ok, data):
+    """Called from QML (GpsSource.qml) with the outcome of a fix request.
+    `data` is a dict with lat/lon/alt/speed/accuracy on success, or an error
+    string on failure."""
+    if ok:
+        d = data or {}
+        fix = _QmlFix(True, lat=d.get("lat"), lon=d.get("lon"),
+                      alt=d.get("alt"), speed=d.get("speed"),
+                      accuracy_h=d.get("accuracy"))
+    else:
+        fix = _QmlFix(False, error=str(data or "no fix"))
+    _qml_fix_state["result"] = (int(seq), fix)
+    _qml_fix_event.set()
+    return True
 
 
 def _fix_error_code(err):
@@ -508,28 +633,23 @@ def _do_refresh_location(notify=True, notify_fail=None):
         notify_fail = notify
     own_id = devices.own_device_id()
 
-    if not location_control.is_enabled():
+    if not _location_enabled():
         if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
-            _log_ui("auto-enabling location services")
-            location_control.set_location_enabled(enable=True)
-            location_control.wait_until_enabled()  # priv service applies it async
-            time.sleep(2)  # allow the provider to start before the first fix
+            # The sandboxed GUI cannot flip the system switch itself; it queues
+            # a wish that the (unsandboxed) cmd daemon forwards to the priv
+            # service. Without an installed daemon the request stays pending
+            # and the fix attempt below reports its failure via the banner.
+            _log_ui("requesting location enable via background service")
+            runtime.request_location_enable()
+            time.sleep(3)  # give the daemon a moment to apply it
         else:
             if notify_fail:
                 _emit("locationFix", False, "gps_disabled")
             _emit("mapUpdated")
             return {"ok": False, "error": "gps_disabled"}
 
-    try:
-        import gps_reader  # device-only (dbus/gi)
-    except Exception as exc:
-        _log_ui("gps_reader unavailable: %s" % exc)
-        if notify_fail:
-            _emit("locationFix", False, "gps_reader_unavailable")
-        return {"ok": False, "error": "no_gps_reader"}
-
-    fix = gps_reader.get_fix(timeout=90)
-    battery = gps_reader.read_battery_level()
+    fix = _qml_fix(timeout=90)
+    battery = _read_battery_level()
     if not fix.success:
         # Keep the raw error in the log; show a clean message in the UI banner.
         _log_ui("no GPS fix: %s" % fix.error)
@@ -568,15 +688,23 @@ def _publish_own_location(own_id, fix, battery):
     }
     global _pending_location
     with _ui_lock:
-        if _ui_mqtt and _ui_mqtt.is_connected():
-            _ui_mqtt.publish_location(own_id, payload)
+        client = _ui_mqtt
+    # No is_really_connected() pre-check: publish_location() repairs a dead or
+    # stale connection itself (reconnect + republish). Gating here on the
+    # wrapper flag parked every fix on _pending_location once the flag went
+    # stale, because the on_connected flush only fires on an actual reconnect.
+    # Published outside _ui_lock: the repair can block a few seconds and the
+    # flush callback (paho network thread) needs the lock meanwhile.
+    if client is not None and client.publish_location(own_id, payload):
+        with _ui_lock:
             _pending_location = None
-        else:
-            # With background activity off no daemon is running, so nobody else
-            # would publish this fix -- keep it and flush it on reconnect.
-            _pending_location = (own_id, payload)
-            log.warning("UI MQTT not connected; fix stored locally, "
-                        "will publish on reconnect")
+        return
+    # With background activity off no daemon is running, so nobody else would
+    # publish this fix -- keep the newest one and flush it on reconnect.
+    with _ui_lock:
+        _pending_location = (own_id, payload)
+    log.warning("UI MQTT publish failed or client not running; fix stored "
+                "locally, will publish on reconnect")
 
 
 # =========================================================================
@@ -626,8 +754,10 @@ def _schedule_foreground_tick_locked(delay_s=None):
 
 def _foreground_tick():
     global _fg_in_failure
-    # If background activity got turned on meanwhile, the daemon now handles it.
-    if settings.get_bool(settings.BACKGROUND_ENABLED):
+    # If the background daemon took over meanwhile, it now handles the polling.
+    # (Only the flag being set is not enough: without an installed daemon the
+    # app keeps polling in the foreground -- degraded mode.)
+    if _background_daemon_owns_gps():
         _stop_foreground_gps()
         return
     try:
@@ -671,7 +801,7 @@ def send_command(device_id, cmd, arg=""):
         payload["arg"] = arg
 
     with _ui_lock:
-        if not (_ui_mqtt and _ui_mqtt.is_connected()):
+        if not (_ui_mqtt and _ui_mqtt.is_really_connected()):
             _log_ui("cannot send %s to %s: MQTT not connected" % (cmd, device_id))
             return {"ok": False, "error": "mqtt_offline"}
         _ui_mqtt.publish_command(device_id, payload)
@@ -769,101 +899,140 @@ def _on_ack_timeout(device_id, cmd, token):
 
 
 # =========================================================================
-# Daemon status (Settings overview)
+# Daemon status (Settings overview) -- derived from DB heartbeats only.
+# The sandboxed GUI never talks to systemd; the daemons run permanently and
+# steer themselves (idle/active) from the shared settings (see fmd/runtime.py).
 # =========================================================================
-_DAEMONS = {
-    "gps": "harbour-find-my-device-daemon-gps.service",
-    "cmd": "harbour-find-my-device-daemon-cmd.service",
-}
+def _background_daemon_owns_gps():
+    """True when the GPS daemon is expected to poll: background activity is on
+    AND the daemon package heartbeats (running or about to pick the flag up).
+    In degraded mode (flag set but no daemon installed) the app must keep
+    polling in the foreground so tracking does not silently stop."""
+    return (settings.get_bool(settings.BACKGROUND_ENABLED)
+            and runtime.daemon_status("gps") != "not_installed_or_stopped")
 
 
-# Remote-control features that require the command listener to be running.
-# If ANY of these is on, the cmd daemon must run (MQTT and/or SMS channel).
-_CMD_FEATURE_KEYS = (
-    settings.RING_ENABLED, settings.LOCK_ENABLED, settings.DELETE_ENABLED,
-    settings.CAMERA_ENABLED, settings.SMS_REMOTE_ENABLED, settings.SMS_GPS_ENABLED,
-)
+def _apply_foreground_gps():
+    """Start/stop the in-app GPS polling to complement the background daemon.
 
-
-def _systemd_user_manager():
-    """D-Bus interface to the systemd USER manager.
-
-    Used instead of spawning `systemctl`, which is not reachable from inside
-    the Sailjail sandbox; the FindMyDevice permission grants talking to
-    org.freedesktop.systemd1 on the session bus instead.
-    """
-    import dbus
-    bus = dbus.SessionBus()
-    return bus, dbus.Interface(
-        bus.get_object("org.freedesktop.systemd1", "/org/freedesktop/systemd1"),
-        "org.freedesktop.systemd1.Manager")
-
-
-def _set_daemon_state(unit, wanted):
-    """Make the systemd USER unit match `wanted`.
-
-    When wanted, we `restart` (not just `start`) so a running daemon re-reads the
-    freshly saved settings/DB instead of keeping its old in-memory config; when
-    not wanted, we `stop` it so a disabled feature truly idles. Best-effort: any
-    failure is logged, never raised.
-    """
-    action = "restart" if wanted else "stop"
-    try:
-        _, mgr = _systemd_user_manager()
-        # Job mode "replace" queues the job and returns at once (the D-Bus
-        # equivalent of `systemctl --no-block`), so saving settings never blocks.
-        if wanted:
-            mgr.RestartUnit(unit, "replace")
-        else:
-            mgr.StopUnit(unit, "replace")
-        log.info("daemon %s -> %s (wanted=%s)", unit, action, wanted)
-    except Exception as exc:
-        log.warning("could not %s daemon %s: %s", action, unit, exc)
-
-
-def _sync_daemons():
-    #Start/stop/reload the two user daemons to match current settings.
-    cmd_wanted = any(settings.get_bool(k) for k in _CMD_FEATURE_KEYS)
-    gps_wanted = settings.get_bool(settings.BACKGROUND_ENABLED)
-    _set_daemon_state(_DAEMONS["cmd"], cmd_wanted)
-    _set_daemon_state(_DAEMONS["gps"], gps_wanted)
-    # When the background daemon is off, the running app polls GPS itself so the
-    # location keeps being published until the user closes the app. When the
-    # daemon is on it owns the polling (also while the app is closed).
-    if gps_wanted:
+    When "Background activity" is off (or the daemon package is not installed),
+    the running app polls GPS itself so the location keeps being published
+    until the user closes it. When the daemon owns the polling, the app stays
+    quiet."""
+    if _background_daemon_owns_gps():
         _stop_foreground_gps()
     else:
         _start_foreground_gps()
 
 
 def get_daemon_status():
-    """Return {'gps': 'running'|'deactivated'|'failed'|'unknown', 'cmd': ...}."""
-    import dbus
-    result = {}
-    for key, unit in _DAEMONS.items():
-        try:
-            bus, mgr = _systemd_user_manager()
-            upath = mgr.LoadUnit(unit)
-            props = dbus.Interface(
-                bus.get_object("org.freedesktop.systemd1", upath),
-                "org.freedesktop.DBus.Properties")
-            out = str(props.Get("org.freedesktop.systemd1.Unit", "ActiveState"))
-        except Exception:
-            out = "unknown"
-        result[key] = {
-            "active": "running",
-            "inactive": "deactivated",
-            "failed": "failed",
-        }.get(out, out or "unknown")
-    return result
+    """Status for the Settings page, purely from DB heartbeats.
+
+    Per-daemon states: 'running' | 'deactivated' (daemon idles, features off)
+    | 'applying' (daemon still naps on the settings from before the last save)
+    | 'not_installed_or_stopped' (no fresh heartbeat). Adds the installed
+    daemon version, the bundled RPM info and an update flag."""
+    snap = runtime.daemon_snapshot()
+    gps = snap["gps"]["status"]
+    cmd = snap["cmd"]["status"]
+    installed = (gps != "not_installed_or_stopped"
+                 or cmd != "not_installed_or_stopped")
+    daemon_version = snap["gps"]["version"] or snap["cmd"]["version"]
+    bundle = daemon_rpm_available()
+    update_available = bool(installed and bundle["available"] and daemon_version
+                            and bundle["version"] != daemon_version)
+    return {
+        "gps": gps,
+        "cmd": cmd,
+        "installed": installed,
+        "daemon_version": daemon_version,
+        "bundled_available": bundle["available"],
+        "bundled_version": bundle["version"],
+        "update_available": update_available,
+        "banner_needed": (not installed
+                          and runtime.get("daemon_hint_dismissed") != "1"),
+    }
+
+
+def dismiss_daemon_banner():
+    """Persist that the first-start 'install the background service' banner
+    was dismissed; it never comes back."""
+    runtime.set("daemon_hint_dismissed", "1")
+    return {"ok": True}
 
 
 def enable_location_now():
-    """Manually enable the system location services (used by the GPS prompt)."""
-    location_control.set_location_enabled(enable=True)
-    enabled = location_control.wait_until_enabled()  # priv service applies it async
-    _log_ui("location enable requested -> enabled=%s" % enabled)
-    return {"ok": enabled}
+    """Ask for the system location services to be enabled (GPS prompt).
+
+    The sandboxed GUI cannot write location.conf; it queues the wish for the
+    cmd daemon, which forwards it to the root priv service. Fire-and-forget:
+    without an installed daemon nothing happens (the UI communicates that)."""
+    runtime.request_location_enable()
+    _log_ui("location enable requested (queued for the background service)")
+    return {"ok": True, "pending": True}
+
+
+# =========================================================================
+# Daemon RPM sideload (Settings install/update flow)
+# =========================================================================
+# The Store build bundles the daemon RPM inside the app's own share dir
+# (readable under Sailjail). Chum builds ship no bundle: there the user
+# installs harbour-find-my-device-daemon from the same repository instead.
+_BUNDLED_RPM_DIR = "/usr/share/harbour-find-my-device/daemon"
+_DAEMON_RPM_RE = r"^harbour-find-my-device-daemon-(.+?)\.[^.]+\.rpm$"
+
+
+_bundled_rpm_cache = None
+
+
+def daemon_rpm_available():
+    """Info about the bundled daemon RPM:
+    {'available': bool, 'path': str, 'version': 'X.Y-Z'}.
+
+    Cached for the process lifetime: the RPM ships inside the app's own
+    (read-only) install directory and cannot change while the app runs, but
+    get_daemon_status() -- and with it this glob -- is polled every couple of
+    seconds while the Settings page is open."""
+    global _bundled_rpm_cache
+    if _bundled_rpm_cache is not None:
+        return _bundled_rpm_cache
+    import glob
+    import os
+    import re
+    rpms = sorted(glob.glob(os.path.join(
+        _BUNDLED_RPM_DIR, "harbour-find-my-device-daemon-*.rpm")))
+    if not rpms:
+        _bundled_rpm_cache = {"available": False, "path": "", "version": ""}
+    else:
+        path = rpms[-1]
+        m = re.match(_DAEMON_RPM_RE, os.path.basename(path))
+        _bundled_rpm_cache = {"available": True, "path": path,
+                              "version": m.group(1) if m else ""}
+    return _bundled_rpm_cache
+
+
+def stage_daemon_rpm():
+    """Copy the bundled daemon RPM into ~/Downloads and return its file:// URL.
+
+    The QML side opens that URL (Qt.openUrlExternally) so the system installer
+    dialog takes over -- the flow the Harbour FAQ explicitly allows. The copy
+    is needed because the installer cannot read paths that only exist inside
+    the app sandbox view; ~/Downloads is shared via the Downloads permission."""
+    import os
+    import shutil
+    bundle = daemon_rpm_available()
+    if not bundle["available"]:
+        return {"ok": False, "error": "no_bundled_rpm", "url": ""}
+    downloads = os.path.expanduser("~/Downloads")
+    try:
+        os.makedirs(downloads, exist_ok=True)
+        target = os.path.join(downloads, os.path.basename(bundle["path"]))
+        shutil.copy2(bundle["path"], target)
+    except OSError as exc:
+        log.error("could not stage daemon RPM: %s", exc)
+        return {"ok": False, "error": str(exc), "url": ""}
+    _log_ui("daemon RPM staged for install: %s" % target)
+    return {"ok": True, "error": "", "url": "file://" + target}
 
 
 # =========================================================================
@@ -879,7 +1048,10 @@ def _start_ui_mqtt():
         with _ui_lock:
             was_running = _ui_mqtt is not None
             if was_running:
-                _ui_mqtt.disconnect()
+                # close(), not disconnect(): a GPS tick still holding the old
+                # reference must not be able to revive it via the publish
+                # repair path (client-id fight with any successor).
+                _ui_mqtt.close()
                 _ui_mqtt = None
         log.info("MQTT %s; UI listener %s",
                  "disabled in settings" if not enabled else "not configured",
@@ -891,7 +1063,7 @@ def _start_ui_mqtt():
 
     with _ui_lock:
         if _ui_mqtt is not None:
-            _ui_mqtt.disconnect()
+            _ui_mqtt.close()  # retire for good; see teardown branch above
         _ui_mqtt = mqtt_client.FmdMqttClient(
             server, port, tls,
             settings.get(settings.MQTT_USERNAME),
@@ -925,7 +1097,10 @@ def _flush_pending_location():
             return
         own_id, payload = _pending_location
         log.info("publishing fix taken while offline")
-        if _ui_mqtt.publish_location(own_id, payload):
+        # wait=False is mandatory here: this callback runs in the paho network
+        # thread, and waiting for the PUBACK would block exactly the thread
+        # that has to process it (guaranteed timeout + 5s stalled loop).
+        if _ui_mqtt.publish_location(own_id, payload, wait=False):
             _pending_location = None
 
 

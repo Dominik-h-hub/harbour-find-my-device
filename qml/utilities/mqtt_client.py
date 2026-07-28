@@ -40,18 +40,42 @@ ROLE_UI = "ui"
 # the broker drops the connection after 1.5x keepalive (45s meant a kick +
 # full TLS reconnect every ~67s). 900s keeps the session alive across suspend
 # as long as anything (e.g. a GPS tick) wakes the device within ~22 minutes.
+# NOTE: handover detection does NOT run through this MQTT keepalive. On the
+# publisher it works via verified publishes (PUBACK wait + forced reconnect)
+# plus TCP_USER_TIMEOUT; on the idle subscriber (-cmd) via SO_KEEPALIVE and
+# the ConnMan state signal. Lowering this value would only triple the PINGREQ
+# radio wakeups without improving detection.
 KEEPALIVE_S = 900
 
+# Timeout for the QoS1 PUBACK when a publish is verified (_publish(wait=True)).
+# wait_for_publish() polls internally at timeout/10, so keep this short: only
+# the failure case pays for it, and 5s is plenty for a healthy link.
+PUBLISH_ACK_TIMEOUT_S = 5
+
 # OS-level TCP keepalive. The MQTT keepalive above is deliberately long, but a
-# WLAN<->mobile handover left the old socket "half-open".
-TCP_KEEPIDLE_S = 60      # start probing after 60s idle
-TCP_KEEPINTVL_S = 15     # then probe every 15s
-TCP_KEEPCNT = 4          # give up (socket dead) after 4 missed probes (~120s total)
+# WLAN<->mobile handover leaves the old socket "half-open". Values chosen for
+# an IDLE connection (the -cmd/-ui subscribers): probing a mostly-idle link
+# once a minute (old value 60s) kept the radio permanently busy for nothing.
+TCP_KEEPIDLE_S = 300     # start probing after 5 min idle
+TCP_KEEPINTVL_S = 30     # then probe every 30s
+TCP_KEEPCNT = 3          # give up (socket dead) after 3 missed probes
+
+# TCP keepalive probes are only sent on an *idle* connection: as soon as
+# unacknowledged data sits in the send buffer (exactly what happens when a
+# publish is written into a half-open socket), the kernel switches to the
+# retransmission timer (tcp_retries2 ~ 13-30 min) and keepalive stays silent.
+# TCP_USER_TIMEOUT caps that: a connection with unacknowledged data is killed
+# after this many milliseconds instead of retransmitting for minutes -- which
+# also ends the repeated radio wakeups of those retransmit phases.
+TCP_USER_TIMEOUT_MS = 25000  # 25s: half-open socket dies shortly after handover
 
 
 def _enable_tcp_keepalive(sock):
-    """Turn on OS TCP keepalive with a short idle so a half-open socket left by a
-    network handover is detected in ~2 min instead of waiting out KEEPALIVE_S."""
+    """Turn on OS TCP keepalive + TCP_USER_TIMEOUT on a (re)connect socket so a
+    half-open socket left by a network handover is detected promptly instead of
+    waiting out KEEPALIVE_S (idle case) or the kernel retransmit limit (data in
+    flight; see TCP_USER_TIMEOUT_MS above for why SO_KEEPALIVE alone is not
+    enough there)."""
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     except (OSError, AttributeError):
@@ -66,6 +90,14 @@ def _enable_tcp_keepalive(sock):
             sock.setsockopt(socket.IPPROTO_TCP, opt, value)
         except OSError:
             pass
+    # Linux-only; the constant is missing from some python builds, the numeric
+    # fallback 18 is stable on Linux. Value is in milliseconds.
+    try:
+        sock.setsockopt(socket.IPPROTO_TCP,
+                        getattr(socket, "TCP_USER_TIMEOUT", 18),
+                        TCP_USER_TIMEOUT_MS)
+    except OSError:
+        pass
 
 
 # --- topic helpers ---------------------------------------------------------
@@ -158,8 +190,16 @@ class FmdMqttClient(object):
         self.on_connected = on_connected
         self._client = None
         self._connected = False
+        self._closed = False
         self._subs = set()              # set of (topic, kind)
         self._clean_session = clean_session
+        # Set on CONNACK rc=0, cleared on connect()/disconnect; wait_connected()
+        # blocks on it (connect() is async: connect_async + loop_start).
+        self._conn_event = threading.Event()
+        # Serialises force_reconnect() so concurrent repair paths (publish
+        # failure, ConnMan signal, net watch) never tear down the same client
+        # twice in parallel.
+        self._reconnect_lock = threading.Lock()
 
     # -- lifecycle --
     def connect(self):
@@ -167,12 +207,16 @@ class FmdMqttClient(object):
 
         Returns True if the connect was dispatched (not necessarily completed).
         """
+        if self._closed:
+            log.warning("connect refused: client closed (%s)", self.cid)
+            return False
         if not _HAVE_PAHO:
             log.error("cannot connect: paho-mqtt not installed")
             return False
         if not self.server:
-            log.warning("no MQTT server configured; not connecting")
+            log.warning("no MQTT server configured; not connecting (%s)", self.cid)
             return False
+        self._conn_event.clear()
         try:
             self._client = _new_paho_client(self.cid, self._clean_session)
             if self.username:
@@ -192,13 +236,24 @@ class FmdMqttClient(object):
             self._client.loop_start()
             return True
         except Exception as exc:
-            log.error("mqtt connect failed: %s", exc)
+            log.error("mqtt connect failed (%s): %s", self.cid, exc)
             return False
 
     def disconnect(self):
-        if self._client is not None:
+        old = self._client
+        self._client = None
+        self._connected = False
+        self._conn_event.clear()
+        if old is not None:
+            # Unbind the callbacks first: an abandoned network thread must
+            # never touch this wrapper again. A late on_disconnect from an old
+            # client used to mark the freshly connected successor as offline
+            # (see also the staleness guards in the _handle_* callbacks).
             try:
-                self._client.disconnect()
+                old.on_connect = None
+                old.on_disconnect = None
+                old.on_message = None
+                old.on_socket_open = None
             except Exception:
                 pass
             try:
@@ -207,21 +262,86 @@ class FmdMqttClient(object):
                 # (getaddrinfo) for minutes during auto-reconnect. Signal it to
                 # terminate and abandon it (daemon thread) if it doesn't exit in
                 # time; connect() always builds a fresh client anyway.
-                self._client._thread_terminate = True
-                thread = getattr(self._client, "_thread", None)
+                old._thread_terminate = True
+            except Exception:
+                pass
+            try:
+                old.disconnect()
+            except Exception:
+                pass
+            try:
+                # Close the socket to unstick a thread blocked in a TLS
+                # read/handshake; together with _thread_terminate it then exits
+                # instead of finishing a reconnect that would fight the
+                # successor for the (identical) client id.
+                sock = old.socket()
+                if sock is not None:
+                    sock.close()
+            except Exception:
+                pass
+            try:
+                thread = getattr(old, "_thread", None)
                 if thread is not None and thread is not threading.current_thread():
                     thread.join(2.0)
                     if thread.is_alive():
                         log.warning("mqtt network thread still busy; abandoned")
                     else:
-                        self._client._thread = None
+                        old._thread = None
             except Exception:
                 pass
-        self._connected = False
         log.info("mqtt disconnected (%s)", self.cid)
+
+    def close(self):
+        """Permanently shut this client down. Unlike disconnect(), no repair
+        path (force_reconnect from a late publish still holding this
+        reference) can revive it afterwards -- a revived predecessor would
+        fight its successor for the identical client id at the broker.
+        Use this whenever the wrapper object is being replaced or retired."""
+        self._closed = True
+        self.disconnect()
 
     def is_connected(self):
         return self._connected
+
+    def is_really_connected(self):
+        """Connection state confirmed by paho, not just our wrapper flag.
+
+        The wrapper flag alone is too optimistic: after a silent socket death
+        paho may already know it is disconnected while _connected is still
+        True. All health checks should use this."""
+        return bool(self._connected and self._client is not None
+                    and self._client.is_connected())
+
+    def wait_connected(self, timeout=15):
+        """Block until the CONNACK arrived (connect() is asynchronous).
+
+        A publish right after connect() would otherwise always fail. Single
+        event wait, no polling. Returns bool."""
+        return self._conn_event.wait(timeout)
+
+    def force_reconnect(self):
+        """Hard-drop the current client and connect a fresh one. Never raises.
+
+        Subscriptions are kept in self._subs and re-applied by _handle_connect.
+        Serialised via _reconnect_lock so concurrent repair paths don't fight."""
+        with self._reconnect_lock:
+            try:
+                log.warning("forcing mqtt reconnect (%s)", self.cid)
+                self.disconnect()
+                return self.connect()
+            except Exception:
+                log.exception("force_reconnect failed (%s)", self.cid)
+                return False
+
+    def local_ip(self):
+        """Source address of the live MQTT socket, or None. Used by the net
+        watch to detect that the kernel would now route via a different
+        interface (WLAN<->mobile handover stranded this socket)."""
+        try:
+            sock = self._client.socket() if self._client is not None else None
+            return sock.getsockname()[0] if sock is not None else None
+        except (OSError, AttributeError, IndexError):
+            return None
 
     # -- subscriptions --
     def subscribe_commands(self, device_id):
@@ -237,12 +357,13 @@ class FmdMqttClient(object):
         self._subs.add((topic, kind))
         if self._client is not None and self._connected:
             self._client.subscribe(topic, qos=QOS)
-            log.info("subscribed %s (%s)", topic, kind)
+            log.info("subscribed %s (%s, %s)", topic, kind, self.cid)
 
     # -- publishing --
-    def publish_location(self, device_id, payload):
+    def publish_location(self, device_id, payload, wait=True):
         """Publish a location payload (retain=true, QoS1)."""
-        return self._publish(topic_location(device_id), payload, retain=True)
+        return self._publish(topic_location(device_id), payload, retain=True,
+                             wait=wait)
 
     def publish_command(self, device_id, payload):
         """Publish a command to a remote device (retain=false, QoS1)."""
@@ -252,18 +373,75 @@ class FmdMqttClient(object):
         """Publish a command result on the ack topic (retain=false, QoS1)."""
         return self._publish(topic_ack(device_id), payload, retain=False)
 
-    def _publish(self, topic, payload, retain):
-        if not (self._client is not None and self._connected):
-            log.warning("publish skipped (not connected): %s", topic)
+    def _publish(self, topic, payload, retain, wait=True):
+        """Publish with delivery verification and one self-repair attempt.
+
+        wait=True (default): block until the QoS1 PUBACK arrived; on failure
+        force a hard reconnect and republish the SAME payload exactly once
+        (a reconnect alone would save the connection but lose this tick's
+        position). Total worst case ~8s -- fine against a 5-min tick.
+
+        wait=False MUST be used by any caller running in the paho network
+        thread (e.g. an on_connected flush): waiting for the PUBACK there
+        blocks exactly the thread that would process it, guaranteeing the
+        timeout. The wait=False path also skips the reconnect/republish repair.
+        """
+        body = json.dumps(payload) if not isinstance(payload, str) else payload
+        if not self.is_really_connected():
+            if not wait:
+                log.warning("publish skipped (not connected): %s (%s)",
+                            topic, self.cid)
+                return False
+            log.warning("publish on dead connection; reconnecting first: %s (%s)",
+                        topic, self.cid)
+            if not (self.force_reconnect() and self.wait_connected()):
+                return False
+            return self._send_once(topic, body, retain, wait)
+        if self._send_once(topic, body, retain, wait):
+            return True
+        if not wait:
             return False
+        # First attempt failed (no PUBACK / error): hard reconnect, then
+        # republish this payload exactly once. Only then give up (-> caller's
+        # pending queue).
+        log.warning("publish failed; reconnect + republish once: %s (%s)",
+                    topic, self.cid)
+        if not (self.force_reconnect() and self.wait_connected()):
+            return False
+        ok = self._send_once(topic, body, retain, wait)
+        log.warning("republish %s after reconnect -> %s (%s)",
+                    topic, "ok" if ok else "FAILED", self.cid)
+        return ok
+
+    def _send_once(self, topic, body, retain, wait):
+        """One raw publish attempt. With wait=True, success means PUBACK
+        received -- never logs 'published' without proof of delivery."""
         try:
-            body = json.dumps(payload) if not isinstance(payload, str) else payload
             info = self._client.publish(topic, body, qos=QOS, retain=retain)
-            log.info("published %s (retain=%s, mid=%s)", topic, retain,
-                     getattr(info, "mid", "?"))
+            if info.rc != mqtt.MQTT_ERR_SUCCESS:
+                log.warning("publish %s rejected rc=%s (%s)",
+                            topic, info.rc, self.cid)
+                self._connected = False
+                return False
+            if wait and QOS >= 1:
+                try:
+                    info.wait_for_publish(timeout=PUBLISH_ACK_TIMEOUT_S)
+                except (ValueError, RuntimeError) as exc:
+                    log.warning("publish %s not confirmed: %s (%s)",
+                                topic, exc, self.cid)
+                    self._connected = False
+                    return False
+                if not info.is_published():
+                    log.warning("publish %s: no PUBACK within %ds (%s)",
+                                topic, PUBLISH_ACK_TIMEOUT_S, self.cid)
+                    self._connected = False
+                    return False
+            log.debug("published %s (retain=%s, mid=%s, %s)", topic, retain,
+                      getattr(info, "mid", "?"), self.cid)
             return True
         except Exception as exc:
-            log.error("publish to %s failed: %s", topic, exc)
+            log.error("publish to %s failed: %s (%s)", topic, exc, self.cid)
+            self._connected = False
             return False
 
     # -- paho callbacks --
@@ -271,26 +449,34 @@ class FmdMqttClient(object):
         """Called by paho for every new (re)connect socket, including each
         auto-reconnect. Enable kernel TCP keepalive so a half-open socket from a
         WLAN<->mobile handover is detected promptly instead of after KEEPALIVE_S."""
+        if client is not self._client:
+            return  # stale callback from an abandoned client
         _enable_tcp_keepalive(sock)
 
     def _handle_connect(self, client, userdata, flags, rc):
+        if client is not self._client:
+            return  # stale callback from an abandoned client
         if rc == 0:
             self._connected = True
+            self._conn_event.set()
             log.info("mqtt connected (%s)", self.cid)
             for topic, _kind in self._subs:
                 client.subscribe(topic, qos=QOS)
-                log.info("re-subscribed %s", topic)
+                log.info("re-subscribed %s (%s)", topic, self.cid)
             if self.on_connected is not None:
                 try:
                     self.on_connected()
                 except Exception:
-                    log.exception("on_connected callback failed")
+                    log.exception("on_connected callback failed (%s)", self.cid)
         else:
             self._connected = False
-            log.error("mqtt connect refused rc=%s", rc)
+            log.error("mqtt connect refused rc=%s (%s)", rc, self.cid)
 
     def _handle_disconnect(self, client, userdata, rc):
+        if client is not self._client:
+            return  # stale callback from an abandoned client
         self._connected = False
+        self._conn_event.clear()
         if rc == 0:
             # rc=0 means we called disconnect() ourselves; paho won't reconnect.
             log.info("mqtt disconnected cleanly (%s)", self.cid)
@@ -298,6 +484,8 @@ class FmdMqttClient(object):
             log.warning("mqtt connection lost rc=%s (will auto-reconnect)", rc)
 
     def _handle_message(self, client, userdata, msg):
+        if client is not self._client:
+            return  # stale callback from an abandoned client
         topic = msg.topic
         try:
             payload = json.loads(msg.payload.decode("utf-8"))
@@ -305,7 +493,7 @@ class FmdMqttClient(object):
             log.warning("non-JSON message on %s, ignored", topic)
             return
         device_id = _device_from_topic(topic)
-        log.info("mqtt message on %s", topic)
+        log.info("mqtt message on %s (%s)", topic, self.cid)
         if topic.endswith("/cmd/ack"):
             if self.on_ack:
                 self.on_ack(device_id, payload)

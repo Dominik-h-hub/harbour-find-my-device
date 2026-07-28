@@ -233,6 +233,10 @@
         <source>Devices</source>
         <translation>Enheter</translation>
     </message>
+    <message>
+        <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>MapView</name>
@@ -578,6 +582,42 @@
     <message>
         <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
         <translation>Registrera denna hemlighet i en TOTP-autentiseringsapp på ANDRA enheter. Den aktuella koden krävs i SMS-kommandon. Förvara reservkoderna säkert för användning utan en autentiseringsapp.</translation>
+    </message>
+    <message>
+        <source>running</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Install background service</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Background service update available (installed: %1, new: %2).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Update background service</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>deactivated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>not installed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>applying…</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

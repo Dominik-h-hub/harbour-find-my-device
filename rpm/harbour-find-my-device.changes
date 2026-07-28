@@ -9,6 +9,37 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Mon Jul 27 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.2-1
+- CHANGED: Harbour/Jolla-Store compliance refactoring (two-RPM model)
+- CHANGED: App now runs sandboxed (Sailjail) with stock permissions
+  Internet;Location;Audio;Downloads
+- CHANGED: Daemons, privileged helper and systemd units moved into the new
+  harbour-find-my-device-daemon package (bundled in the app RPM; in-app
+  sideload install from the Settings page, or separate install via
+  OpenRepos/Chum)
+- CHANGED: Daemons run permanently and steer themselves via the shared DB
+  (settings generation counter + heartbeats); no systemd control from the GUI
+- CHANGED: Foreground GPS fix now uses QtPositioning (QML PositionSource)
+  instead of dbus/gi in the app process
+- CHANGED: Ringtone preview now plays via QtMultimedia in QML
+- CHANGED: App data moved to the Sailjail data dir
+  ~/.local/share/harbour-find-my-device/harbour-find-my-device/ (old DB and
+  photos are migrated automatically)
+- ADDED: Degraded mode - the app is fully usable without the daemon package;
+  daemon-dependent switches are greyed out and offer the install flow
+- ADDED: Daemon status/version from DB heartbeats incl. in-app update hint
+- ADDED: CI builds both RPMs (daemon first) and gates the app RPM with the
+  official sdk-harbour-rpmvalidator; Chum metadata prepared in both specs
+- FIX: MQTT publishing now survives WLAN/mobile network handovers: publishes
+  are verified (PUBACK) and repaired via forced reconnect + republish; the
+  GPS daemon connects per tick instead of holding a stranded connection and
+  keeps an undeliverable fix pending for the next cycle
+- FIX: TCP_USER_TIMEOUT ends the minutes-long retransmit phases on half-open
+  sockets; command daemon reconnects instantly on ConnMan network changes;
+  UI client detects handovers via a source-address check
+- FIX: battery use reduced - daemon sleep loops wake ~2x/min instead of 1x/s,
+  TCP keepalive probing on idle connections reduced to a fifth
+
 * Sun Jul 26 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.1-1
 - FIX: Improve MQTT connection robustness across WLAN/mobile handovers
 - FIX: Add rotating file logs under /tmp/
