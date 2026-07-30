@@ -272,3 +272,11 @@ A minimal Flask client (interactive Leaflet map, device list, command buttons, H
 ## Building
 
 The app is built with the Sailfish SDK (`harbour-find-my-device.pro`, spec under `rpm/`). CI builds run on GitHub Actions using the [CODeRUS Sailfish OS Platform SDK docker images](https://github.com/CODeRUS/github-sfos-build) - see [.github/workflows/build.yaml](../.github/workflows/build.yaml).
+
+### Versioning
+
+The version is maintained **only** in `rpm/harbour-find-my-device.spec` (`Version:` / `Release:`); the daemon spec inherits it at build time and both packages write a `VERSION` file that app and daemons read at runtime. When building locally with the Sailfish SDK, disable the SDK's automatic git-describe versioning so the spec version applies: `sfdk config no-fix-version` (or `mb2 --no-fix-version`). Release tags must match the spec version (`v<Version>-<Release>-release`) - the release CI enforces this.
+
+### Build order of the two packages
+
+The noarch daemon RPM is built first (plain `rpmbuild`, no compilation), then each app build picks it up from `daemon-rpm/RPMS/` and embeds it under `/usr/share/harbour-find-my-device/daemon/`. The app RPM is gated by the official [sdk-harbour-rpmvalidator](https://github.com/sailfishos/sdk-harbour-rpmvalidator).

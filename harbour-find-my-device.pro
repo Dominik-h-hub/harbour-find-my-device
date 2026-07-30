@@ -51,6 +51,7 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/utilities/fmd/gpsstore.py \
     qml/utilities/paho/__init__.py \
     qml/utilities/paho/edl-v10 \
+    qml/utilities/paho/epl-v20 \
     qml/utilities/paho/LICENSE.txt \
     qml/utilities/paho/mqtt/__init__.py \
     qml/utilities/paho/mqtt/client.py \

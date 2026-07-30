@@ -9,7 +9,7 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
-* Mon Jul 27 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.2-1
+* Tue Jul 30 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.0-1
 - CHANGED: Harbour/Jolla-Store compliance refactoring (two-RPM model)
 - CHANGED: App now runs sandboxed (Sailjail) with stock permissions
   Internet;Location;Audio;Downloads
@@ -39,6 +39,7 @@
   UI client detects handovers via a source-address check
 - FIX: battery use reduced - daemon sleep loops wake ~2x/min instead of 1x/s,
   TCP keepalive probing on idle connections reduced to a fifth
+- FIX: Moved background-daemon banner from top to bottom due to hardware-notches.
 
 * Sun Jul 26 2026 Dominik Heidinger <dominikh@atomicmail.io> 1.1-1
 - FIX: Improve MQTT connection robustness across WLAN/mobile handovers

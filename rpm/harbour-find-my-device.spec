@@ -26,9 +26,13 @@
 
 Name:       harbour-find-my-device
 Summary:    Radar App (Find My Device)
-Version:    1.2
+Version:    2.0
 Release:    1
-License:    Apache-2.0
+# Own code is Apache-2.0. The BSD-3-Clause part covers the vendored
+# qml/utilities/paho (EDL-1.0, which SPDX expresses as BSD-3-Clause) and
+# qml/utilities/qrcode -- see NOTICE. Both ship inside this package, so the
+# tag has to name them.
+License:    Apache-2.0 AND BSD-3-Clause
 URL:        https://github.com/Dominik-h-hub/harbour-find-my-device
 Source0:    %{name}-%{version}.tar.bz2
 Requires:   sailfishsilica-qt5 >= 0.10.9
@@ -71,6 +75,10 @@ Screenshots:
  - https://github.com/Dominik-h-hub/harbour-find-my-device/raw/main/docs/images/map-view.png
  - https://github.com/Dominik-h-hub/harbour-find-my-device/raw/main/docs/images/devices-view.png
  - https://github.com/Dominik-h-hub/harbour-find-my-device/raw/main/docs/images/settings-view-1.png
+Links:
+  Homepage: https://github.com/Dominik-h-hub/harbour-find-my-device
+  Help: https://forum.sailfishos.org/t/radar-app-find-my-device/30944
+  Bugtracker: https://github.com/Dominik-h-hub/harbour-find-my-device/issues
 %endif
 
 %prep

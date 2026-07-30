@@ -33,7 +33,10 @@ Name:       harbour-find-my-device-daemon
 Summary:    Background services for Radar (Find My Device)
 Version:    %{fmd_ver}
 Release:    %{fmd_rel}
-License:    Apache-2.0
+# Own code is Apache-2.0. The BSD-3-Clause part covers the vendored paho
+# (EDL-1.0, which SPDX expresses as BSD-3-Clause), copied in from
+# qml/utilities/paho by %%install -- see NOTICE.
+License:    Apache-2.0 AND BSD-3-Clause
 URL:        https://github.com/Dominik-h-hub/harbour-find-my-device
 Source0:    %{name}-%{version}.tar.bz2
 BuildArch:  noarch
@@ -65,6 +68,10 @@ Categories:
 Custom:
   Repo: https://github.com/Dominik-h-hub/harbour-find-my-device
 PackageIcon: https://github.com/Dominik-h-hub/harbour-find-my-device/raw/main/icons/172x172/harbour-find-my-device.png
+Links:
+  Homepage: https://github.com/Dominik-h-hub/harbour-find-my-device
+  Help: https://forum.sailfishos.org/t/radar-app-find-my-device/30944
+  Bugtracker: https://github.com/Dominik-h-hub/harbour-find-my-device/issues
 %endif
 
 %prep
@@ -93,6 +100,20 @@ find "$D" -name '*.py' -exec chmod 0644 {} +
 # version marker: daemons report this in their DB heartbeat so the app can
 # detect version mismatches and offer the update flow
 echo "%{version}-%{release}" > "$D"/VERSION
+
+# License + attribution. This package is also distributed on its own (Chum,
+# OpenRepos, GitHub releases), so it has to carry them itself -- Apache-2.0
+# section 4 requires both with every distribution. paho's own license files
+# travel along inside paho/ via the cp -r above.
+# cwd differs between build systems: mb2 runs %%install in the shadow build
+# dir (files reachable via %%_sourcedir/..), OBS in the extracted source tree.
+for f in LICENSE NOTICE; do
+  if [ -f "$f" ]; then
+    install -D -m 0644 "$f" "$D"/$f
+  else
+    install -D -m 0644 %{_sourcedir}/../$f "$D"/$f
+  fi
+done
 
 # systemd units + tmpfiles
 install -D -m 0644 daemon-rpm/systemd/harbour-find-my-device-daemon-gps.service \
@@ -179,6 +200,8 @@ fi
 
 %files
 %defattr(-,root,root,-)
+%license %{_datadir}/%{name}/LICENSE
+%license %{_datadir}/%{name}/NOTICE
 %{_datadir}/%{name}
 /usr/lib/systemd/user/harbour-find-my-device-daemon-gps.service
 /usr/lib/systemd/user/harbour-find-my-device-daemon-cmd.service

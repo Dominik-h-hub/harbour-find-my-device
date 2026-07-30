@@ -73,24 +73,11 @@ This is not a spy app: every remote action — even a failed one — shows a not
 
 - Qt 5.6.3 (Sailfish OS Silica UI) + Python 3 backend/daemons
 - Two-RPM model: sandboxed store app + separate daemon package (see [Technical Infos](docs/TECHNICAL-INFOS.md))
+- Building, versioning and the CI build order: see [Building](docs/TECHNICAL-INFOS.md#building)
 - Tested on:
   - Fairphone 4 - Sailfish OS 5.0.0.62
+  - Jolla Phone 2026 - Sailfish OS 5.1.0.xx
   - Emulator - Sailfish OS 5.0.0.62, 5.1.0.11
-
-### Building
-
-The version is maintained **only** in `rpm/harbour-find-my-device.spec`
-(`Version:` / `Release:`); the daemon spec inherits it at build time and both
-packages write a `VERSION` file that app and daemons read at runtime. When
-building locally with the Sailfish SDK, disable the SDK's automatic
-git-describe versioning so the spec version applies: `sfdk config
-no-fix-version` (or `mb2 --no-fix-version`). Release tags must match the spec
-version (`v<Version>-<Release>-release`) - the release CI enforces this.
-
-CI build order: the noarch daemon RPM is built first (plain `rpmbuild`, no
-compilation), then each app build picks it up from `daemon-rpm/RPMS/` and
-embeds it under `/usr/share/harbour-find-my-device/daemon/`. The app RPM is
-gated by the official [sdk-harbour-rpmvalidator](https://github.com/sailfishos/sdk-harbour-rpmvalidator).
 
 ## Contributing to the project
 
@@ -128,6 +115,10 @@ Thanks for your consideration and contribution!
 ## License
 
 This project is licensed under the Apache License 2.0 - see [LICENSE](LICENSE).
+
+The packages additionally contain vendored third-party components under the
+BSD-3-Clause license (`paho-mqtt`, `qrcode`), which is why the RPMs declare
+`Apache-2.0 AND BSD-3-Clause`. See [NOTICE](NOTICE) for the attributions.
 
 ## AI Information
 
