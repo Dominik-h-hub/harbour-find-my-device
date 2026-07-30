@@ -54,6 +54,7 @@ Dialog {
     }
 
     function daemonStateText(s) {
+        //: shows status of background daemon on settings page; s is one of "unknown", "running", "deactivated", "applying"
         if (s === "running") return qsTr("running");
         if (s === "deactivated") return qsTr("deactivated");
         // Heartbeat is fresh but predates the last save: the daemon is still

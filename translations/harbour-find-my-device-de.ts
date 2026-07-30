@@ -217,11 +217,11 @@
     </message>
     <message>
         <source>%1 queued until reconnect</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 warten bis zum Reconnect.</translation>
     </message>
     <message>
         <source>Could not send %1: no connection</source>
-        <translation type="unfinished"></translation>
+        <translation>Konnte %1 nicht senden: keine Verbindung</translation>
     </message>
 </context>
 <context>
@@ -243,7 +243,7 @@
     </message>
     <message>
         <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>Remote-Commands und Hintergrundverfolgung benötigen den Hintergrunddienst. Hier tippen, um ihn zu installieren.</translation>
     </message>
 </context>
 <context>
@@ -302,11 +302,11 @@
     </message>
     <message>
         <source>No GPS module available</source>
-        <translation type="unfinished"></translation>
+        <translation>Kein GPS-Modul verfügbar</translation>
     </message>
     <message>
         <source>GPS reader library unavailable</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-Reader-Library nicht verfügbar</translation>
     </message>
 </context>
 <context>
@@ -589,43 +589,44 @@
     </message>
     <message>
         <source>running</source>
-        <translation type="unfinished"></translation>
+        <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
+        <translation>gestartet</translation>
     </message>
     <message>
         <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
-        <translation type="unfinished"></translation>
+        <translation>Remote-Commands, SMS-Steuerung und Hintergrunddienste benötigen das Hintergrunddienst-Paket. Es läuft außerhalb der App-Sandbox und enthält einen privilegierten Helfer für Neustart und SMS-Antworten; der Systeminstaller wird Sie auffordern, die Installation zu bestätigen.</translation>
     </message>
     <message>
         <source>Install background service</source>
-        <translation type="unfinished"></translation>
+        <translation>Hintergrunddienst installieren</translation>
     </message>
     <message>
         <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
-        <translation type="unfinished"></translation>
+        <translation>Remote-Commands, SMS-Steuerung und Hintergrunddienste benötigen den Hintergrunddienst. Installieren Sie das Paket &apos;harbour-find-my-device-daemon&apos; aus demselben Repository, aus dem diese App stammt (z. B. SailfishOS:Chum).</translation>
     </message>
     <message>
         <source>Background service update available (installed: %1, new: %2).</source>
-        <translation type="unfinished"></translation>
+        <translation>Hintergrunddienst-Update verfügbar (installiert: %1, neu: %2).</translation>
     </message>
     <message>
         <source>Update background service</source>
-        <translation type="unfinished"></translation>
+        <translation>Hintergrunddienst aktualisieren</translation>
     </message>
     <message>
         <source>deactivated</source>
-        <translation type="unfinished"></translation>
+        <translation>deaktiviert</translation>
     </message>
     <message>
         <source>not installed</source>
-        <translation type="unfinished"></translation>
+        <translation>nicht installiert</translation>
     </message>
     <message>
         <source>applying…</source>
-        <translation type="unfinished"></translation>
+        <translation>wird angewendet…</translation>
     </message>
     <message>
         <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
-        <translation type="unfinished"></translation>
+        <translation>Löscht alle Userdaten unter &apos;home/&lt;user&gt;/&apos; und startet das Gerät anschließend neu.</translation>
     </message>
 </context>
 </TS>

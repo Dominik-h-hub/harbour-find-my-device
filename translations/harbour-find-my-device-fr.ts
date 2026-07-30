@@ -589,6 +589,7 @@
     </message>
     <message>
         <source>running</source>
+        <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
         <translation type="unfinished"></translation>
     </message>
     <message>
