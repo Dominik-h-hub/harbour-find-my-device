@@ -41,7 +41,10 @@ import mqtt_client
 log = logging.getLogger("fmd.daemon.gps")
 
 IDLE_POLL_SECONDS = 30        # how often to re-check toggles while idle
-CONNECT_TIMEOUT_S = 15        # CONNACK wait per connection attempt
+CONNECT_TIMEOUT_S = 25        # CONNACK wait per connection attempt. 25, not 15:
+                              # a TLS connect right after a handover regularly
+                              # needs longer, and both attempts timing out at
+                              # 15s cost a fix the link would have carried.
 
 # Set by SIGTERM/SIGINT; every wait blocks on this event instead of polling a
 # flag once per second (300 wakeups per 5-min cycle cost more battery than

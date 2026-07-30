@@ -52,11 +52,32 @@ KEEPALIVE_S = 900
 # the failure case pays for it, and 5s is plenty for a healthy link.
 PUBLISH_ACK_TIMEOUT_S = 5
 
+# The republish after a forced reconnect writes into a socket whose TLS
+# handshake just finished on a network that is still settling from a handover,
+# so the broker's first PUBACK is measurably slower than on a warm link. This
+# is the attempt that decides between "delivered" and "lost" -- give it room.
+PUBLISH_ACK_RETRY_TIMEOUT_S = 10
+
+# CONNACK wait after connect()/force_reconnect(). 25s, not 15: a TLS connect on
+# a freshly handed-over network regularly needs longer than 15s (measured 17.3s
+# on the UI client, and two 15s timeouts in a row in the GPS publisher -- each
+# one threw away a payload that the link would have carried a second later).
+CONNACK_TIMEOUT_S = 25
+
 # OS-level TCP keepalive. The MQTT keepalive above is deliberately long, but a
-# WLAN<->mobile handover leaves the old socket "half-open". Values chosen for
-# an IDLE connection (the -cmd/-ui subscribers): probing a mostly-idle link
-# once a minute (old value 60s) kept the radio permanently busy for nothing.
-TCP_KEEPIDLE_S = 300     # start probing after 5 min idle
+# WLAN<->mobile handover leaves the old socket "half-open".
+#
+# KEEPIDLE is also what keeps the path itself alive between publishes. At 300s
+# it did not: a 168min field log showed 13 connection losses, and the surviving
+# connection lifetimes clustered on multiples of the 5.5min GPS interval
+# (7x ~350s, 3x ~700s) -- i.e. the link died during the FIRST idle gap and the
+# next publish only surfaced it. 12 of 22 positions then had to go out through
+# the reconnect+republish repair, each costing a full TLS handshake. 120s sits
+# under the 3-6min NAT mapping lifetime typical for mobile carriers, so the
+# mapping is refreshed before it expires. Do NOT lower KEEPALIVE_S instead:
+# TCP keepalive is handled by the kernel and therefore survives the Sailfish
+# suspend that freezes the paho thread, an MQTT PINGREQ does not.
+TCP_KEEPIDLE_S = 120     # start probing after 2 min idle
 TCP_KEEPINTVL_S = 30     # then probe every 30s
 TCP_KEEPCNT = 3          # give up (socket dead) after 3 missed probes
 
@@ -312,12 +333,24 @@ class FmdMqttClient(object):
         return bool(self._connected and self._client is not None
                     and self._client.is_connected())
 
-    def wait_connected(self, timeout=15):
+    def wait_connected(self, timeout=CONNACK_TIMEOUT_S):
         """Block until the CONNACK arrived (connect() is asynchronous).
 
         A publish right after connect() would otherwise always fail. Single
         event wait, no polling. Returns bool."""
         return self._conn_event.wait(timeout)
+
+    def _refresh_connected(self):
+        """Re-derive the wrapper flag from paho after a failed publish.
+
+        NEVER latch it to False here. A missing PUBACK says nothing about the
+        session state -- the packet may simply be late. Latching was effectively
+        permanent: only _handle_connect sets the flag back and that does not
+        fire while paho stays connected, so a single unconfirmed publish locked
+        this client out of *sending* for minutes while it kept happily receiving
+        on the very same socket."""
+        self._connected = bool(self._client is not None
+                               and self._client.is_connected())
 
     def force_reconnect(self):
         """Hard-drop the current client and connect a fresh one. Never raises.
@@ -365,9 +398,10 @@ class FmdMqttClient(object):
         return self._publish(topic_location(device_id), payload, retain=True,
                              wait=wait)
 
-    def publish_command(self, device_id, payload):
+    def publish_command(self, device_id, payload, wait=True):
         """Publish a command to a remote device (retain=false, QoS1)."""
-        return self._publish(topic_cmd(device_id), payload, retain=False)
+        return self._publish(topic_cmd(device_id), payload, retain=False,
+                             wait=wait)
 
     def publish_ack(self, device_id, payload):
         """Publish a command result on the ack topic (retain=false, QoS1)."""
@@ -379,12 +413,19 @@ class FmdMqttClient(object):
         wait=True (default): block until the QoS1 PUBACK arrived; on failure
         force a hard reconnect and republish the SAME payload exactly once
         (a reconnect alone would save the connection but lose this tick's
-        position). Total worst case ~8s -- fine against a 5-min tick.
+        position). Worst case ~42s (5s PUBACK + ~2s teardown + 25s CONNACK +
+        10s PUBACK), so wait=True callers MUST run on a thread nobody waits on
+        -- never on the PyOtherSide worker and never on a UI path.
 
         wait=False MUST be used by any caller running in the paho network
         thread (e.g. an on_connected flush): waiting for the PUBACK there
         blocks exactly the thread that would process it, guaranteeing the
         timeout. The wait=False path also skips the reconnect/republish repair.
+
+        The caller must also not hold a lock that any paho callback needs:
+        force_reconnect() below runs the new client's on_connected on the paho
+        network thread, and parking that thread means the PUBACK the republish
+        waits for is never processed -- the repair then fails by construction.
         """
         body = json.dumps(payload) if not isinstance(payload, str) else payload
         if not self.is_really_connected():
@@ -396,7 +437,8 @@ class FmdMqttClient(object):
                         topic, self.cid)
             if not (self.force_reconnect() and self.wait_connected()):
                 return False
-            return self._send_once(topic, body, retain, wait)
+            return self._send_once(topic, body, retain, wait,
+                                   timeout=PUBLISH_ACK_RETRY_TIMEOUT_S)
         if self._send_once(topic, body, retain, wait):
             return True
         if not wait:
@@ -408,40 +450,43 @@ class FmdMqttClient(object):
                     topic, self.cid)
         if not (self.force_reconnect() and self.wait_connected()):
             return False
-        ok = self._send_once(topic, body, retain, wait)
+        ok = self._send_once(topic, body, retain, wait,
+                             timeout=PUBLISH_ACK_RETRY_TIMEOUT_S)
         log.warning("republish %s after reconnect -> %s (%s)",
                     topic, "ok" if ok else "FAILED", self.cid)
         return ok
 
-    def _send_once(self, topic, body, retain, wait):
+    def _send_once(self, topic, body, retain, wait, timeout=None):
         """One raw publish attempt. With wait=True, success means PUBACK
         received -- never logs 'published' without proof of delivery."""
+        if timeout is None:
+            timeout = PUBLISH_ACK_TIMEOUT_S
         try:
             info = self._client.publish(topic, body, qos=QOS, retain=retain)
             if info.rc != mqtt.MQTT_ERR_SUCCESS:
                 log.warning("publish %s rejected rc=%s (%s)",
                             topic, info.rc, self.cid)
-                self._connected = False
+                self._refresh_connected()
                 return False
             if wait and QOS >= 1:
                 try:
-                    info.wait_for_publish(timeout=PUBLISH_ACK_TIMEOUT_S)
+                    info.wait_for_publish(timeout=timeout)
                 except (ValueError, RuntimeError) as exc:
                     log.warning("publish %s not confirmed: %s (%s)",
                                 topic, exc, self.cid)
-                    self._connected = False
+                    self._refresh_connected()
                     return False
                 if not info.is_published():
                     log.warning("publish %s: no PUBACK within %ds (%s)",
-                                topic, PUBLISH_ACK_TIMEOUT_S, self.cid)
-                    self._connected = False
+                                topic, timeout, self.cid)
+                    self._refresh_connected()
                     return False
             log.debug("published %s (retain=%s, mid=%s, %s)", topic, retain,
                       getattr(info, "mid", "?"), self.cid)
             return True
         except Exception as exc:
             log.error("publish to %s failed: %s (%s)", topic, exc, self.cid)
-            self._connected = False
+            self._refresh_connected()
             return False
 
     # -- paho callbacks --

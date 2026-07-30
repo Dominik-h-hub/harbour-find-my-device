@@ -215,6 +215,14 @@
         <source>Last GPS FIX: %1</source>
         <translation>Dernier positionnement GPS : %1</translation>
     </message>
+    <message>
+        <source>%1 queued until reconnect</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not send %1: no connection</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>FullMapPage</name>
@@ -428,10 +436,6 @@
         <translation>Si l’appareil est déverrouillé, il sera verrouillé sur l’écran de code de sécurité.</translation>
     </message>
     <message>
-        <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
-        <translation>Efface toutes les données utilisateur stockées dans « home//&lt;user&gt;// » et redémarre l’appareil ensuite.</translation>
-    </message>
-    <message>
         <source>Camera</source>
         <translation>Caméra</translation>
     </message>
@@ -617,6 +621,10 @@
     </message>
     <message>
         <source>applying…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

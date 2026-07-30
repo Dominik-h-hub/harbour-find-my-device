@@ -510,7 +510,7 @@ Dialog {
             TextSwitch {
                 id: deleteSwitch
                 text: qsTr("Allow command DELETE (wipe)")
-                description: qsTr("Will delete all userdata stored under 'home//<user>//' and reboot device afterwards.")
+                description: qsTr("Will delete all userdata stored under 'home/<user>/' and reboot device afterwards.")
                 automaticCheck: false
                 opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
                 onClicked: dialog.toggleOrInstall(deleteSwitch)

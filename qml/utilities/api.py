@@ -12,6 +12,7 @@ Signals sent to QML (data[0] = event name):
 
 import logging
 import logging.handlers
+import queue
 import threading
 import time
 
@@ -33,8 +34,9 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
                     handlers=[logging.StreamHandler(), _fh])
 
-# OSM zero-config default User-Agent.
-OSM_USER_AGENT = "harbour-find-my-device/1.1 (contact: dominikh@atomicmail.io)"
+# Contact address for the OSM tile User-Agent; the version is not hardcoded
+# here, see osm_user_agent().
+_OSM_CONTACT = "dominikh@atomicmail.io"
 
 _ui_mqtt = None
 _ui_lock = threading.Lock()
@@ -53,6 +55,19 @@ _timed_out = set()        # device ids whose last command got no ack in time
 _pending_lock = threading.Lock()
 _ack_seq = 0
 
+# Outgoing commands are published on a dedicated worker thread.
+_command_queue = queue.Queue()
+_command_worker = None
+_command_worker_lock = threading.Lock()
+
+# Commands that could not be delivered and are safe to retry on the next
+# reconnect. Deliberately STOP_RING only: a late STOP_RING is exactly what the
+# user wanted (silence), whereas a RING/LOCK/CAMERA arriving minutes after the
+# tap would be a surprise action nobody is asking for any more.
+_RETRY_COMMANDS = ("STOP_RING",)
+_PENDING_CMD_TTL_S = 60
+_pending_commands = {}    # device_id -> (cmd, payload, deadline); under _ui_lock
+
 # Devices currently ringing (optimistic UI state so the RING button can become a
 # STOP button). A ring lasts ~RING_SECONDS on the target; we auto-clear a little
 # later so the button reverts even if the "ring ended" is not signalled. Pressing
@@ -66,6 +81,13 @@ _ring_timers = {}         # device_id -> (token, threading.Timer)
 # interval until the user closes it. Lives only in the UI process (dies with it).
 _fg_gps_timer = None      # threading.Timer for the next foreground tick
 _fg_gps_lock = threading.Lock()
+# Generation of the polling chain, bumped on every start/stop. A tick carries
+# the generation it was armed under and only reschedules while that is still
+# current. Without it, a tick that was still running when the chain was stopped
+# and restarted (a fix blocks for up to 100s, a settings save takes seconds)
+# rescheduled off the successor's timer variable and forked a SECOND, permanent
+# chain -- visible as every position being published twice, ~90s apart.
+_fg_gps_gen = 0
 _fg_in_failure = False    # True once a foreground tick failed; reset on next fix.
                           # Used to show the "no fix" banner only on the first
                           # failure of an episode, not every interval.
@@ -105,7 +127,7 @@ def init_app():
         "gps_enabled": _location_enabled(),
         "tile_provider": settings.get(settings.TILE_PROVIDER),
         "geoapify_key": settings.get(settings.GEOAPIFY_KEY),
-        "osm_user_agent": OSM_USER_AGENT,
+        "osm_user_agent": osm_user_agent(),
         "app_version": app_version(),
     }
 
@@ -121,6 +143,11 @@ def app_version():
     return runtime.read_version_file(_APP_VERSION_FILE) or _APP_VERSION_FALLBACK
 
 
+def osm_user_agent():
+    # User-Agent for the OSM tile requests.
+    return "harbour-find-my-device/%s (contact: %s)" % (app_version(), _OSM_CONTACT)
+
+
 def get_map_config():
     """Map tile provider config for the QML map. Read at startup and re-read
     after a settings change so switching osm<->geoapify takes effect without an
@@ -129,7 +156,7 @@ def get_map_config():
     return {
         "tile_provider": settings.get(settings.TILE_PROVIDER),
         "geoapify_key": settings.get(settings.GEOAPIFY_KEY),
-        "osm_user_agent": OSM_USER_AGENT,
+        "osm_user_agent": osm_user_agent(),
     }
 
 
@@ -149,7 +176,7 @@ def get_settings():
                         if own.get("totp_secret") else "")
     data["backup_codes_unused"] = tokens.count_unused_backup_codes()
     data["gps_enabled"] = _location_enabled()
-    data["osm_user_agent"] = OSM_USER_AGENT
+    data["osm_user_agent"] = osm_user_agent()
     return data
 
 
@@ -414,6 +441,12 @@ _NET_TTL_S = 10.0
 _net_state = {"online": True, "checked": 0.0, "probing": False}
 _net_lock = threading.Lock()
 
+# Rate limit for the handover check itself. It costs a route lookup (and, on a
+# cold DNS cache, a resolve), so callers can ask as often as they like.
+_HANDOVER_TTL_S = 10.0
+_handover_check = {"ts": 0.0}
+_handover_lock = threading.Lock()
+
 
 def _network_online(server, port):
     """Return the last known online state; refresh it in the background if stale."""
@@ -433,16 +466,45 @@ def _probe_network(server, port):
         changed = online != _net_state["online"]
         _net_state.update(online=online, checked=time.time(), probing=False)
     # Handover check piggybacks on this existing background probe (no extra
-    # timer): if the kernel would now route to the broker from a different
-    # source address than the live UI socket uses, that socket is stranded.
-    if online and _handover_detected(server, port):
-        log.info("network handover detected; restarting UI MQTT client")
-        with _net_lock:
-            _net_state["checked"] = 0.0  # invalidate: re-probe promptly
-        _restart_ui_mqtt()
+    # timer). Already off the PyOtherSide worker, so repair synchronously.
+    if online:
+        _repair_if_handover(server, port)
     if changed:
         # Reload the map page so the offline banner (dis)appears promptly.
         _emit("mapUpdated")
+
+
+def _repair_if_handover(server=None, port=None):
+    """Restart the UI client if its socket was stranded by a handover.
+
+    Callers must be off the PyOtherSide worker thread: this waits for the new
+    CONNACK so the caller can publish immediately afterwards.
+
+    Rate-limited, so command dispatch can call it on every send. It must:
+    piggybacking the check on the map's _probe_network alone is a chicken-and-
+    egg trap, because get_map_data() is driven by 'mapUpdated', which is mostly
+    driven by *incoming* MQTT traffic -- precisely what stops arriving when the
+    socket is stranded."""
+    now = time.time()
+    with _handover_lock:
+        if now - _handover_check["ts"] < _HANDOVER_TTL_S:
+            return False
+        _handover_check["ts"] = now
+    if server is None:
+        tls = settings.get_bool(settings.MQTT_TLS)
+        server = settings.get(settings.MQTT_SERVER)
+        port = settings.get_int(settings.MQTT_PORT, 8883 if tls else 1883)
+    if not _handover_detected(server, port):
+        return False
+    log.info("network handover detected; restarting UI MQTT client")
+    with _net_lock:
+        _net_state["checked"] = 0.0  # invalidate: re-probe promptly
+    _restart_ui_mqtt_sync()
+    with _ui_lock:
+        client = _ui_mqtt
+    if client is not None:
+        client.wait_connected()
+    return True
 
 
 def _handover_detected(server, port):
@@ -498,7 +560,7 @@ def get_map_data():
         "gps_available": gps_available,
         "tile_provider": settings.get(settings.TILE_PROVIDER),
         "geoapify_key": settings.get(settings.GEOAPIFY_KEY),
-        "osm_user_agent": OSM_USER_AGENT,
+        "osm_user_agent": osm_user_agent(),
     }
 
 
@@ -713,9 +775,11 @@ def _publish_own_location(own_id, fix, battery):
 def _start_foreground_gps():
     """Begin periodic own-device fixes from the UI process. No-op if already
     running. Stops automatically when the app process exits."""
+    global _fg_gps_gen
     with _fg_gps_lock:
         if _fg_gps_timer is not None:
             return
+        _fg_gps_gen += 1
         _log_ui("foreground GPS polling started (background activity off)")
         # Quick first tick: auto-enable location and the GPS cold start should
         # begin right away, not one full interval after the app started.
@@ -723,12 +787,15 @@ def _start_foreground_gps():
 
 
 def _stop_foreground_gps():
-    global _fg_gps_timer, _fg_in_failure
+    global _fg_gps_timer, _fg_in_failure, _fg_gps_gen
     with _fg_gps_lock:
         if _fg_gps_timer is None:
             return
         _fg_gps_timer.cancel()
         _fg_gps_timer = None
+        # Retires any tick that is still mid-fix: cancel() cannot reach one that
+        # has already fired, and on return it would otherwise reschedule itself.
+        _fg_gps_gen += 1
         _log_ui("foreground GPS polling stopped")
     # Handing off to the background daemon: a stale foreground "no fix" banner no
     # longer applies (the daemon runs in its own process and cannot drive the UI
@@ -747,13 +814,20 @@ def _schedule_foreground_tick_locked(delay_s=None):
         if minutes < 1:
             minutes = 1
         delay_s = minutes * 60
-    _fg_gps_timer = threading.Timer(delay_s, _foreground_tick)
+    _fg_gps_timer = threading.Timer(delay_s, _foreground_tick,
+                                    args=(_fg_gps_gen,))
     _fg_gps_timer.daemon = True
     _fg_gps_timer.start()
 
 
-def _foreground_tick():
+def _foreground_tick(gen):
     global _fg_in_failure
+    # Drop a tick whose chain was retired while it sat in the timer.
+    with _fg_gps_lock:
+        if gen != _fg_gps_gen:
+            log.info("foreground GPS tick from retired chain %d (now %d); dropped",
+                     gen, _fg_gps_gen)
+            return
     # If the background daemon took over meanwhile, it now handles the polling.
     # (Only the flag being set is not enough: without an installed daemon the
     # app keeps polling in the foreground -- degraded mode.)
@@ -776,9 +850,13 @@ def _foreground_tick():
         log.info("foreground GPS tick: %s", res)
     except Exception as exc:
         log.error("foreground GPS tick failed: %s", exc)
-    # Reschedule unless we were stopped while fixing.
+    # Reschedule only if this chain is still the current one. Testing
+    # _fg_gps_timer alone is not enough: a stop+start during the fix (a settings
+    # save while a tick blocks for up to 100s) leaves it pointing at the
+    # SUCCESSOR's timer, so this tick would arm a second, parallel chain and
+    # every position would be published twice from then on.
     with _fg_gps_lock:
-        if _fg_gps_timer is not None:
+        if _fg_gps_timer is not None and gen == _fg_gps_gen:
             _schedule_foreground_tick_locked()
 
 
@@ -786,7 +864,18 @@ def _foreground_tick():
 # Remote commands (UI -> remote device)
 # =========================================================================
 def send_command(device_id, cmd, arg=""):
-    #Sign and publish a remote command to another device over MQTT.
+    """Sign a remote command and queue it for the command worker.
+
+    Returns as soon as the command is queued -- the publish itself must never
+    run on the PyOtherSide worker thread. A verified publish blocks until the
+    PUBACK and spends up to ~40s repairing a dying link, and every Bridge.call
+    is served by that one thread, so publishing here froze the whole backend.
+    That is what made the channel look "blocked" after a RING: the STOP_RING
+    tap behind it was not refused, it was simply not processed yet.
+
+    Delivery is reported asynchronously via the 'commandResult' signal
+    ('sent' / 'pending' / 'mqtt_offline'), the target's answer via the ack.
+    """
     cmd = (cmd or "").upper()
     dev = devices.get_device(device_id)
     if not dev:
@@ -800,24 +889,120 @@ def send_command(device_id, cmd, arg=""):
     if arg:
         payload["arg"] = arg
 
-    with _ui_lock:
-        if not (_ui_mqtt and _ui_mqtt.is_really_connected()):
-            _log_ui("cannot send %s to %s: MQTT not connected" % (cmd, device_id))
-            return {"ok": False, "error": "mqtt_offline"}
-        _ui_mqtt.publish_command(device_id, payload)
-    _log_ui("sent command %s to %s" % (cmd, device_id))
-    # Only remote devices are tracked for an ack timeout: the own device's buttons
-    # are never greyed, so a missing self-ack must not flag it as "no response".
-    if dev.get("is_own") != 1:
-        _arm_ack_timeout(device_id, cmd)
-    # Toggle the optimistic ringing state so the RING button can show STOP.
+    # Toggle the optimistic ringing state so the RING button can show STOP. Done
+    # on the tap, not after delivery, so the button follows the finger; the
+    # dispatcher reverts it if the RING never made it out.
     if cmd == "RING":
         _mark_ringing(device_id)
         _emit("devicesUpdated")
     elif cmd == "STOP_RING":
         _clear_ringing(device_id)
         _emit("devicesUpdated")
-    return {"ok": True}
+
+    _ensure_command_worker()
+    _command_queue.put((device_id, cmd, payload, dev.get("is_own") == 1))
+    return {"ok": True, "queued": True}
+
+
+def _ensure_command_worker():
+    """Start the command worker on first use (and revive it if it ever died)."""
+    global _command_worker
+    with _command_worker_lock:
+        if _command_worker is not None and _command_worker.is_alive():
+            return
+        _command_worker = threading.Thread(target=_command_worker_run,
+                                           name="fmd-cmd-dispatch", daemon=True)
+        _command_worker.start()
+
+
+def _command_worker_run():
+    """Publish queued commands one at a time, in tap order."""
+    while True:
+        job = _command_queue.get()
+        try:
+            _dispatch_command(*job)
+        except Exception:
+            log.exception("command dispatch failed")
+
+
+def _dispatch_command(device_id, cmd, payload, is_own):
+    """Publish one queued command. Runs on the command worker thread."""
+    # Repair a stranded socket BEFORE the publish rather than through it: the
+    # in-publish repair pays a 5s PUBACK timeout first, and after a handover
+    # that first attempt is doomed anyway.
+    _repair_if_handover()
+
+    with _ui_lock:
+        client = _ui_mqtt
+    # Published OUTSIDE _ui_lock, and this is load-bearing: publish_command()
+    # can force a reconnect, whose on_connected flush runs on the paho network
+    # thread and takes _ui_lock. Holding it across the publish parked that
+    # thread -- so the PUBACK the republish was waiting for could never be
+    # processed and the repair failed by construction, every single time.
+    if client is not None and client.publish_command(device_id, payload):
+        _log_ui("sent command %s to %s" % (cmd, device_id))
+        # Only remote devices are tracked for an ack timeout: the own device's
+        # buttons are never greyed, so a missing self-ack must not flag it as
+        # "no response". Armed here, not on the tap, so the 60s window starts
+        # when the command actually left the device.
+        if not is_own:
+            _arm_ack_timeout(device_id, cmd)
+        _emit("commandResult", device_id, cmd, "sent")
+        return
+
+    _log_ui("could not send %s to %s: MQTT offline" % (cmd, device_id))
+    # A RING that never left must not leave the button showing STOP.
+    if cmd == "RING":
+        _clear_ringing(device_id)
+        _emit("devicesUpdated")
+    if _queue_pending_command(device_id, cmd, payload):
+        _emit("commandResult", device_id, cmd, "pending")
+        return
+    _emit("commandResult", device_id, cmd, "mqtt_offline")
+
+
+def _queue_pending_command(device_id, cmd, payload):
+    """Park an undeliverable command for the on_connected flush.
+
+    Returns True if it was queued, i.e. the user can be told it is still on its
+    way. Only _RETRY_COMMANDS qualify -- see there for why."""
+    if cmd not in _RETRY_COMMANDS:
+        return False
+    with _ui_lock:
+        _pending_commands[device_id] = (cmd, payload,
+                                        time.time() + _PENDING_CMD_TTL_S)
+    log.info("queued %s for %s until reconnect", cmd, device_id)
+    return True
+
+
+def _flush_pending_commands():
+    """Re-send commands parked while offline. Runs in the paho network thread."""
+    now = time.time()
+    with _ui_lock:
+        client = _ui_mqtt
+        due = [(dev_id, cmd, payload)
+               for dev_id, (cmd, payload, deadline) in _pending_commands.items()
+               if deadline > now]
+        stale = [(dev_id, cmd)
+                 for dev_id, (cmd, _payload, deadline) in _pending_commands.items()
+                 if deadline <= now]
+        _pending_commands.clear()
+    for dev_id, cmd in stale:
+        _log_ui("dropped queued %s for %s (too old)" % (cmd, dev_id))
+    if client is None:
+        return
+    for dev_id, cmd, payload in due:
+        # wait=False is mandatory here for the same reason as in
+        # _flush_pending_location: this runs on the paho network thread, and
+        # waiting for the PUBACK would block the thread that has to process it.
+        if client.publish_command(dev_id, payload, wait=False):
+            _log_ui("sent queued command %s to %s" % (cmd, dev_id))
+            _emit("commandResult", dev_id, cmd, "sent")
+        else:
+            # Dropped rather than re-parked: this already IS the retry, and a
+            # STOP_RING that keeps chasing reconnects would outlive the ring.
+            _log_ui("queued %s for %s could not be sent" % (cmd, dev_id))
+            _emit("commandResult", dev_id, cmd, "mqtt_offline")
 
 
 def _mark_ringing(device_id):
@@ -1046,44 +1231,65 @@ def _start_ui_mqtt():
     server = settings.get(settings.MQTT_SERVER)
     if not enabled or not server or not mqtt_client.paho_available():
         with _ui_lock:
-            was_running = _ui_mqtt is not None
-            if was_running:
-                # close(), not disconnect(): a GPS tick still holding the old
-                # reference must not be able to revive it via the publish
-                # repair path (client-id fight with any successor).
-                _ui_mqtt.close()
-                _ui_mqtt = None
+            old = _ui_mqtt
+            _ui_mqtt = None
+        if old is not None:
+            # close(), not disconnect(): a GPS tick still holding the old
+            # reference must not be able to revive it via the publish repair
+            # path (client-id fight with any successor). Outside the lock: it
+            # joins the network thread (see the restart path below).
+            old.close()
         log.info("MQTT %s; UI listener %s",
                  "disabled in settings" if not enabled else "not configured",
-                 "stopped" if was_running else "not started")
+                 "stopped" if old is not None else "not started")
         return
     tls = settings.get_bool(settings.MQTT_TLS)
     port = settings.get_int(settings.MQTT_PORT, 8883 if tls else 1883)
     own_id = devices.own_device_id()
 
+    # Retire the predecessor OUTSIDE _ui_lock: close() joins the old network
+    # thread for up to 2s, and the successor's on_connected (paho network
+    # thread) takes this very lock -- holding it across a blocking call is the
+    # pattern that parked that thread and broke the publish repair. Still done
+    # before the successor connects, so the two never fight over the client id.
     with _ui_lock:
-        if _ui_mqtt is not None:
-            _ui_mqtt.close()  # retire for good; see teardown branch above
-        _ui_mqtt = mqtt_client.FmdMqttClient(
-            server, port, tls,
-            settings.get(settings.MQTT_USERNAME),
-            settings.get(settings.MQTT_PASSWORD),
-            mqtt_client.client_id(own_id, mqtt_client.ROLE_UI),
-            on_location=_on_remote_location,
-            on_ack=_on_remote_ack,
-            on_connected=_flush_pending_location)
-        if _ui_mqtt.connect():
-            # Listen to every remote device's location + ack topics.
-            for dev in devices.list_devices():
-                if dev["is_own"] == 1:
-                    continue
-                _ui_mqtt.subscribe_location(dev["device_id"])
-                _ui_mqtt.subscribe_ack(dev["device_id"])
-            # Also listen to the own ack topic: the command daemon acks here when it
-            # executes a locally-triggered command (e.g. a RING sent from another
-            # device), which lets us refresh the own-device row's STOP button.
-            _ui_mqtt.subscribe_ack(own_id)
-            log.info("UI MQTT listener started")
+        old = _ui_mqtt
+        _ui_mqtt = None
+    if old is not None:
+        old.close()  # retire for good; see teardown branch above
+
+    client = mqtt_client.FmdMqttClient(
+        server, port, tls,
+        settings.get(settings.MQTT_USERNAME),
+        settings.get(settings.MQTT_PASSWORD),
+        mqtt_client.client_id(own_id, mqtt_client.ROLE_UI),
+        on_location=_on_remote_location,
+        on_ack=_on_remote_ack,
+        on_connected=_on_ui_connected)
+    # Published before connect(): on_connected can fire while we are still
+    # subscribing below, and its flush must find this client, not the retired one.
+    with _ui_lock:
+        _ui_mqtt = client
+    if client.connect():
+        # Listen to every remote device's location + ack topics.
+        for dev in devices.list_devices():
+            if dev["is_own"] == 1:
+                continue
+            client.subscribe_location(dev["device_id"])
+            client.subscribe_ack(dev["device_id"])
+        # Also listen to the own ack topic: the command daemon acks here when it
+        # executes a locally-triggered command (e.g. a RING sent from another
+        # device), which lets us refresh the own-device row's STOP button.
+        client.subscribe_ack(own_id)
+        log.info("UI MQTT listener started")
+
+
+def _on_ui_connected():
+    """on_connected callback of the UI client: flush everything that was parked
+    while it was offline. Runs in the paho network thread, so every publish in
+    here must use wait=False."""
+    _flush_pending_location()
+    _flush_pending_commands()
 
 
 def _flush_pending_location():

@@ -368,12 +368,22 @@ class _ConnmanWatcher(object):
     detection mechanism.
     """
 
-    DEBOUNCE_S = 5  # a handover fires several signals in a row
+    # A handover walks the state machine (idle -> ready -> online) and the steps
+    # can be ~10s apart, so a leading-edge debounce reconnected on the FIRST,
+    # least useful state and then either suppressed or duplicated the reconnect
+    # for the final one. Coalesce on the trailing edge instead: wait for the
+    # state to settle, then do exactly one reconnect, on the state that lasts.
+    SETTLE_S = 5
+    # States worth reconnecting for. "idle"/"offline" mean there is no network
+    # to connect to; reconnecting there only burns a TLS handshake.
+    ACTIONABLE_STATES = ("ready", "online")
 
     def __init__(self, get_client):
         self._get_client = get_client
         self._match = None
-        self._last = 0.0
+        self._lock = threading.Lock()
+        self._timer = None
+        self._state = None
 
     def start(self):
         try:
@@ -399,24 +409,42 @@ class _ConnmanWatcher(object):
                 self._match = None
         except Exception:
             pass
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
 
     def _on_property_changed(self, name, value):
         try:
             if str(name) != "State":
                 return
-            now = time.time()
-            if now - self._last < self.DEBOUNCE_S:
+            state = str(value)
+            if state not in self.ACTIONABLE_STATES:
+                log.info("ConnMan state -> %s; no reconnect (no connectivity)",
+                         state)
                 return
-            self._last = now
-            client = self._get_client()
-            if client is None or _stop.is_set():
-                return
-            log.info("ConnMan state -> %s; forcing cmd mqtt reconnect", value)
-            # Off the GLib main thread: force_reconnect can block ~2s tearing
-            # down the old network thread.
-            threading.Thread(target=client.force_reconnect, daemon=True).start()
+            with self._lock:
+                self._state = state
+                if self._timer is not None:
+                    self._timer.cancel()
+                # Fires off the GLib main thread, which is what we want anyway:
+                # force_reconnect can block ~2s tearing down the old network
+                # thread and must not stall D-Bus signal delivery.
+                self._timer = threading.Timer(self.SETTLE_S, self._reconnect)
+                self._timer.daemon = True
+                self._timer.start()
         except Exception:
             log.exception("ConnMan state handler failed")
+
+    def _reconnect(self):
+        with self._lock:
+            state = self._state
+            self._timer = None
+        client = self._get_client()
+        if client is None or _stop.is_set():
+            return
+        log.info("ConnMan state settled at %s; forcing cmd mqtt reconnect", state)
+        client.force_reconnect()
 
 
 def _run_active_phase(own_id, generation):
