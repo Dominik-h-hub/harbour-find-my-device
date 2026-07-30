@@ -63,7 +63,7 @@
     </message>
     <message>
         <source>WARNING: You are about to delete all user data from your device. This cannot be undone. After the user data has been deleted the device will reboot. Locating it will no longer be possible. Do you really want to continue?</source>
-        <translation>ATTENTION : Vous vous apprêtez à effacer toutes les données utilisateur de votre appareil. Cette action ne peut pas être annulée. Après l’effacement des données utilisateur l’appareil redémarrera. Il ne sera plus possible de le localiser. Souhaitez-vous vraiment continuer ?</translation>
+        <translation>ATTENTION&#xa0;: Vous vous apprêtez à effacer toutes les données utilisateur de votre appareil. Cette action ne peut pas être annulée. Après l’effacement des données utilisateur l’appareil redémarrera. Il ne sera plus possible de le localiser. Souhaitez-vous vraiment continuer&#xa0;?</translation>
     </message>
     <message>
         <source>Delete user data now</source>
@@ -75,14 +75,14 @@
     </message>
     <message>
         <source>Note: Request for deletion will be sent after you press the button below. Wipe will be performed only if DELETE command is activated on remote device. Otherwise it will be declined.</source>
-        <translation>Note : La demande d’effacement sera envoyée immédiatement après appui sur le bouton ci-dessous. L’effacement ne sera effectif que si la commande « DELETE » est activée sur l’appareil distant. Il sera refusé dans le cas contraire.</translation>
+        <translation>Note&#xa0;: La demande d’effacement sera envoyée immédiatement après appui sur le bouton ci-dessous. L’effacement ne sera effectif que si la commande «&#xa0;DELETE&#xa0;» est activée sur l’appareil distant. Il sera refusé dans le cas contraire.</translation>
     </message>
 </context>
 <context>
     <name>CoverPage</name>
     <message>
         <source>Battery: %1%</source>
-        <translation>Batterie : %1%</translation>
+        <translation>Batterie&#xa0;: %1%</translation>
     </message>
     <message>
         <source>Radar</source>
@@ -113,7 +113,7 @@
     </message>
     <message>
         <source>Could not send %1: %2</source>
-        <translation>Échec d’envoi %1 : %2</translation>
+        <translation>Échec d’envoi %1&#xa0;: %2</translation>
     </message>
     <message>
         <source>%1 sent</source>
@@ -125,7 +125,7 @@
     </message>
     <message>
         <source>%1 failed: wrong PIN</source>
-        <translation>%1 rejeté : mauvais code PIN</translation>
+        <translation>%1 rejeté&#xa0;: mauvais code PIN</translation>
     </message>
     <message>
         <source>%1 disabled on target</source>
@@ -133,7 +133,7 @@
     </message>
     <message>
         <source>%1: %2</source>
-        <translation>%1 : %2</translation>
+        <translation>%1&#xa0;: %2</translation>
     </message>
     <message>
         <source>(this device)</source>
@@ -157,11 +157,11 @@
     </message>
     <message>
         <source>DELETE confirmed: device wiped</source>
-        <translation>DELETE confirmé : appareil effacé</translation>
+        <translation>DELETE confirmé&#xa0;: appareil effacé</translation>
     </message>
     <message>
         <source>%1: no response</source>
-        <translation>%1 : pas de réponse</translation>
+        <translation>%1&#xa0;: pas de réponse</translation>
     </message>
     <message>
         <source>no data yet</source>
@@ -213,15 +213,15 @@
     </message>
     <message>
         <source>Last GPS FIX: %1</source>
-        <translation>Dernier positionnement GPS : %1</translation>
+        <translation>Dernier positionnement GPS&#xa0;: %1</translation>
     </message>
     <message>
         <source>%1 queued until reconnect</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 en file d’attente jusqu’à reconnexion</translation>
     </message>
     <message>
         <source>Could not send %1: no connection</source>
-        <translation type="unfinished"></translation>
+        <translation>Impossible d’envoyer %1&#xa0;: pas de connexion</translation>
     </message>
 </context>
 <context>
@@ -243,7 +243,7 @@
     </message>
     <message>
         <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>Les commandes distantes et le suivi en arrière-plan nécessitent le service. Cliquez pour le configurer dans les Options.</translation>
     </message>
 </context>
 <context>
@@ -278,7 +278,7 @@
     </message>
     <message>
         <source>Pull down and tap &apos;Update map&apos;</source>
-        <translation>Tirer vers le bas et sélectionner « Mettre à jour la carte »</translation>
+        <translation>Tirer vers le bas et sélectionner «&#xa0;Mettre à jour la carte&#xa0;»</translation>
     </message>
     <message>
         <source>Map module not available</source>
@@ -302,11 +302,11 @@
     </message>
     <message>
         <source>No GPS module available</source>
-        <translation type="unfinished"></translation>
+        <translation>Aucun module GPS disponible.</translation>
     </message>
     <message>
         <source>GPS reader library unavailable</source>
-        <translation type="unfinished"></translation>
+        <translation>La bibliothèque d’accés au GPS n’est pas disponible</translation>
     </message>
 </context>
 <context>
@@ -337,11 +337,11 @@
     </message>
     <message>
         <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
-        <translation>Service GPS : Activé lorsque l’interrupteur « Activité d’arrière-plan » est allumé.</translation>
+        <translation>Service GPS&#xa0;: Activé lorsque l’interrupteur «&#xa0;Activité d’arrière-plan&#xa0;» est allumé.</translation>
     </message>
     <message>
         <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
-        <translation>Service de commande : Activé lorsqu’au moins une action distante ou par SMS est activée.</translation>
+        <translation>Service de commande&#xa0;: Activé lorsqu’au moins une action distante ou par SMS est activée.</translation>
     </message>
     <message>
         <source>General</source>
@@ -553,7 +553,7 @@
     </message>
     <message>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
-        <translation>Envoie les coordonnées GPS actuelles par SMS à l’expéditeur. Le SMS ne sera PAS visible dans les messages envoyés mais une notification sera visible. ATTENTION : des coûts d’envoi de SMS peuvent s’appliquer.</translation>
+        <translation>Envoie les coordonnées GPS actuelles par SMS à l’expéditeur. Le SMS ne sera PAS visible dans les messages envoyés mais une notification sera visible. ATTENTION&#xa0;: des coûts d’envoi de SMS peuvent s’appliquer.</translation>
     </message>
     <message>
         <source>Allow command RING</source>
@@ -561,7 +561,7 @@
     </message>
     <message>
         <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
-        <translation>Note : l’aperçu de la sonnerie sera joué au volume courant du système. La commande distante sera jouée à 100% du volume, ignorant un appareil silencieux.</translation>
+        <translation>Note&#xa0;: l’aperçu de la sonnerie sera joué au volume courant du système. La commande distante sera jouée à 100% du volume, ignorant un appareil silencieux.</translation>
     </message>
     <message>
         <source>Allow command LOCK</source>
@@ -590,43 +590,43 @@
     <message>
         <source>running</source>
         <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
-        <translation type="unfinished"></translation>
+        <translation>démarré</translation>
     </message>
     <message>
         <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
-        <translation type="unfinished"></translation>
+        <translation>Les commandes distantes, le contrôle par SMS et le suivi d’arrière plan nécessitent le paquet du service d’arrière-plan. Celui-ci tourne en dehors du bac-à-sable et contient des fonctionnalités privilégiées pour le redémarrage et les réponses par SMS&#xa0;; l’installeur système vous demandera de confirmer l’installation.</translation>
     </message>
     <message>
         <source>Install background service</source>
-        <translation type="unfinished"></translation>
+        <translation>Installer le service d’arrière-plan</translation>
     </message>
     <message>
         <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
-        <translation type="unfinished"></translation>
+        <translation>Les commandes distantes, le contrôle par SMS et le suivi d’arrière plan nécessitent le service d’arrière-plan. Installez le paquet «&#xa0;harbour-find-my-device-daemon&#xa0;» depuis le même dépôt que cette application (e.g. SailfishOS:Chum).</translation>
     </message>
     <message>
         <source>Background service update available (installed: %1, new: %2).</source>
-        <translation type="unfinished"></translation>
+        <translation>Mise à jour du service d’arrière-plan disponible (installé&#xa0;: %1, nouveau&#xa0;: %2).</translation>
     </message>
     <message>
         <source>Update background service</source>
-        <translation type="unfinished"></translation>
+        <translation>Mettre à jour le service d’arrière-plan</translation>
     </message>
     <message>
         <source>deactivated</source>
-        <translation type="unfinished"></translation>
+        <translation>désactivé</translation>
     </message>
     <message>
         <source>not installed</source>
-        <translation type="unfinished"></translation>
+        <translation>pas installé</translation>
     </message>
     <message>
         <source>applying…</source>
-        <translation type="unfinished"></translation>
+        <translation>application…</translation>
     </message>
     <message>
         <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
-        <translation type="unfinished"></translation>
+        <translation>Effacera toutes les données utilisateur sous «&#xa0;home/&lt;user&gt;/&#xa0;» et redémarrera l’appareil ensuite.</translation>
     </message>
 </context>
 </TS>
