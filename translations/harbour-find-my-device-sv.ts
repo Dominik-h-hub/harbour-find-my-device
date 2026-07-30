@@ -293,20 +293,20 @@
         <translation>Ingen GPS-signal än — Försök igen vid nästa uppdatering</translation>
     </message>
     <message>
-        <source>GPS not available on this device</source>
-        <translation>GPS är inte tillgängligt på denna enhet</translation>
-    </message>
-    <message>
         <source>GPS is disabled</source>
         <translation>GPS är inaktiverat</translation>
     </message>
     <message>
-        <source>GPS reader unavailable</source>
-        <translation>GPS-läsaren är inte tillgänglig</translation>
-    </message>
-    <message>
         <source>GPS error</source>
         <translation>GPS-fel</translation>
+    </message>
+    <message>
+        <source>No GPS module available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS reader library unavailable</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

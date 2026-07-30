@@ -293,19 +293,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GPS not available on this device</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>GPS is disabled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GPS reader unavailable</source>
+        <source>GPS error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GPS error</source>
+        <source>No GPS module available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS reader library unavailable</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

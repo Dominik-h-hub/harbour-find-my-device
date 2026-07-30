@@ -293,20 +293,20 @@
         <translation>Noch kein GPS-FIX — Retry bei nächstem FIX</translation>
     </message>
     <message>
-        <source>GPS not available on this device</source>
-        <translation>GPS auf diesem Gerät nicht verfügbar</translation>
-    </message>
-    <message>
         <source>GPS is disabled</source>
         <translation>GPS ist deaktiviert</translation>
     </message>
     <message>
-        <source>GPS reader unavailable</source>
-        <translation>GPS-Reader nicht verfügbar</translation>
-    </message>
-    <message>
         <source>GPS error</source>
         <translation>GPS-Fehler</translation>
+    </message>
+    <message>
+        <source>No GPS module available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS reader library unavailable</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

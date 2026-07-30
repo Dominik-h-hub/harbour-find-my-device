@@ -35,49 +35,6 @@ Page {
     Column {
         anchors.fill: parent
 
-        // --- background-service hint banner --------------------------------
-        Rectangle {
-            id: daemonBanner
-            width: parent.width
-            height: mainPage.daemonBannerVisible
-                    ? bannerRow.implicitHeight + Theme.paddingMedium : 0
-            visible: mainPage.daemonBannerVisible
-            color: Theme.rgba(Theme.highlightDimmerColor, 0.9)
-            z: 2
-
-            Row {
-                id: bannerRow
-                anchors.verticalCenter: parent.verticalCenter
-                x: Theme.horizontalPageMargin
-                width: parent.width - x - Theme.paddingSmall
-                spacing: Theme.paddingSmall
-
-                Label {
-                    width: parent.width - bannerClose.width - Theme.paddingSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    wrapMode: Text.Wrap
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.primaryColor
-                    text: qsTr("Remote commands and background tracking need "
-                             + "the background service. Tap to set it up in "
-                             + "the Settings.")
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
-                    }
-                }
-                IconButton {
-                    id: bannerClose
-                    anchors.verticalCenter: parent.verticalCenter
-                    icon.source: "image://theme/icon-m-clear"
-                    onClicked: {
-                        mainPage.daemonBannerVisible = false;
-                        Bridge.call("dismiss_daemon_banner", [], function () {});
-                    }
-                }
-            }
-        }
-
         // --- tab bar -------------------------------------------------------
         Item {
             id: tabBar
@@ -133,6 +90,48 @@ Page {
                 width: tabView.width
                 height: tabView.height
                 sourceComponent: index === 0 ? mapComponent : devicesComponent
+            }
+        }
+        // --- background-service hint banner --------------------------------
+        Rectangle {
+            id: daemonBanner
+            width: parent.width
+            height: mainPage.daemonBannerVisible
+                    ? bannerRow.implicitHeight + Theme.paddingMedium : 0
+            visible: mainPage.daemonBannerVisible
+            color: Theme.rgba(Theme.highlightDimmerColor, 0.9)
+            z: 2
+
+            Row {
+                id: bannerRow
+                anchors.verticalCenter: parent.verticalCenter
+                x: Theme.horizontalPageMargin
+                width: parent.width - x - Theme.paddingSmall
+                spacing: Theme.paddingSmall
+
+                Label {
+                    width: parent.width - bannerClose.width - Theme.paddingSmall
+                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.primaryColor
+                    text: qsTr("Remote commands and background tracking need "
+                             + "the background service. Tap to set it up in "
+                             + "the Settings.")
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
+                    }
+                }
+                IconButton {
+                    id: bannerClose
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon.source: "image://theme/icon-m-clear"
+                    onClicked: {
+                        mainPage.daemonBannerVisible = false;
+                        Bridge.call("dismiss_daemon_banner", [], function () {});
+                    }
+                }
             }
         }
     }

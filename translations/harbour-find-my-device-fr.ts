@@ -293,20 +293,20 @@
         <translation>Aucun positionnement GPS pour l’instant — Réessayez au prochain rafraîchissement</translation>
     </message>
     <message>
-        <source>GPS not available on this device</source>
-        <translation>Le GPS n’est pas disponible sur cet appareil</translation>
-    </message>
-    <message>
         <source>GPS is disabled</source>
         <translation>Le GPS est désactivé</translation>
     </message>
     <message>
-        <source>GPS reader unavailable</source>
-        <translation>Lecteur GPS non disponible</translation>
-    </message>
-    <message>
         <source>GPS error</source>
         <translation>Erreur du GPS</translation>
+    </message>
+    <message>
+        <source>No GPS module available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS reader library unavailable</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

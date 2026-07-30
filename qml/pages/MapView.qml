@@ -122,9 +122,9 @@ SilicaFlickable {
     function fixErrorText(code) {
         switch (code) {
         case "no_fix": return qsTr("No GPS fix yet — Retry at next refresh time");
-        case "gps_unavailable": return qsTr("GPS not available on this device");
+        case "gps_unavailable": return qsTr("No GPS module available");
         case "gps_disabled": return qsTr("GPS is disabled");
-        case "gps_reader_unavailable": return qsTr("GPS reader unavailable");
+        case "gps_reader_unavailable": return qsTr("GPS reader library unavailable");
         case "error": return qsTr("GPS error");
         default: return qsTr("No GPS fix");
         }
