@@ -38,7 +38,7 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
 
 ## Two Packages: App + Background Service
 
-Since v1.2 the project ships as two RPMs (required for Jolla Store / Harbour
+Since v2.0 the project ships as two RPMs (required for Jolla Store / Harbour
 compliance):
 
 - **`harbour-find-my-device`** — the app itself, fully sandboxed (Sailjail).
