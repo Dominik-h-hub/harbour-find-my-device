@@ -215,6 +215,14 @@
         <source>Last GPS FIX: %1</source>
         <translation>Senaste GPS-FIX: %1</translation>
     </message>
+    <message>
+        <source>%1 queued until reconnect</source>
+        <translation>%1 är köad till efter återanslutning</translation>
+    </message>
+    <message>
+        <source>Could not send %1: no connection</source>
+        <translation>Kunde inte skicka %1: Ingen anslutning</translation>
+    </message>
 </context>
 <context>
     <name>FullMapPage</name>
@@ -232,6 +240,10 @@
     <message>
         <source>Devices</source>
         <translation>Enheter</translation>
+    </message>
+    <message>
+        <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
+        <translation>Fjärrkommandon och bakgrundsspårning behöver bakgrundstjänsten. Tryck för att konfigurera den i Inställningar.</translation>
     </message>
 </context>
 <context>
@@ -281,20 +293,20 @@
         <translation>Ingen GPS-signal än — Försök igen vid nästa uppdatering</translation>
     </message>
     <message>
-        <source>GPS not available on this device</source>
-        <translation>GPS är inte tillgängligt på denna enhet</translation>
-    </message>
-    <message>
         <source>GPS is disabled</source>
         <translation>GPS är inaktiverat</translation>
     </message>
     <message>
-        <source>GPS reader unavailable</source>
-        <translation>GPS-läsaren är inte tillgänglig</translation>
-    </message>
-    <message>
         <source>GPS error</source>
         <translation>GPS-fel</translation>
+    </message>
+    <message>
+        <source>No GPS module available</source>
+        <translation>Ingen GPS-modul tillgänglig</translation>
+    </message>
+    <message>
+        <source>GPS reader library unavailable</source>
+        <translation>GPS-läsarens bibliotek är inte tillgängligt</translation>
     </message>
 </context>
 <context>
@@ -422,10 +434,6 @@
     <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
         <translation>Om enheten är olåst kommer den att låsas till låsskärmen.</translation>
-    </message>
-    <message>
-        <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
-        <translation>All användardata som är lagrad under ”home//&lt;user&gt;//” kommer att raderas, varefter enheten startas om.</translation>
     </message>
     <message>
         <source>Camera</source>
@@ -578,6 +586,47 @@
     <message>
         <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
         <translation>Registrera denna hemlighet i en TOTP-autentiseringsapp på ANDRA enheter. Den aktuella koden krävs i SMS-kommandon. Förvara reservkoderna säkert för användning utan en autentiseringsapp.</translation>
+    </message>
+    <message>
+        <source>running</source>
+        <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
+        <translation>Körs</translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
+        <translation>Fjärrkommandon, SMS-kontroll och bakgrundsspårning behöver paketet för bakgrundstjänster. Det körs utanför appens sandlåda och innehåller en privilegierad hjälpfunktion för omstart och SMS-svar; systeminstallatören kommer att be dig bekräfta installationen.</translation>
+    </message>
+    <message>
+        <source>Install background service</source>
+        <translation>Installera bakgrundstjänsten</translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
+        <translation>Fjärrkommandon, SMS-styrning och bakgrundsspårning behöver bakgrundstjänsten. Installera paketet &apos;harbour-find-my-device-daemon&apos; från samma arkiv som den här appen kommer från (t.ex. SailfishOS:Chum).</translation>
+    </message>
+    <message>
+        <source>Background service update available (installed: %1, new: %2).</source>
+        <translation>Bakgrundstjänstuppdatering tillgänglig (installerad: %1, ny: %2).</translation>
+    </message>
+    <message>
+        <source>Update background service</source>
+        <translation>Uppdatera bakgrundstjänsten</translation>
+    </message>
+    <message>
+        <source>deactivated</source>
+        <translation>avaktiverad</translation>
+    </message>
+    <message>
+        <source>not installed</source>
+        <translation>inte installerad</translation>
+    </message>
+    <message>
+        <source>applying…</source>
+        <translation>tillämpar…</translation>
+    </message>
+    <message>
+        <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
+        <translation>Kommer att radera all användardata som lagras under &apos;home/&lt;användare&gt;/&apos; och starta om enheten efteråt.</translation>
     </message>
 </context>
 </TS>
