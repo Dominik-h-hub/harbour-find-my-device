@@ -24,8 +24,9 @@ files in this repository.
    and the Eclipse Distribution License v1.0 (EDL-1.0, a BSD 3-Clause variant).
    This project redistributes paho-mqtt under the EDL-1.0 license, which is
    compatible with the Apache License 2.0.
-   The full EDL-1.0 text is available at:
-     qml/utilities/paho/edl-v10
+   Both original license texts are available at:
+     qml/utilities/paho/edl-v10   (EDL-1.0, the license this project uses)
+     qml/utilities/paho/epl-v20   (EPL-2.0, the alternative of the dual license)
    SPDX-License-Identifier: BSD-3-Clause
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:

@@ -4,4 +4,4 @@ Description=Find My Device privileged action processor (reboot / send SMS)
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /usr/share/harbour-find-my-device/qml/utilities/priv_service.py
+ExecStart=/usr/bin/python3 /usr/share/harbour-find-my-device-daemon/priv_service.py

@@ -215,6 +215,14 @@
         <source>Last GPS FIX: %1</source>
         <translation>Dernier positionnement GPS : %1</translation>
     </message>
+    <message>
+        <source>%1 queued until reconnect</source>
+        <translation>%1 en file d’attente jusqu’à reconnexion</translation>
+    </message>
+    <message>
+        <source>Could not send %1: no connection</source>
+        <translation>Impossible d’envoyer %1 : pas de connexion</translation>
+    </message>
 </context>
 <context>
     <name>FullMapPage</name>
@@ -232,6 +240,10 @@
     <message>
         <source>Devices</source>
         <translation>Appareils</translation>
+    </message>
+    <message>
+        <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
+        <translation>Les commandes distantes et le suivi en arrière-plan nécessitent le service. Cliquez pour le configurer dans les Options.</translation>
     </message>
 </context>
 <context>
@@ -281,20 +293,20 @@
         <translation>Aucun positionnement GPS pour l’instant — Réessayez au prochain rafraîchissement</translation>
     </message>
     <message>
-        <source>GPS not available on this device</source>
-        <translation>Le GPS n’est pas disponible sur cet appareil</translation>
-    </message>
-    <message>
         <source>GPS is disabled</source>
         <translation>Le GPS est désactivé</translation>
     </message>
     <message>
-        <source>GPS reader unavailable</source>
-        <translation>Lecteur GPS non disponible</translation>
-    </message>
-    <message>
         <source>GPS error</source>
         <translation>Erreur du GPS</translation>
+    </message>
+    <message>
+        <source>No GPS module available</source>
+        <translation>Aucun module GPS disponible.</translation>
+    </message>
+    <message>
+        <source>GPS reader library unavailable</source>
+        <translation>La bibliothèque d’accés au GPS n’est pas disponible</translation>
     </message>
 </context>
 <context>
@@ -422,10 +434,6 @@
     <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
         <translation>Si l’appareil est déverrouillé, il sera verrouillé sur l’écran de code de sécurité.</translation>
-    </message>
-    <message>
-        <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
-        <translation>Efface toutes les données utilisateur stockées dans « home//&lt;user&gt;// » et redémarre l’appareil ensuite.</translation>
     </message>
     <message>
         <source>Camera</source>
@@ -578,6 +586,47 @@
     <message>
         <source>Add a translation</source>
         <translation>Ajouter une traduction</translation>
+    </message>
+    <message>
+        <source>running</source>
+        <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
+        <translation>démarré</translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
+        <translation>Les commandes distantes, le contrôle par SMS et le suivi d’arrière plan nécessitent le paquet du service d’arrière-plan. Celui-ci tourne en dehors du bac-à-sable et contient des fonctionnalités privilégiées pour le redémarrage et les réponses par SMS ; l’installeur système vous demandera de confirmer l’installation.</translation>
+    </message>
+    <message>
+        <source>Install background service</source>
+        <translation>Installer le service d’arrière-plan</translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
+        <translation>Les commandes distantes, le contrôle par SMS et le suivi d’arrière plan nécessitent le service d’arrière-plan. Installez le paquet « harbour-find-my-device-daemon » depuis le même dépôt que cette application (e.g. SailfishOS:Chum).</translation>
+    </message>
+    <message>
+        <source>Background service update available (installed: %1, new: %2).</source>
+        <translation>Mise à jour du service d’arrière-plan disponible (installé : %1, nouveau : %2).</translation>
+    </message>
+    <message>
+        <source>Update background service</source>
+        <translation>Mettre à jour le service d’arrière-plan</translation>
+    </message>
+    <message>
+        <source>deactivated</source>
+        <translation>désactivé</translation>
+    </message>
+    <message>
+        <source>not installed</source>
+        <translation>pas installé</translation>
+    </message>
+    <message>
+        <source>applying…</source>
+        <translation>application…</translation>
+    </message>
+    <message>
+        <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
+        <translation>Effacera toutes les données utilisateur sous « home/&lt;user&gt;/ » et redémarrera l’appareil ensuite.</translation>
     </message>
 </context>
 </TS>

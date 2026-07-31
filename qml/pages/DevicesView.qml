@@ -67,11 +67,14 @@ SilicaListView {
     }
 
     function sendCommand(deviceId, cmd, arg) {
+        // The backend only QUEUES the command here; publishing runs off the
+        // bridge thread so a dying link cannot freeze the UI. Success is
+        // therefore never known at this point -- reporting it would be the
+        // phantom "RING sent" that showed up even when nothing left the device.
+        // Delivery is confirmed below in onCommandResult.
         Bridge.call("send_command", [deviceId, cmd, arg || ""], function (res) {
             if (res && !res.ok)
                 feedback.show(qsTr("Could not send %1: %2").arg(cmd).arg(res.error));
-            else
-                feedback.show(qsTr("%1 sent").arg(cmd));
         });
     }
 
@@ -79,12 +82,17 @@ SilicaListView {
         target: Bridge
         onDevicesUpdated: list.reload()
         onCommandResult: {
+            // 'sent'/'pending'/'mqtt_offline' report DELIVERY (did the command
+            // reach the broker); the others report the target's answer.
             var txt = (result === "ok" && cmd === "DELETE")
                       ? qsTr("DELETE confirmed: device wiped")
                     : result === "ok" ? qsTr("%1 acknowledged").arg(cmd)
+                    : result === "sent" ? qsTr("%1 sent").arg(cmd)
+                    : result === "pending" ? qsTr("%1 queued until reconnect").arg(cmd)
                     : result === "auth_failed" ? qsTr("%1 failed: wrong PIN").arg(cmd)
                     : result === "disabled" ? qsTr("%1 disabled on target").arg(cmd)
                     : result === "timeout" ? qsTr("%1: no response").arg(cmd)
+                    : result === "mqtt_offline" ? qsTr("Could not send %1: no connection").arg(cmd)
                     : qsTr("%1: %2").arg(cmd).arg(result);
             feedback.show(txt);
         }

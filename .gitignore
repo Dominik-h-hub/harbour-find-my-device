@@ -28,6 +28,7 @@ tst_ssemanager
 
 # RPM output
 /RPMS/
+/daemon-rpm/RPMS/
 
 /.claude/
 
