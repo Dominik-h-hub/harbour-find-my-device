@@ -217,11 +217,11 @@
     </message>
     <message>
         <source>%1 queued until reconnect</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 är köad till efter återanslutning</translation>
     </message>
     <message>
         <source>Could not send %1: no connection</source>
-        <translation type="unfinished"></translation>
+        <translation>Kunde inte skicka %1: Ingen anslutning</translation>
     </message>
 </context>
 <context>
@@ -243,7 +243,7 @@
     </message>
     <message>
         <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
-        <translation type="unfinished"></translation>
+        <translation>Fjärrkommandon och bakgrundsspårning behöver bakgrundstjänsten. Tryck för att konfigurera den i Inställningar.</translation>
     </message>
 </context>
 <context>
@@ -302,11 +302,11 @@
     </message>
     <message>
         <source>No GPS module available</source>
-        <translation type="unfinished"></translation>
+        <translation>Ingen GPS-modul tillgänglig</translation>
     </message>
     <message>
         <source>GPS reader library unavailable</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-läsarens bibliotek är inte tillgängligt</translation>
     </message>
 </context>
 <context>
@@ -590,43 +590,43 @@
     <message>
         <source>running</source>
         <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
-        <translation type="unfinished"></translation>
+        <translation>Körs</translation>
     </message>
     <message>
         <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
-        <translation type="unfinished"></translation>
+        <translation>Fjärrkommandon, SMS-kontroll och bakgrundsspårning behöver paketet för bakgrundstjänster. Det körs utanför appens sandlåda och innehåller en privilegierad hjälpfunktion för omstart och SMS-svar; systeminstallatören kommer att be dig bekräfta installationen.</translation>
     </message>
     <message>
         <source>Install background service</source>
-        <translation type="unfinished"></translation>
+        <translation>Installera bakgrundstjänsten</translation>
     </message>
     <message>
         <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
-        <translation type="unfinished"></translation>
+        <translation>Fjärrkommandon, SMS-styrning och bakgrundsspårning behöver bakgrundstjänsten. Installera paketet &apos;harbour-find-my-device-daemon&apos; från samma arkiv som den här appen kommer från (t.ex. SailfishOS:Chum).</translation>
     </message>
     <message>
         <source>Background service update available (installed: %1, new: %2).</source>
-        <translation type="unfinished"></translation>
+        <translation>Bakgrundstjänstuppdatering tillgänglig (installerad: %1, ny: %2).</translation>
     </message>
     <message>
         <source>Update background service</source>
-        <translation type="unfinished"></translation>
+        <translation>Uppdatera bakgrundstjänsten</translation>
     </message>
     <message>
         <source>deactivated</source>
-        <translation type="unfinished"></translation>
+        <translation>avaktiverad</translation>
     </message>
     <message>
         <source>not installed</source>
-        <translation type="unfinished"></translation>
+        <translation>inte installerad</translation>
     </message>
     <message>
         <source>applying…</source>
-        <translation type="unfinished"></translation>
+        <translation>tillämpar…</translation>
     </message>
     <message>
         <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kommer att radera all användardata som lagras under &apos;home/&lt;användare&gt;/&apos; och starta om enheten efteråt.</translation>
     </message>
 </context>
 </TS>

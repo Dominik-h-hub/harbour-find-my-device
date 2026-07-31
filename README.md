@@ -34,7 +34,7 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
   - CAMERA — take a photo (front or back camera) and upload it to your WebDAV folder
   - DELETE — wipe all user data (`/home/<defaultuser | nemo>`) and reboot — NOT a factory reset
 - **Everything is opt-in**: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
-- **Translations**: EN, DE, SV
+- **Translations**: EN, DE, SV, FR
 
 ## Two Packages: App + Background Service
 
