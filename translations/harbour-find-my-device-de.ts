@@ -590,7 +590,7 @@
     <message>
         <source>running</source>
         <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
-        <translation>gestartet</translation>
+        <translation>aktiviert</translation>
     </message>
     <message>
         <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
