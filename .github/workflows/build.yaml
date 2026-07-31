@@ -21,6 +21,51 @@ on:
 
 jobs:
   # ──────────────────────────────────────────────
+  # Daemon job – builds the noarch background-service RPM FIRST.
+  # Pure python + systemd units, no compilation: built with plain rpmbuild
+  # inside the Sailfish platform SDK container. The app build below bundles
+  # this RPM into /usr/share/harbour-find-my-device/daemon/ (sideload flow).
+  # Version/Release are inherited from rpm/harbour-find-my-device.spec by the
+  # daemon spec itself (single source of truth).
+  # ──────────────────────────────────────────────
+  daemon:
+    name: Build daemon RPM (noarch)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build harbour-find-my-device-daemon
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '^Version:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          git archive --format=tar --prefix="harbour-find-my-device-daemon-${VERSION}/" HEAD \
+            | bzip2 > "harbour-find-my-device-daemon-${VERSION}.tar.bz2"
+          mkdir -p daemon-rpm/RPMS
+          docker run --rm -u 0:0 -v "$PWD:/work" \
+            coderus/sailfishos-platform-sdk:5.0.0.43 \
+            bash -c "set -euo pipefail
+              rpmbuild -bb /work/daemon-rpm/harbour-find-my-device-daemon.spec \
+                --define '_sourcedir /work' \
+                --define '_rpmdir /work/daemon-rpm/RPMS' \
+                --define '_builddir /tmp/fmd-build'
+              # flatten the noarch/ subdir so the app spec's bundling glob finds the file
+              find /work/daemon-rpm/RPMS -mindepth 2 -name '*.rpm' -exec mv {} /work/daemon-rpm/RPMS/ \;
+              chmod -R a+rX /work/daemon-rpm/RPMS"
+          echo "Built:"
+          ls -la daemon-rpm/RPMS/*.noarch.rpm
+
+      - name: Upload daemon RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: harbour-find-my-device-daemon-noarch-SNAPSHOT
+          path: daemon-rpm/RPMS/*.noarch.rpm
+          retention-days: 30
+          if-no-files-found: error
+
+  # ──────────────────────────────────────────────
   # Build job – CI only, runs on feature branch pushes and PRs
   # Never runs on direct pushes to main (releases are handled by release.yaml)
   # Uses the CODeRUS Buildfish action for Sailfish OS 5.x
@@ -32,6 +77,7 @@ jobs:
     name: Build (${{ matrix.arch }})
     # Avoid duplicate builds: on pull_request, only run for forks (push already covers internal branches)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    needs: daemon
     runs-on: ubuntu-latest
 
     strategy:
@@ -42,6 +88,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      # The app spec auto-bundles the daemon RPM when it is present in
+      # daemon-rpm/RPMS/ at build time.
+      - name: Download daemon RPM (for bundling)
+        uses: actions/download-artifact@v4
+        with:
+          name: harbour-find-my-device-daemon-noarch-SNAPSHOT
+          path: daemon-rpm/RPMS
 
       - name: Build RPM package
         uses: coderus/github-sfos-build@sfos5

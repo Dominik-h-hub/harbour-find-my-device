@@ -215,6 +215,14 @@
         <source>Last GPS FIX: %1</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>%1 queued until reconnect</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not send %1: no connection</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>FullMapPage</name>
@@ -231,6 +239,10 @@
     </message>
     <message>
         <source>Devices</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -281,19 +293,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GPS not available on this device</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>GPS is disabled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GPS reader unavailable</source>
+        <source>GPS error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>GPS error</source>
+        <source>No GPS module available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS reader library unavailable</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -421,10 +433,6 @@
     </message>
     <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -577,6 +585,47 @@
     </message>
     <message>
         <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>running</source>
+        <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Install background service</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Background service update available (installed: %1, new: %2).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Update background service</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>deactivated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>not installed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>applying…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

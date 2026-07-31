@@ -215,6 +215,14 @@
         <source>Last GPS FIX: %1</source>
         <translation>Letzter GPS-Fix: %1</translation>
     </message>
+    <message>
+        <source>%1 queued until reconnect</source>
+        <translation>%1 warten bis zum Reconnect.</translation>
+    </message>
+    <message>
+        <source>Could not send %1: no connection</source>
+        <translation>Konnte %1 nicht senden: keine Verbindung</translation>
+    </message>
 </context>
 <context>
     <name>FullMapPage</name>
@@ -232,6 +240,10 @@
     <message>
         <source>Devices</source>
         <translation>Geräte</translation>
+    </message>
+    <message>
+        <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
+        <translation>Remote-Commands und Hintergrundverfolgung benötigen den Hintergrunddienst. Hier tippen, um ihn zu installieren.</translation>
     </message>
 </context>
 <context>
@@ -281,20 +293,20 @@
         <translation>Noch kein GPS-FIX — Retry bei nächstem FIX</translation>
     </message>
     <message>
-        <source>GPS not available on this device</source>
-        <translation>GPS auf diesem Gerät nicht verfügbar</translation>
-    </message>
-    <message>
         <source>GPS is disabled</source>
         <translation>GPS ist deaktiviert</translation>
     </message>
     <message>
-        <source>GPS reader unavailable</source>
-        <translation>GPS-Reader nicht verfügbar</translation>
-    </message>
-    <message>
         <source>GPS error</source>
         <translation>GPS-Fehler</translation>
+    </message>
+    <message>
+        <source>No GPS module available</source>
+        <translation>Kein GPS-Modul verfügbar</translation>
+    </message>
+    <message>
+        <source>GPS reader library unavailable</source>
+        <translation>GPS-Reader-Library nicht verfügbar</translation>
     </message>
 </context>
 <context>
@@ -422,10 +434,6 @@
     <message>
         <source>If device is unlocked, it will be locked into lock screen.</source>
         <translation>Wenn das Gerät entsperrt ist, wird es in den Sperrbildschirm gesperrt.</translation>
-    </message>
-    <message>
-        <source>Will delete all userdata stored under &apos;home//&lt;user&gt;//&apos; and reboot device afterwards.</source>
-        <translation>Löscht alle Userdaten unter „home//&lt;user&gt;//“ und startet das Gerät anschließend neu.</translation>
     </message>
     <message>
         <source>Camera</source>
@@ -578,6 +586,47 @@
     <message>
         <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
         <translation>Hinterlege dieses Secret in einer TOTP-Authenticator-App auf einem ANDEREN Gerät. Der aktuelle Code ist in SMS-Commands erforderlich. Bewahre die Backup-Codes sicher auf, um sie ohne Authenticator-App zu nutzen.</translation>
+    </message>
+    <message>
+        <source>running</source>
+        <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
+        <translation>aktiviert</translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
+        <translation>Remote-Commands, SMS-Steuerung und Hintergrunddienste benötigen das Hintergrunddienst-Paket. Es läuft außerhalb der App-Sandbox und enthält einen privilegierten Helfer für Neustart und SMS-Antworten; der Systeminstaller wird Sie auffordern, die Installation zu bestätigen.</translation>
+    </message>
+    <message>
+        <source>Install background service</source>
+        <translation>Hintergrunddienst installieren</translation>
+    </message>
+    <message>
+        <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
+        <translation>Remote-Commands, SMS-Steuerung und Hintergrunddienste benötigen den Hintergrunddienst. Installieren Sie das Paket &apos;harbour-find-my-device-daemon&apos; aus demselben Repository, aus dem diese App stammt (z. B. SailfishOS:Chum).</translation>
+    </message>
+    <message>
+        <source>Background service update available (installed: %1, new: %2).</source>
+        <translation>Hintergrunddienst-Update verfügbar (installiert: %1, neu: %2).</translation>
+    </message>
+    <message>
+        <source>Update background service</source>
+        <translation>Hintergrunddienst aktualisieren</translation>
+    </message>
+    <message>
+        <source>deactivated</source>
+        <translation>deaktiviert</translation>
+    </message>
+    <message>
+        <source>not installed</source>
+        <translation>nicht installiert</translation>
+    </message>
+    <message>
+        <source>applying…</source>
+        <translation>wird angewendet…</translation>
+    </message>
+    <message>
+        <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
+        <translation>Löscht alle Userdaten unter &apos;home/&lt;user&gt;/&apos; und startet das Gerät anschließend neu.</translation>
     </message>
 </context>
 </TS>

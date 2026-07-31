@@ -134,14 +134,56 @@ jobs:
           echo "✅ No existing release for '${TAG}' – proceeding."
 
   # ──────────────────────────────────────────────
-  # Build job – only starts after validate passes
+  # Daemon job – builds the noarch background-service RPM FIRST so the app
+  # builds can bundle it (Settings sideload flow). Also attached separately
+  # to the GitHub release for OpenRepos / direct installation.
+  # ──────────────────────────────────────────────
+  daemon:
+    name: Build daemon RPM (noarch)
+    needs: validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build harbour-find-my-device-daemon
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '^Version:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          git archive --format=tar --prefix="harbour-find-my-device-daemon-${VERSION}/" HEAD \
+            | bzip2 > "harbour-find-my-device-daemon-${VERSION}.tar.bz2"
+          mkdir -p daemon-rpm/RPMS
+          docker run --rm -u 0:0 -v "$PWD:/work" \
+            coderus/sailfishos-platform-sdk:5.0.0.43 \
+            bash -c "set -euo pipefail
+              rpmbuild -bb /work/daemon-rpm/harbour-find-my-device-daemon.spec \
+                --define '_sourcedir /work' \
+                --define '_rpmdir /work/daemon-rpm/RPMS' \
+                --define '_builddir /tmp/fmd-build'
+              # flatten the noarch/ subdir so the app spec's bundling glob finds the file
+              find /work/daemon-rpm/RPMS -mindepth 2 -name '*.rpm' -exec mv {} /work/daemon-rpm/RPMS/ \;
+              chmod -R a+rX /work/daemon-rpm/RPMS"
+          echo "Built:"
+          ls -la daemon-rpm/RPMS/*.noarch.rpm
+
+      - name: Upload daemon RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: harbour-find-my-device-daemon-noarch
+          path: daemon-rpm/RPMS/*.noarch.rpm
+          retention-days: 30
+          if-no-files-found: error
+
+  # ──────────────────────────────────────────────
+  # Build job – only starts after validate + daemon pass
   # Uses the CODeRUS Buildfish action for Sailfish OS 5.x
   # https://github.com/CODeRUS/github-sfos-build
   # Available SDK releases: https://hub.docker.com/r/coderus/sailfishos-platform-sdk/tags
   # ──────────────────────────────────────────────
   build:
     name: Build (${{ matrix.arch }})
-    needs: validate
+    needs: [validate, daemon]
     runs-on: ubuntu-latest
 
     strategy:
@@ -152,6 +194,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      # The app spec auto-bundles the daemon RPM when it is present in
+      # daemon-rpm/RPMS/ at build time.
+      - name: Download daemon RPM (for bundling)
+        uses: actions/download-artifact@v4
+        with:
+          name: harbour-find-my-device-daemon-noarch
+          path: daemon-rpm/RPMS
 
       - name: Build RPM package
         uses: coderus/github-sfos-build@sfos5
@@ -232,11 +282,12 @@ jobs:
             
             ### Packages
 
-            | Architecture | Description |
+            | Package | Description |
             |---|---|
-            | **aarch64** | 64-bit ARM devices |
-            | **armv7hl** | 32-bit ARM devices |
-            | **i486** | Emulator |
+            | **aarch64** | App – 64-bit ARM devices (daemon RPM bundled for in-app install) |
+            | **armv7hl** | App – 32-bit ARM devices (daemon RPM bundled for in-app install) |
+            | **i486** | App – Emulator (daemon RPM bundled for in-app install) |
+            | **noarch (daemon)** | Background services (remote commands, tracking) – install alongside the app, or directly from the app's Settings page |
 
             ### Changelog
 

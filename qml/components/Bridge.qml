@@ -37,6 +37,8 @@ QtObject {
     signal devicesUpdated()
     signal commandResult(string deviceId, string cmd, string result)
     signal locationFix(bool success, string message)
+    // Backend asks the QML PositionSource for a foreground fix (GpsSource.qml).
+    signal gpsFixRequested(int requestSeq, int timeoutMs)
 
     // Convenience wrapper so callers don't repeat the 'api.' prefix.
     function call(func, args, callback) {
@@ -80,6 +82,8 @@ QtObject {
                 bridge.commandResult(data[1], data[2], data[3]);
             else if (ev === "locationFix")
                 bridge.locationFix(data[1], data[2]);
+            else if (ev === "requestGpsFix")
+                bridge.gpsFixRequested(data[1], data[2]);
         }
     }
 }

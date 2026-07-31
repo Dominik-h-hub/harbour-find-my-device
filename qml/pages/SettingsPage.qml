@@ -1,4 +1,5 @@
 import QtQuick 2.0
+import QtMultimedia 5.6
 import Sailfish.Silica 1.0
 import "../components"
 
@@ -8,13 +9,20 @@ Dialog {
     allowedOrientations: Orientation.Portrait
 
     property var cfg: ({})
-    property var daemonStatus: ({ gps: "unknown", cmd: "unknown" })
+    // Daemon status is derived from DB heartbeats (api.get_daemon_status).
+    property var daemonStatus: ({ gps: "unknown", cmd: "unknown",
+                                  installed: true, bundled_available: false,
+                                  bundled_version: "", daemon_version: "",
+                                  update_available: false })
     property string totpSecretText: qsTr("(not set)")
     property string totpUriText: ""
     property var totpQrMatrix: null
     property string backupCountText: "0"
 
     ListModel { id: ringToneModel }
+
+    // Ringtone preview plays in QML: the python backend runs sandboxed
+    Audio { id: previewPlayer }
 
     Component.onCompleted: {
         Bridge.call("get_settings", [], function (data) {
@@ -26,12 +34,54 @@ Dialog {
     }
 
     // Stop any preview that is still playing when leaving the page.
-    Component.onDestruction: Bridge.call("stop_ring_preview", [], function () {})
+    Component.onDestruction: previewPlayer.stop()
 
     function refreshDaemonStatus() {
         Bridge.call("get_daemon_status", [], function (s) {
             if (s) daemonStatus = s;
         });
+    }
+
+    // Poll while the page is visible: the daemons report their state through
+    // DB heartbeats, so a state change after a save (or the service showing up
+    // at all) only reaches the UI when we look. Two small SELECTs on a WAL
+    // database -- cheap enough to run every two seconds.
+    Timer {
+        interval: 2000
+        repeat: true
+        running: dialog.status === PageStatus.Active
+        onTriggered: dialog.refreshDaemonStatus()
+    }
+
+    function daemonStateText(s) {
+        //: shows status of background daemon on settings page; s is one of "unknown", "running", "deactivated", "applying"
+        if (s === "running") return qsTr("running");
+        if (s === "deactivated") return qsTr("deactivated");
+        // Heartbeat is fresh but predates the last save: the daemon is still
+        // napping, so its reported state would be misleading.
+        if (s === "applying") return qsTr("applying…");
+        return qsTr("not installed");
+    }
+
+    // Stage the bundled daemon RPM into ~/Downloads and hand it to the system
+    // installer dialog (the Harbour-FAQ-approved sideload flow).
+    function installDaemon() {
+        Bridge.call("stage_daemon_rpm", [], function (res) {
+            if (res && res.ok && res.url)
+                Qt.openUrlExternally(res.url);
+        });
+    }
+
+    // Degraded mode: daemon-dependent switches don't toggle while the service
+    // is missing -- a tap offers the install flow instead. Stored flags remain
+    // untouched and apply as soon as the daemon runs.
+    function toggleOrInstall(sw) {
+        if (daemonStatus.installed) {
+            sw.checked = !sw.checked;
+            return;
+        }
+        if (daemonStatus.bundled_available)
+            installDaemon();
     }
 
     function loadRingTones() {
@@ -124,11 +174,8 @@ Dialog {
         var ri = ringToneCombo.currentIndex;
         if (ri >= 0 && ri < ringToneModel.count)
             values.ring_tone = ringToneModel.get(ri).path;
-        // Capture the Bridge singleton: onAccepted pops and destroys this Dialog
-        // page, so by the time the save_settings callback fires an unqualified
-        // 'Bridge' would resolve to undefined (the page's import scope is gone).
+        previewPlayer.stop();
         var b = Bridge;
-        b.call("stop_ring_preview", [], function () {});
         b.call("save_settings", [values], function () {
             b.refreshMapConfig();
         });
@@ -168,7 +215,7 @@ Dialog {
                     Label {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        text: dialog.daemonStatus.gps
+                        text: dialog.daemonStateText(dialog.daemonStatus.gps)
                         font.pixelSize: Theme.fontSizeSmall
                         color: dialog.daemonStatus.gps === "running"
                                ? Theme.highlightColor : Theme.secondaryColor
@@ -189,7 +236,7 @@ Dialog {
                     Label {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        text: dialog.daemonStatus.cmd
+                        text: dialog.daemonStateText(dialog.daemonStatus.cmd)
                         font.pixelSize: Theme.fontSizeSmall
                         color: dialog.daemonStatus.cmd === "running"
                                ? Theme.highlightColor : Theme.secondaryColor
@@ -202,6 +249,67 @@ Dialog {
                     highlighted: true
                     onClicked: dialog.refreshDaemonStatus()
                     anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // --- install flow (daemon missing, bundled RPM available) ----
+                Label {
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    visible: !dialog.daemonStatus.installed
+                             && dialog.daemonStatus.bundled_available
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.highlightColor
+                    text: qsTr("Remote commands, SMS control and background "
+                             + "tracking need the background service package. "
+                             + "It runs outside the app sandbox and contains a "
+                             + "privileged helper for reboot and SMS replies; "
+                             + "the system installer will ask you to confirm "
+                             + "the installation.")
+                }
+                Button {
+                    visible: !dialog.daemonStatus.installed
+                             && dialog.daemonStatus.bundled_available
+                    text: qsTr("Install background service")
+                    highlighted: true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    onClicked: dialog.installDaemon()
+                }
+
+                // --- hint branch (no bundle, e.g. Chum build) ---------------
+                Label {
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    visible: !dialog.daemonStatus.installed
+                             && !dialog.daemonStatus.bundled_available
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.highlightColor
+                    text: qsTr("Remote commands, SMS control and background "
+                             + "tracking need the background service. Install "
+                             + "the package 'harbour-find-my-device-daemon' "
+                             + "from the same repository this app came from "
+                             + "(e.g. SailfishOS:Chum).")
+                }
+
+                // --- update flow (bundled RPM newer than installed daemon) --
+                Label {
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    visible: dialog.daemonStatus.installed
+                             && dialog.daemonStatus.update_available
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.highlightColor
+                    text: qsTr("Background service update available "
+                             + "(installed: %1, new: %2).")
+                          .arg(dialog.daemonStatus.daemon_version)
+                          .arg(dialog.daemonStatus.bundled_version)
+                }
+                Button {
+                    visible: dialog.daemonStatus.installed
+                             && dialog.daemonStatus.update_available
+                    text: qsTr("Update background service")
+                    highlighted: true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    onClicked: dialog.installDaemon()
                 }
 
                 // Two separate labels so each line is its own translation unit and
@@ -321,6 +429,9 @@ Dialog {
                 text: qsTr("Background activity")
                 description: qsTr("Keep reporting the location while the app is closed "
                                 + "(the daemon 'GPS service' runs).")
+                automaticCheck: false
+                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                onClicked: dialog.toggleOrInstall(backgroundSwitch)
             }
 
             // --- remote actions ---------------------------------------------
@@ -337,6 +448,9 @@ Dialog {
                 id: ringSwitch
                 text: qsTr("Allow command RING")
                 description: qsTr("Device will ring for 60 seconds the below defined tone.")
+                automaticCheck: false
+                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                onClicked: dialog.toggleOrInstall(ringSwitch)
             }
             // Ringtone picker for the RING sound. Plays the chosen file on a loop
             ComboBox {
@@ -363,14 +477,16 @@ Dialog {
                         text: qsTr("Preview")
                         onClicked: {
                             var idx = ringToneCombo.currentIndex;
-                            if (idx >= 0 && idx < ringToneModel.count)
-                                Bridge.call("preview_ring_tone",
-                                    [ringToneModel.get(idx).path], function () {});
+                            if (idx >= 0 && idx < ringToneModel.count) {
+                                previewPlayer.stop();
+                                previewPlayer.source = ringToneModel.get(idx).path;
+                                previewPlayer.play();
+                            }
                         }
                     }
                     Button {
                         text: qsTr("Stop")
-                        onClicked: Bridge.call("stop_ring_preview", [], function () {})
+                        onClicked: previewPlayer.stop()
                     }
                 }
 
@@ -387,11 +503,17 @@ Dialog {
                 id: lockSwitch
                 text: qsTr("Allow command LOCK")
                 description: qsTr("If device is unlocked, it will be locked into lock screen.")
+                automaticCheck: false
+                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                onClicked: dialog.toggleOrInstall(lockSwitch)
             }
             TextSwitch {
                 id: deleteSwitch
                 text: qsTr("Allow command DELETE (wipe)")
-                description: qsTr("Will delete all userdata stored under 'home//<user>//' and reboot device afterwards.")
+                description: qsTr("Will delete all userdata stored under 'home/<user>/' and reboot device afterwards.")
+                automaticCheck: false
+                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                onClicked: dialog.toggleOrInstall(deleteSwitch)
             }
 
             // --- camera ------------------------------------------------------
@@ -400,6 +522,9 @@ Dialog {
                 id: cameraSwitch
                 text: qsTr("Allow command CAMERA")
                 description: qsTr("A photo can be captured and uploaded to the configured WebDAV server.")
+                automaticCheck: false
+                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                onClicked: dialog.toggleOrInstall(cameraSwitch)
             }
             TextField {
                 id: webdavUrlField
@@ -433,11 +558,17 @@ Dialog {
                 text: qsTr("Remote control via SMS")
                 description: qsTr("Turn on if you want accept SMS commands from the whitelist. "
                                 + "The current TOTP code is required in SMS commands.")
+                automaticCheck: false
+                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                onClicked: dialog.toggleOrInstall(smsRemoteSwitch)
             }
             TextSwitch {
                 id: smsGpsSwitch
                 text: qsTr("Allow command GPS")
                 description: qsTr("Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.")
+                automaticCheck: false
+                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                onClicked: dialog.toggleOrInstall(smsGpsSwitch)
             }
 
             // --- SMS two-factor (TOTP + backup codes) ------------------------

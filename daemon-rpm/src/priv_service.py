@@ -17,7 +17,7 @@ Spool request files (one JSON object per file):
 Every file is deleted after processing (success or failure) so the `.path` unit
 does not retrigger endlessly.
 
-ExecStart: python3 /usr/share/harbour-find-my-device/qml/utilities/priv_service.py
+ExecStart: python3 /usr/share/harbour-find-my-device-daemon/priv_service.py
 """
 
 import glob
@@ -31,7 +31,7 @@ import sys
 # Where the user daemon queues requests (see priv_client.py); the tmpfiles drop-in
 # creates the directory owned by the primary user (uid 100000).
 SPOOL_DIR = "/run/harbour-find-my-device/spool"
-UTILS_DIR = "/usr/share/harbour-find-my-device/qml/utilities"
+UTILS_DIR = "/usr/share/harbour-find-my-device-daemon"
 
 log = logging.getLogger("fmd.priv")
 

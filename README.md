@@ -17,7 +17,9 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
 <p align="center">
 <a href="https://openrepos.net/content/domih/radar-find-my-device"><img src="docs/images/get-it-on-logos/get-it-on-openrepos.png" alt="Get it on OpenRepos" height="55"></a>
 <a href="https://github.com/Dominik-h-hub/harbour-find-my-device/releases"><img src="docs/images/get-it-on-logos/direct-rpm-download.png" alt="Direct RPM Download" height="55"></a>
-<!-- <a href="https://store.jolla.com"><img src="docs/images/get-it-on-logos/get-it-on-jollaStore.png" alt="Get it on the Jolla Store" height="55"></a> -->
+<a href="https://store.jolla.com"><img src="docs/images/get-it-on-logos/get-it-on-jollaStore.png" alt="Get it on the Jolla Store" height="55"></a>
+<!-- <a href="https://sailfishos-chum.github.io/"><img src="docs/images/get-it-on-logos/get-it-on-chum.png" alt="Get it on CHUM" height="55"></a> -->
+
 </p>
 
 ## Features
@@ -33,6 +35,21 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
   - DELETE — wipe all user data (`/home/<defaultuser | nemo>`) and reboot — NOT a factory reset
 - **Everything is opt-in**: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
 - **Translations**: EN, DE, SV, FR
+
+## Two Packages: App + Background Service
+
+Since v1.2 the project ships as two RPMs (required for Jolla Store / Harbour
+compliance):
+
+- **`harbour-find-my-device`** — the app itself, fully sandboxed (Sailjail).
+  Works standalone: map, device management, foreground position updates while
+  the app is open, TOTP/backup codes.
+- **`harbour-find-my-device-daemon`** — the background services (remote
+  commands via MQTT/SMS, background tracking, privileged helper for
+  reboot/SMS). Not sandboxed, therefore not in the Jolla Store. The app RPM
+  bundles it: the Settings page offers a one-tap install through the system
+  installer. On OpenRepos and SailfishOS:Chum it can also be installed as a
+  separate package.
 
 <img src="docs/images/map-view.png" alt="Main view" width=200px> <img src="docs/images/devices-view.png" alt="Devices view" width=200px> <img src="docs/images/settings-view-1.png" alt="Settings view" width=200px>
 
@@ -55,8 +72,11 @@ This is not a spy app: every remote action — even a failed one — shows a not
 ## Technical Information
 
 - Qt 5.6.3 (Sailfish OS Silica UI) + Python 3 backend/daemons
+- Two-RPM model: sandboxed store app + separate daemon package (see [Technical Infos](docs/TECHNICAL-INFOS.md))
+- Building, versioning and the CI build order: see [Building](docs/TECHNICAL-INFOS.md#building)
 - Tested on:
   - Fairphone 4 - Sailfish OS 5.0.0.62
+  - Jolla Phone 2026 - Sailfish OS 5.1.0.xx
   - Emulator - Sailfish OS 5.0.0.62, 5.1.0.11
 
 ## Contributing to the project
@@ -95,6 +115,10 @@ Thanks for your consideration and contribution!
 ## License
 
 This project is licensed under the Apache License 2.0 - see [LICENSE](LICENSE).
+
+The packages additionally contain vendored third-party components under the
+BSD-3-Clause license (`paho-mqtt`, `qrcode`), which is why the RPMs declare
+`Apache-2.0 AND BSD-3-Clause`. See [NOTICE](NOTICE) for the attributions.
 
 ## AI Information
 
