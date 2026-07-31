@@ -479,8 +479,7 @@ Dialog {
                             var idx = ringToneCombo.currentIndex;
                             if (idx >= 0 && idx < ringToneModel.count) {
                                 previewPlayer.stop();
-                                previewPlayer.source = "file://"
-                                        + ringToneModel.get(idx).path;
+                                previewPlayer.source = ringToneModel.get(idx).path;
                                 previewPlayer.play();
                             }
                         }
