@@ -27,7 +27,7 @@
 Name:       harbour-find-my-device
 Summary:    Radar App (Find My Device)
 Version:    2.0
-Release:    1
+Release:    2
 # Own code is Apache-2.0. The BSD-3-Clause part covers the vendored
 # qml/utilities/paho (EDL-1.0, which SPDX expresses as BSD-3-Clause) and
 # qml/utilities/qrcode -- see NOTICE. Both ship inside this package, so the
@@ -42,6 +42,7 @@ Requires:   qt5-qtlocation
 Requires:   qt5-plugin-geoservices-osm
 # Foreground GPS fix (GpsSource.qml)
 Requires:   qml(QtPositioning)
+Requires:   qml(QtLocation)
 # No QtMultimedia dependency: Harbour does not allow it (see
 # __requires_exclude above). The ringtone preview degrades gracefully if the
 # gstreamer mediaservice plugin is missing -- it ships with the device image,

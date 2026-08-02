@@ -9,6 +9,9 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sun Aug 02 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.0-2
+- FIX: Added missing dependency QtLocation to spec file.
+
 * Tue Jul 30 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.0-1
 - CHANGED: Harbour/Jolla-Store compliance refactoring (two-RPM model)
 - CHANGED: App now runs sandboxed (Sailjail) with stock permissions
