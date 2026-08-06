@@ -24,6 +24,9 @@
 # ────────────────────────────────────────────────────────────────────────
 name: Sailfish OS Release
 
+env:
+  sdkVersion: "5.2.0.15"
+
 on:
   push:
     tags:
@@ -155,7 +158,7 @@ jobs:
             | bzip2 > "harbour-find-my-device-daemon-${VERSION}.tar.bz2"
           mkdir -p daemon-rpm/RPMS
           docker run --rm -u 0:0 -v "$PWD:/work" \
-            coderus/sailfishos-platform-sdk:5.0.0.43 \
+            coderus/sailfishos-platform-sdk:${{ env.sdkVersion }} \
             bash -c "set -euo pipefail
               rpmbuild -bb /work/daemon-rpm/harbour-find-my-device-daemon.spec \
                 --define '_sourcedir /work' \
@@ -206,7 +209,7 @@ jobs:
       - name: Build RPM package
         uses: coderus/github-sfos-build@sfos5
         with:
-          release: 5.0.0.43
+          release: ${{ env.sdkVersion }}
           arch: ${{ matrix.arch }}
 
       - name: "Harbour compliance check and Buildoutput"

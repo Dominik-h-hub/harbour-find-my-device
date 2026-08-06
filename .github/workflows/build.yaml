@@ -1,5 +1,8 @@
 name: Build App
 
+env:
+  sdkVersion: "5.2.0.15"
+
 on:
   push:
     branches-ignore:
@@ -45,7 +48,7 @@ jobs:
             | bzip2 > "harbour-find-my-device-daemon-${VERSION}.tar.bz2"
           mkdir -p daemon-rpm/RPMS
           docker run --rm -u 0:0 -v "$PWD:/work" \
-            coderus/sailfishos-platform-sdk:5.0.0.43 \
+            coderus/sailfishos-platform-sdk:${{ env.sdkVersion }} \
             bash -c "set -euo pipefail
               rpmbuild -bb /work/daemon-rpm/harbour-find-my-device-daemon.spec \
                 --define '_sourcedir /work' \
@@ -57,10 +60,19 @@ jobs:
           echo "Built:"
           ls -la daemon-rpm/RPMS/*.noarch.rpm
 
+      - name: Determine artifact name
+        id: artifact-name
+        run: |
+          VERSION=$(grep '^Version:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          RELEASE_NUM=$(grep '^Release:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          NAME="harbour-find-my-device-daemon-${VERSION}-${RELEASE_NUM}-SNAPSHOT.noarch.rpm"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "--> Artifact name: ${NAME}"
+
       - name: Upload daemon RPM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: harbour-find-my-device-daemon-noarch-SNAPSHOT
+          name: ${{ steps.artifact-name.outputs.name }}
           path: daemon-rpm/RPMS/*.noarch.rpm
           retention-days: 30
           if-no-files-found: error
@@ -89,18 +101,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Determine daemon artifact name
+        id: artifact-name-daemon
+        run: |
+          VERSION=$(grep '^Version:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          RELEASE_NUM=$(grep '^Release:' rpm/harbour-find-my-device.spec | awk '{print $2}')
+          DNAME="harbour-find-my-device-daemon-${VERSION}-${RELEASE_NUM}-SNAPSHOT.noarch.rpm"
+          echo "dname=${DNAME}" >> "$GITHUB_OUTPUT"
+          echo "--> Artifact name: ${DNAME}"
+
       # The app spec auto-bundles the daemon RPM when it is present in
       # daemon-rpm/RPMS/ at build time.
       - name: Download daemon RPM (for bundling)
         uses: actions/download-artifact@v4
         with:
-          name: harbour-find-my-device-daemon-noarch-SNAPSHOT
+          name: ${{ steps.artifact-name-daemon.outputs.dname }}
           path: daemon-rpm/RPMS
 
       - name: Build RPM package
         uses: coderus/github-sfos-build@sfos5
         with:
-          release: 5.0.0.43
+          release: ${{ env.sdkVersion }}
           arch: ${{ matrix.arch }}
 
       - name: "Harbour compliance check and Buildoutput"
@@ -115,7 +136,7 @@ jobs:
           RELEASE_NUM=$(grep '^Release:' rpm/harbour-find-my-device.spec | awk '{print $2}')
           NAME="harbour-find-my-device-${VERSION}-${RELEASE_NUM}-SNAPSHOT.${{ matrix.arch }}.rpm"
           echo "name=${NAME}" >> "$GITHUB_OUTPUT"
-          echo "📦 Artifact name: ${NAME}"
+          echo "--> Artifact name: ${NAME}"
 
       - name: Upload RPM artifacts
         uses: actions/upload-artifact@v4

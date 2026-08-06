@@ -6,6 +6,8 @@ inputs:
     description: "Target architecture (e.g. aarch64, armv7hl, i486)"
     required: true
 
+# sdkVersion is expected to be provided by the calling workflow via env.sdkVersion
+
 runs:
   using: 'composite'
   steps:
@@ -27,7 +29,7 @@ runs:
       run: |
         docker run --rm \
           -v "${{ github.workspace }}/RPMS:/RPMS" \
-          coderus/sailfishos-platform-sdk:5.0.0.43 \
+          coderus/sailfishos-platform-sdk:${{ env.sdkVersion }} \
           bash -c '
             set -euo pipefail
 
@@ -89,7 +91,7 @@ runs:
         fi
         echo "Checking $APP_RPM for the bundled daemon RPM..."
         LISTING=$(docker run --rm -v "${{ github.workspace }}/RPMS:/RPMS" \
-          coderus/sailfishos-platform-sdk:5.0.0.43 \
+          coderus/sailfishos-platform-sdk:${{ env.sdkVersion }} \
           rpm -qlp "/RPMS/$(basename "$APP_RPM")")
         if echo "$LISTING" | grep -q '^/usr/share/harbour-find-my-device/daemon/harbour-find-my-device-daemon-.*\.rpm$'; then
           echo "OK - Daemon RPM is bundled:"
