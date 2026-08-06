@@ -101,8 +101,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Determine artifact name
-        id: artifact-name
+      - name: Determine deamon artifact name
+        id: artifact-name-daemon
         run: |
           VERSION=$(grep '^Version:' rpm/harbour-find-my-device.spec | awk '{print $2}')
           RELEASE_NUM=$(grep '^Release:' rpm/harbour-find-my-device.spec | awk '{print $2}')
@@ -115,7 +115,7 @@ jobs:
       - name: Download daemon RPM (for bundling)
         uses: actions/download-artifact@v4
         with:
-          name: ${{ steps.artifact-name.outputs.dname }}
+          name: ${{ steps.artifact-name-daemon.outputs.dname }}
           path: daemon-rpm/RPMS
 
       - name: Build RPM package
