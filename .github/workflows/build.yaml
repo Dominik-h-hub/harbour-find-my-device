@@ -101,7 +101,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Determine deamon artifact name
+      - name: Determine daemon artifact name
         id: artifact-name-daemon
         run: |
           VERSION=$(grep '^Version:' rpm/harbour-find-my-device.spec | awk '{print $2}')

@@ -1,13 +1,12 @@
 name: "Harbour compliance check and Buildoutput"
 description: "Validates RPM build output and runs Harbour compliance checks"
 
-env:
-  sdkVersion: "5.2.0.15"
-
 inputs:
   arch:
     description: "Target architecture (e.g. aarch64, armv7hl, i486)"
     required: true
+
+# sdkVersion is expected to be provided by the calling workflow via env.sdkVersion
 
 runs:
   using: 'composite'
