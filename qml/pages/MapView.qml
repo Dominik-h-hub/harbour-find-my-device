@@ -79,7 +79,7 @@ SilicaFlickable {
             root.centerLat = (minLat + maxLat) / 2;
             root.centerLon = (minLon + maxLon) / 2;
             if (n === 1 || root.width < 100 || root.height < 100)
-                root.centerZoom = n === 1 ? 20 : 13;
+                root.centerZoom = n === 1 ? 19 : 13;
             else
                 root.centerZoom = root.fitZoom(minLat, minLon, maxLat, maxLon,
                                                root.width, root.height);
@@ -150,6 +150,7 @@ SilicaFlickable {
     Loader {
         id: mapLoader
         anchors.fill: parent
+        active: Bridge.ready && Bridge.osmUserAgent !== ""
         source: Qt.resolvedUrl("MapCanvas.qml")
         onStatusChanged: {
             if (status === Loader.Ready && item) {

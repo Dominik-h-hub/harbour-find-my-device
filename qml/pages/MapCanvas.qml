@@ -14,7 +14,7 @@ Map {
 
     property bool allowGestures: false
     gesture.enabled: allowGestures && useGeoapify
-    zoomLevel: 20                    // street level, so the road is visible
+    zoomLevel: useGeoapify ? 20 : 19                   // street level, so the road is visible
     center: QtPositioning.coordinate(0, 0)
 
     property var markerModel: null
@@ -48,10 +48,14 @@ Map {
         name: "osm"
         PluginParameter { name: "osm.useragent"; value: Bridge.osmUserAgent }
         PluginParameter { name: "osm.mapping.providersrepository.disabled"; value: true }
+        PluginParameter { name: "osm.mapping.cache.directory"
+            value: StandardPaths.cache + "/osm_tiles" }
+        PluginParameter { name: "osm.mapping.cache.disk.size"; value: 50000000 }
+        PluginParameter { name: "osm.mapping.cache.memory.size"; value: 10000000 }
         PluginParameter {
             name: "osm.mapping.custom.host"
             value: "https://maps.geoapify.com/v1/tile/osm-bright/%z/%x/%y.png?apiKey="
-                   + Bridge.geoapifyKey
+                + Bridge.geoapifyKey
         }
     }
 

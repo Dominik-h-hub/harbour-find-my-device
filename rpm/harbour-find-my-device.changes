@@ -9,6 +9,10 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sun Aug 08 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.0-3
+- FIX: OSM cache was not loaded correctly after sailjail activation - changed to sailjail path.
+- FIX: OSM user agent was not loaded before page was ready, caused to not fully loaded map tiles.
+
 * Sun Aug 02 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.0-2
 - FIX: Added missing dependency QtLocation to spec file.
 
