@@ -14,7 +14,7 @@ Map {
 
     property bool allowGestures: false
     gesture.enabled: allowGestures && useGeoapify
-    zoomLevel: 20                    // street level, so the road is visible
+    zoomLevel: useGeoapify ? 20 : 19                   // street level, so the road is visible
     center: QtPositioning.coordinate(0, 0)
 
     property var markerModel: null
@@ -51,7 +51,7 @@ Map {
         PluginParameter {
             name: "osm.mapping.custom.host"
             value: "https://maps.geoapify.com/v1/tile/osm-bright/%z/%x/%y.png?apiKey="
-                   + Bridge.geoapifyKey
+                + Bridge.geoapifyKey
         }
     }
 

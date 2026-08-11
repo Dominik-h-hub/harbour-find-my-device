@@ -79,7 +79,7 @@ SilicaFlickable {
             root.centerLat = (minLat + maxLat) / 2;
             root.centerLon = (minLon + maxLon) / 2;
             if (n === 1 || root.width < 100 || root.height < 100)
-                root.centerZoom = n === 1 ? 20 : 13;
+                root.centerZoom = n === 1 ? (root.canExplore ? 20 : 19) : 13;
             else
                 root.centerZoom = root.fitZoom(minLat, minLon, maxLat, maxLon,
                                                root.width, root.height);
@@ -101,7 +101,8 @@ SilicaFlickable {
         var latZoom = latFrac > EPS ? Math.log(usableH / TILE / latFrac) / Math.LN2 : 20;
         var lonZoom = lonFrac > EPS ? Math.log(usableW / TILE / lonFrac) / Math.LN2 : 20;
         var z = Math.min(latZoom, lonZoom) - ZOOM_MARGIN;
-        return isFinite(z) ? z : 13;
+        var maxZ = root.canExplore ? 20 : 19;
+        return isFinite(z) ? Math.min(z, maxZ) : 13;
     }
 
     // Mercator-projected latitude (radians), used by fitZoom.
@@ -115,7 +116,9 @@ SilicaFlickable {
 
     function reloadMap() {
         mapLoader.active = false;
-        mapLoader.active = true;
+        mapLoader.active = Qt.binding(function () {
+            return Bridge.ready && Bridge.osmUserAgent !== "";
+        });
     }
 
     // Localize a backend GPS error code (see api.py _fix_error_code) for the status banner.
@@ -150,6 +153,7 @@ SilicaFlickable {
     Loader {
         id: mapLoader
         anchors.fill: parent
+        active: Bridge.ready && Bridge.osmUserAgent !== ""
         source: Qt.resolvedUrl("MapCanvas.qml")
         onStatusChanged: {
             if (status === Loader.Ready && item) {

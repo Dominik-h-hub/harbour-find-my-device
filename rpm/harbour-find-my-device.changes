@@ -9,6 +9,15 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sun Aug 09 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.0-3
+- FIX: Map tiles were partially missing. The map requested zoom level 20,
+  which tile.openstreetmap.org rejects with HTTP 400; the OSM standard layer
+  serves up to zoom 19. Zoom is now capped at 19 for the OSM provider
+  (Geoapify still uses 20). Became visible after the build update to the
+  current Sailfish OS version, whose QtLocation no longer clamps the
+  requested zoom to the provider maximum.
+- FIX: The OSM user agent was not yet available on page loading.
+
 * Sun Aug 02 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.0-2
 - FIX: Added missing dependency QtLocation to spec file.
 
