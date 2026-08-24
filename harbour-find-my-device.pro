@@ -20,7 +20,7 @@ SOURCES +=
 # all systemd units live in daemon-rpm/ (separate, non-Harbour RPM). Modules
 # shared by both packages (fmd/, paho/, mqtt_client.py) have their single
 # source here and are copied into the daemon package at build time by
-# daemon-rpm/harbour-find-my-device-daemon.spec.
+# rpm/harbour-find-my-device-daemon.spec.
 OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/cover/CoverPage.qml \
     qml/components/qmldir \
@@ -73,6 +73,7 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     rpm/harbour-find-my-device.changes.in \
     rpm/harbour-find-my-device.changes.run.in \
     rpm/harbour-find-my-device.spec \
+    rpm/harbour-find-my-device-daemon.spec \
     translations/*.ts \
     harbour-find-my-device.desktop
 

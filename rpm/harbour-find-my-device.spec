@@ -27,7 +27,7 @@
 Name:       harbour-find-my-device
 Summary:    Radar App (Find My Device)
 Version:    2.0
-Release:    3
+Release:    4
 # Own code is Apache-2.0. The BSD-3-Clause part covers the vendored
 # qml/utilities/paho (EDL-1.0, which SPDX expresses as BSD-3-Clause) and
 # qml/utilities/qrcode -- see NOTICE. Both ship inside this package, so the
@@ -53,6 +53,13 @@ BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  desktop-file-utils
+
+# Chum installs the daemon as a separate package from the same repository, so
+# pull it in as a weak dependency there. Not emitted for Store/OpenRepos
+# builds: those bundle the daemon RPM inside this package.
+%if 0%{?_chum}
+Recommends: harbour-find-my-device-daemon
+%endif
 
 %description
 Native Sailfish OS App "Find my Device". Tracks this and other

@@ -1,0 +1,49 @@
+name: "Sailfish OS app build"
+description: "Builds the app RPM with mb2 inside the Sailfish platform SDK container"
+
+# Replaces coderus/github-sfos-build@sfos5. Same image, same mb2 invocation --
+# with one addition: the SPEC file is selected explicitly.
+#
+# Why: since the daemon spec moved to rpm/ (required by OBS/Chum -- tar_git
+# only looks for rpm/<obs-package>.spec), the rpm/ directory holds two SPEC
+# files. mb2 aborts in that case with "Multiple RPM SPEC files found - please
+# select one." and the upstream action offers no way to pass -s.
+
+inputs:
+  release:
+    description: "SailfishOS release (see https://hub.docker.com/r/coderus/sailfishos-platform-sdk/tags)"
+    required: true
+  arch:
+    description: "Build arch (aarch64, armv7hl, i486)"
+    required: true
+  spec:
+    description: "SPEC file to build, relative to the project root"
+    required: false
+    default: "rpm/harbour-find-my-device.spec"
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Build app RPM with mb2
+      shell: bash
+      env:
+        INPUT_RELEASE: ${{ inputs.release }}
+        INPUT_ARCH: ${{ inputs.arch }}
+        INPUT_SPEC: ${{ inputs.spec }}
+      run: |
+        set -ex
+        mkdir -p "$GITHUB_WORKSPACE/RPMS"
+        sudo chmod a+w "$GITHUB_WORKSPACE/RPMS"
+        docker run --rm --privileged \
+          -v "$GITHUB_WORKSPACE:/workspace" \
+          -e INPUT_RELEASE \
+          -e INPUT_ARCH \
+          -e INPUT_SPEC \
+          "coderus/sailfishos-platform-sdk:$INPUT_RELEASE" \
+          /bin/bash -c 'set -ex
+            mkdir -p build
+            cd build
+            cp -r /workspace/* .
+            mb2 -t "SailfishOS-${INPUT_RELEASE}-${INPUT_ARCH}" -s "${INPUT_SPEC}" build
+            mkdir -p /workspace/RPMS
+            cp -r RPMS/*.rpm /workspace/RPMS'

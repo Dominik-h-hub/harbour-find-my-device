@@ -160,7 +160,7 @@ jobs:
           docker run --rm -u 0:0 -v "$PWD:/work" \
             coderus/sailfishos-platform-sdk:${{ env.sdkVersion }} \
             bash -c "set -euo pipefail
-              rpmbuild -bb /work/daemon-rpm/harbour-find-my-device-daemon.spec \
+              rpmbuild -bb /work/rpm/harbour-find-my-device-daemon.spec \
                 --define '_sourcedir /work' \
                 --define '_rpmdir /work/daemon-rpm/RPMS' \
                 --define '_builddir /tmp/fmd-build'
@@ -206,11 +206,15 @@ jobs:
           name: harbour-find-my-device-daemon-noarch
           path: daemon-rpm/RPMS
 
+      # Local wrapper around the coderus platform-SDK image: it passes
+      # -s rpm/harbour-find-my-device.spec, because rpm/ now holds two SPEC
+      # files (the daemon spec has to live there for OBS/Chum)
       - name: Build RPM package
-        uses: coderus/github-sfos-build@sfos5
+        uses: ./.github/actions/sfos-build
         with:
           release: ${{ env.sdkVersion }}
           arch: ${{ matrix.arch }}
+          spec: rpm/harbour-find-my-device.spec
 
       - name: "Harbour compliance check and Buildoutput"
         uses: ./.github/actions/checks

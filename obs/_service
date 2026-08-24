@@ -1,0 +1,24 @@
+<services>
+  <!--
+    Reference copy of the _service file used for both OBS packages in
+    SailfishOS:Chum. Upload it unchanged to BOTH packages:
+
+      harbour-find-my-device          -> builds rpm/harbour-find-my-device.spec
+      harbour-find-my-device-daemon   -> builds rpm/harbour-find-my-device-daemon.spec
+
+    OBS exports the package name as OBS_SERVICE_PACKAGE; tar_git uses it to
+    pick rpm/$OBS_SERVICE_PACKAGE.spec when rpm/ holds more than one spec.
+    That is the only thing that tells the two packages apart, so the file is
+    identical for both.
+
+    tar_git derives Version and Release from the newest version-like tag
+    reachable from <branch> and rewrites the Version:/Release: lines of the
+    spec before building: v2.0-4-release -> Version 2.0, Release 4.
+    Bump <revision> to the new tag for every release.
+  -->
+  <service name="tar_git">
+    <param name="url">https://github.com/Dominik-h-hub/harbour-find-my-device.git</param>
+    <param name="branch">main</param>
+    <param name="revision">v2.0-4-release</param>
+  </service>
+</services>

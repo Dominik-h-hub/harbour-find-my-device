@@ -7,6 +7,12 @@
 #   * SailfishOS:Chum (built from source on OBS, installed as a normal package)
 #
 # Pure python + unit files -> noarch, no compilation.
+#
+# This file has to stay in rpm/ and its basename has to match the OBS package
+# name: obs-service-tar_git picks rpm/*.spec and, when there is more than one,
+# narrows it down to rpm/$OBS_SERVICE_PACKAGE.spec. The paths used in %%install
+# below are relative to the tarball root, not to this file, so they are
+# unaffected by living in rpm/.
 
 %define debug_package %{nil}
 # Deterministic, SFOS-compatible payload regardless of which rpmbuild builds
@@ -17,9 +23,12 @@
 # Version/Release are read from rpm/harbour-find-my-device.spec at parse time.
 # Both candidate paths are probed because %%_sourcedir differs between build
 # systems (mb2: <project>/rpm; CI rpmbuild: project root). On OBS neither path
-# exists at parse time -- there tar_git's set_version service rewrites
-# Version/Release from the release tag (kept identical to the spec version by
-# the CI consistency check), so the 0-fallback never ships.
+# exists at parse time -- tar_git strips rpm/ from the generated tarball --
+# but there tar_git rewrites the Version: and Release: lines itself from the
+# version tag (e.g. v2.0-4-release -> Version 2.0, Release 4), which is kept
+# identical to the spec by the release workflow's tag<->spec check. So the
+# 0/1 fallback below never ships; seeing it in a built RPM means no version
+# tag was reachable from the built branch.
 %define fmd_ver %(cat %{_sourcedir}/rpm/harbour-find-my-device.spec %{_sourcedir}/../rpm/harbour-find-my-device.spec 2>/dev/null | sed -n 's/^Version:[[:space:]]*//p' | head -n1)
 %define fmd_rel %(cat %{_sourcedir}/rpm/harbour-find-my-device.spec %{_sourcedir}/../rpm/harbour-find-my-device.spec 2>/dev/null | sed -n 's/^Release:[[:space:]]*//p' | head -n1)
 %if "%{fmd_ver}" == ""
