@@ -273,6 +273,26 @@ A minimal Flask client (interactive Leaflet map, device list, command buttons, H
 
 The app is built with the Sailfish SDK (`harbour-find-my-device.pro`, spec under `rpm/`). CI builds run on GitHub Actions using the [CODeRUS Sailfish OS Platform SDK docker images](https://github.com/CODeRUS/github-sfos-build) - see [.github/workflows/build.yaml](../.github/workflows/build.yaml).
 
+### Selecting the SPEC file
+
+`rpm/` holds two SPEC files: the app spec and `harbour-find-my-device-daemon.spec`.
+The daemon spec has to live there because OBS (SailfishOS:Chum) picks
+`rpm/$OBS_SERVICE_PACKAGE.spec` and looks nowhere else. mb2 refuses to guess
+between them (`Fatal: Multiple RPM SPEC files found - please select one.`), so
+every build has to name one:
+
+- **Qt Creator**: Projects -> Build & Run -> *Build Settings* -> **RPM SPEC file**;
+  browse to `rpm/harbour-find-my-device.spec`. The value is resolved against the
+  working directory, which is the shadow build dir, so it has to be an absolute
+  path (the Browse button produces one). Set it once per build configuration.
+- **Command line**: `sfdk -c specfile=rpm/harbour-find-my-device.spec build`
+  (or `mb2 -s rpm/harbour-find-my-device.spec build`), run from the project root.
+- **CI**: handled by [.github/actions/sfos-build](../.github/actions/sfos-build/action.yaml),
+  which passes `-s` to mb2.
+
+Only one `.changes` file may exist in `rpm/` - obs-service-tar_git aborts with
+"Need single changes file in rpm" otherwise.
+
 ### Versioning
 
 The version is maintained **only** in `rpm/harbour-find-my-device.spec` (`Version:` / `Release:`); the daemon spec inherits it at build time and both packages write a `VERSION` file that app and daemons read at runtime. When building locally with the Sailfish SDK, disable the SDK's automatic git-describe versioning so the spec version applies: `sfdk config no-fix-version` (or `mb2 --no-fix-version`). Release tags must match the spec version (`v<Version>-<Release>-release`) - the release CI enforces this.
