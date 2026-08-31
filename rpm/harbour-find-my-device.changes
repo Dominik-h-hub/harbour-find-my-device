@@ -9,6 +9,11 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Mon Aug 31 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.1-1
+- FIX: Introduced cmd daemon heartbeats fmd/<id>/hc to fix some lost cmd commands while mqtt subscription was silently dead
+- FIX: Hardening of cmd daemon error secenarios
+- CHANGED: Changed settings section headers to expanding section groups for better usability
+
 * Tue Aug 25 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.0-4
 - CHANGED: Packaging prepared for SailfishOS:Chum.
 

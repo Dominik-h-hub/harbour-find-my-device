@@ -14,6 +14,11 @@ Dialog {
                                   installed: true, bundled_available: false,
                                   bundled_version: "", daemon_version: "",
                                   update_available: false })
+    // Id of the section that is currently unfolded, "" for none. The daemon
+    // status is the one block you come here to read rather than to change, so
+    // it starts open; everything else is one tap away.
+    property string openSection: "services"
+
     property string totpSecretText: qsTr("(not set)")
     property string totpUriText: ""
     property var totpQrMatrix: null
@@ -195,300 +200,423 @@ Dialog {
             DialogHeader { title: qsTr("Settings") }
 
             // --- daemon status overview --------------------------------------
-            SectionHeader { text: qsTr("Background services") }
-            Column {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                spacing: Theme.paddingSmall
+            SettingsSection {
+                title: qsTr("Background services")
+                sectionId: "services"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
 
-                Item {
-                    width: parent.width
-                    height: gpsNameLabel.implicitHeight
+                Column {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    spacing: Theme.paddingSmall
+
+                    Item {
+                        width: parent.width
+                        height: gpsNameLabel.implicitHeight
+                        Label {
+                            id: gpsNameLabel
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("GPS service")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.primaryColor
+                        }
+                        Label {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: dialog.daemonStateText(dialog.daemonStatus.gps)
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: dialog.daemonStatus.gps === "running"
+                                   ? Theme.highlightColor : Theme.secondaryColor
+                        }
+                    }
+
+                    Item {
+                        width: parent.width
+                        height: cmdNameLabel.implicitHeight
+                        Label {
+                            id: cmdNameLabel
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Command service")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.primaryColor
+                        }
+                        Label {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: dialog.daemonStateText(dialog.daemonStatus.cmd)
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: dialog.daemonStatus.cmd === "running"
+                                   ? Theme.highlightColor : Theme.secondaryColor
+                        }
+                    }
+
+                    Button {
+                        id: statusBtn
+                        text: qsTr("Refresh")
+                        highlighted: true
+                        onClicked: dialog.refreshDaemonStatus()
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    // --- install flow (daemon missing, bundled RPM available) ----
                     Label {
-                        id: gpsNameLabel
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("GPS service")
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        visible: !dialog.daemonStatus.installed
+                                 && dialog.daemonStatus.bundled_available
                         font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.primaryColor
+                        color: Theme.highlightColor
+                        text: qsTr("Remote commands, SMS control and background "
+                                 + "tracking need the background service package. "
+                                 + "It runs outside the app sandbox and contains a "
+                                 + "privileged helper for reboot and SMS replies; "
+                                 + "the system installer will ask you to confirm "
+                                 + "the installation.")
+                    }
+                    Button {
+                        visible: !dialog.daemonStatus.installed
+                                 && dialog.daemonStatus.bundled_available
+                        text: qsTr("Install background service")
+                        highlighted: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        onClicked: dialog.installDaemon()
+                    }
+
+                    // --- hint branch (no bundle, e.g. Chum build) ---------------
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        visible: !dialog.daemonStatus.installed
+                                 && !dialog.daemonStatus.bundled_available
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.highlightColor
+                        text: qsTr("Remote commands, SMS control and background "
+                                 + "tracking need the background service. Install "
+                                 + "the package 'harbour-find-my-device-daemon' "
+                                 + "from the same repository this app came from "
+                                 + "(e.g. SailfishOS:Chum).")
+                    }
+
+                    // --- update flow (bundled RPM newer than installed daemon) --
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        visible: dialog.daemonStatus.installed
+                                 && dialog.daemonStatus.update_available
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.highlightColor
+                        text: qsTr("Background service update available "
+                                 + "(installed: %1, new: %2).")
+                              .arg(dialog.daemonStatus.daemon_version)
+                              .arg(dialog.daemonStatus.bundled_version)
+                    }
+                    Button {
+                        visible: dialog.daemonStatus.installed
+                                 && dialog.daemonStatus.update_available
+                        text: qsTr("Update background service")
+                        highlighted: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        onClicked: dialog.installDaemon()
+                    }
+
+                    // Two separate labels so each line is its own translation unit and
+                    // the command-service note always starts on a new line.
+                    Label {
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                        text: qsTr("GPS service: Activated when you turn the switch 'Background activity' on.")
                     }
                     Label {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: dialog.daemonStateText(dialog.daemonStatus.gps)
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: dialog.daemonStatus.gps === "running"
-                               ? Theme.highlightColor : Theme.secondaryColor
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                        text: qsTr("Command service: Activated when you turn min. one remote action or SMS action on.")
                     }
-                }
-
-                Item {
-                    width: parent.width
-                    height: cmdNameLabel.implicitHeight
-                    Label {
-                        id: cmdNameLabel
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("Command service")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.primaryColor
-                    }
-                    Label {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: dialog.daemonStateText(dialog.daemonStatus.cmd)
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: dialog.daemonStatus.cmd === "running"
-                               ? Theme.highlightColor : Theme.secondaryColor
-                    }
-                }
-
-                Button {
-                    id: statusBtn
-                    text: qsTr("Refresh")
-                    highlighted: true
-                    onClicked: dialog.refreshDaemonStatus()
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
-
-                // --- install flow (daemon missing, bundled RPM available) ----
-                Label {
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                    visible: !dialog.daemonStatus.installed
-                             && dialog.daemonStatus.bundled_available
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.highlightColor
-                    text: qsTr("Remote commands, SMS control and background "
-                             + "tracking need the background service package. "
-                             + "It runs outside the app sandbox and contains a "
-                             + "privileged helper for reboot and SMS replies; "
-                             + "the system installer will ask you to confirm "
-                             + "the installation.")
-                }
-                Button {
-                    visible: !dialog.daemonStatus.installed
-                             && dialog.daemonStatus.bundled_available
-                    text: qsTr("Install background service")
-                    highlighted: true
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    onClicked: dialog.installDaemon()
-                }
-
-                // --- hint branch (no bundle, e.g. Chum build) ---------------
-                Label {
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                    visible: !dialog.daemonStatus.installed
-                             && !dialog.daemonStatus.bundled_available
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.highlightColor
-                    text: qsTr("Remote commands, SMS control and background "
-                             + "tracking need the background service. Install "
-                             + "the package 'harbour-find-my-device-daemon' "
-                             + "from the same repository this app came from "
-                             + "(e.g. SailfishOS:Chum).")
-                }
-
-                // --- update flow (bundled RPM newer than installed daemon) --
-                Label {
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                    visible: dialog.daemonStatus.installed
-                             && dialog.daemonStatus.update_available
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.highlightColor
-                    text: qsTr("Background service update available "
-                             + "(installed: %1, new: %2).")
-                          .arg(dialog.daemonStatus.daemon_version)
-                          .arg(dialog.daemonStatus.bundled_version)
-                }
-                Button {
-                    visible: dialog.daemonStatus.installed
-                             && dialog.daemonStatus.update_available
-                    text: qsTr("Update background service")
-                    highlighted: true
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    onClicked: dialog.installDaemon()
-                }
-
-                // Two separate labels so each line is its own translation unit and
-                // the command-service note always starts on a new line.
-                Label {
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
-                    text: qsTr("GPS service: Activated when you turn the switch 'Background activity' on.")
-                }
-                Label {
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
-                    text: qsTr("Command service: Activated when you turn min. one remote action or SMS action on.")
                 }
             }
 
             // --- general -----------------------------------------------------
-            SectionHeader { text: qsTr("General") }
-            BackgroundItem {
-                id: ownIdLabel
-                property string value: ""
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                height: Math.max(ownIdNameLabel.implicitHeight, ownIdValueLabel.implicitHeight) + Theme.paddingMedium * 2
-                onClicked: {
-                    Clipboard.text = ownIdLabel.value
-                }
-                Label {
-                    id: ownIdNameLabel
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Device-Id")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.primaryColor
-                }
-                Row {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: Theme.paddingSmall
+            SettingsSection {
+                title: qsTr("General")
+                sectionId: "general"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
+
+                BackgroundItem {
+                    id: ownIdLabel
+                    property string value: ""
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    height: Math.max(ownIdNameLabel.implicitHeight, ownIdValueLabel.implicitHeight) + Theme.paddingMedium * 2
+                    onClicked: {
+                        Clipboard.text = ownIdLabel.value
+                    }
                     Label {
-                        id: ownIdValueLabel
+                        id: ownIdNameLabel
+                        anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        text: ownIdLabel.value
+                        text: qsTr("Device-Id")
                         font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.highlightColor
+                        color: Theme.primaryColor
                     }
-                    Image {
+                    Row {
+                        anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        source: "image://theme/icon-s-clipboard"
-                        sourceSize.width: Theme.iconSizeSmall
-                        sourceSize.height: Theme.iconSizeSmall
-                        opacity: 0.6
+                        spacing: Theme.paddingSmall
+                        Label {
+                            id: ownIdValueLabel
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: ownIdLabel.value
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.highlightColor
+                        }
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "image://theme/icon-s-clipboard"
+                            sourceSize.width: Theme.iconSizeSmall
+                            sourceSize.height: Theme.iconSizeSmall
+                            opacity: 0.6
+                        }
                     }
                 }
-            }
-            TextField {
-                id: intervalField
-                width: parent.width
-                label: qsTr("GPS query interval (minutes)")
-                inputMethodHints: Qt.ImhDigitsOnly
-                validator: IntValidator { bottom: 1; top: 1440 }
-            }
-            TextSwitch {
-                id: autoLocSwitch
-                text: qsTr("Auto-enable location when needed")
-                description: qsTr("Lets the daemon turn on the system location "
-                                + "services and accept the agreement. Opt-in.")
+                TextField {
+                    id: intervalField
+                    width: parent.width
+                    label: qsTr("GPS query interval (minutes)")
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    validator: IntValidator { bottom: 1; top: 1440 }
+                }
+                TextSwitch {
+                    id: autoLocSwitch
+                    text: qsTr("Auto-enable location when needed")
+                    description: qsTr("Lets the daemon turn on the system location "
+                                    + "services and accept the agreement. Opt-in.")
+                }
             }
 
             // --- MQTT --------------------------------------------------------
-            SectionHeader { text: qsTr("MQTT") }
-            TextSwitch {
-                id: mqttSwitch
-                text: qsTr("Publish coordinates over MQTT")
-                description: qsTr("Off = the daemon stores locally but does not publish.")
-            }
-            TextField {
-                id: serverField
-                width: parent.width
-                label: qsTr("MQTT server")
-                placeholderText: qsTr("broker.example.com")
-                inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
-            }
-            TextSwitch {
-                id: tlsSwitch
-                text: qsTr("Use TLS")
-                onCheckedChanged: {
-                    if (portField.text === "8883" || portField.text === "1883")
-                        portField.text = checked ? "8883" : "1883";
+            SettingsSection {
+                title: qsTr("MQTT")
+                sectionId: "mqtt"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
+
+                TextSwitch {
+                    id: mqttSwitch
+                    text: qsTr("Publish coordinates over MQTT")
+                    description: qsTr("Off = the daemon stores locally but does not publish.")
                 }
-            }
-            TextField {
-                id: mqttUserField
-                width: parent.width
-                label: qsTr("MQTT username")
-                inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
-            }
-            PasswordField {
-                id: mqttPassField
-                width: parent.width
-                label: qsTr("MQTT password")
-                inputMethodHints: Qt.ImhNoPredictiveText
-            }
-            TextField {
-                id: portField
-                width: parent.width
-                label: qsTr("Port")
-                inputMethodHints: Qt.ImhDigitsOnly
-                validator: IntValidator { bottom: 1; top: 65535 }
-            }
-            TextSwitch {
-                id: backgroundSwitch
-                text: qsTr("Background activity")
-                description: qsTr("Keep reporting the location while the app is closed "
-                                + "(the daemon 'GPS service' runs).")
-                automaticCheck: false
-                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
-                onClicked: dialog.toggleOrInstall(backgroundSwitch)
+                TextField {
+                    id: serverField
+                    width: parent.width
+                    label: qsTr("MQTT server")
+                    placeholderText: qsTr("broker.example.com")
+                    inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                }
+                TextSwitch {
+                    id: tlsSwitch
+                    text: qsTr("Use TLS")
+                    onCheckedChanged: {
+                        if (portField.text === "8883" || portField.text === "1883")
+                            portField.text = checked ? "8883" : "1883";
+                    }
+                }
+                TextField {
+                    id: mqttUserField
+                    width: parent.width
+                    label: qsTr("MQTT username")
+                    inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                }
+                PasswordField {
+                    id: mqttPassField
+                    width: parent.width
+                    label: qsTr("MQTT password")
+                    inputMethodHints: Qt.ImhNoPredictiveText
+                }
+                TextField {
+                    id: portField
+                    width: parent.width
+                    label: qsTr("Port")
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    validator: IntValidator { bottom: 1; top: 65535 }
+                }
+                TextSwitch {
+                    id: backgroundSwitch
+                    text: qsTr("Background activity")
+                    description: qsTr("Keep reporting the location while the app is closed "
+                                    + "(the daemon 'GPS service' runs).")
+                    automaticCheck: false
+                    opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                    onClicked: dialog.toggleOrInstall(backgroundSwitch)
+                }
             }
 
             // --- remote actions ---------------------------------------------
-            SectionHeader { text: qsTr("Remote actions") }
+            SettingsSection {
+                title: qsTr("Remote actions")
+                sectionId: "remote"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
 
-            PasswordField {
-                id: pinField
-                width: parent.width
-                label: qsTr("PIN for remote access (HMAC secret)")
-                inputMethodHints: Qt.ImhNoPredictiveText
-            }
-
-            TextSwitch {
-                id: ringSwitch
-                text: qsTr("Allow command RING")
-                description: qsTr("Device will ring for 60 seconds the below defined tone.")
-                automaticCheck: false
-                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
-                onClicked: dialog.toggleOrInstall(ringSwitch)
-            }
-            // Ringtone picker for the RING sound. Plays the chosen file on a loop
-            ComboBox {
-                id: ringToneCombo
-                width: parent.width
-                label: qsTr("Ringtone")
-                visible: ringSwitch.checked
-                menu: ContextMenu {
-                    Repeater {
-                        model: ringToneModel
-                        MenuItem { text: model.name }
-                    }
-                }
-            }
-            Column {
-                width: parent.width
-                spacing: Theme.paddingSmall
-                visible: ringSwitch.checked && ringToneModel.count > 0
-
-                Row {
+                PasswordField {
+                    id: pinField
                     width: parent.width
-                    spacing: Theme.paddingMedium
-                    Button {
-                        text: qsTr("Preview")
-                        onClicked: {
-                            var idx = ringToneCombo.currentIndex;
-                            if (idx >= 0 && idx < ringToneModel.count) {
-                                previewPlayer.stop();
-                                previewPlayer.source = ringToneModel.get(idx).path;
-                                previewPlayer.play();
-                            }
+                    label: qsTr("PIN for remote access (HMAC secret)")
+                    inputMethodHints: Qt.ImhNoPredictiveText
+                }
+
+                TextSwitch {
+                    id: ringSwitch
+                    text: qsTr("Allow command RING")
+                    description: qsTr("Device will ring for 60 seconds the below defined tone.")
+                    automaticCheck: false
+                    opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                    onClicked: dialog.toggleOrInstall(ringSwitch)
+                }
+                // Ringtone picker for the RING sound. Plays the chosen file on a loop
+                ComboBox {
+                    id: ringToneCombo
+                    width: parent.width
+                    label: qsTr("Ringtone")
+                    visible: ringSwitch.checked
+                    menu: ContextMenu {
+                        Repeater {
+                            model: ringToneModel
+                            MenuItem { text: model.name }
                         }
                     }
-                    Button {
-                        text: qsTr("Stop")
-                        onClicked: previewPlayer.stop()
+                }
+                Column {
+                    width: parent.width
+                    spacing: Theme.paddingSmall
+                    visible: ringSwitch.checked && ringToneModel.count > 0
+
+                    Row {
+                        width: parent.width
+                        spacing: Theme.paddingMedium
+                        Button {
+                            text: qsTr("Preview")
+                            onClicked: {
+                                var idx = ringToneCombo.currentIndex;
+                                if (idx >= 0 && idx < ringToneModel.count) {
+                                    previewPlayer.stop();
+                                    previewPlayer.source = ringToneModel.get(idx).path;
+                                    previewPlayer.play();
+                                }
+                            }
+                        }
+                        Button {
+                            text: qsTr("Stop")
+                            onClicked: previewPlayer.stop()
+                        }
+                    }
+
+                    Label {
+                        x: Theme.horizontalPageMargin
+                        width: parent.width - 2 * Theme.horizontalPageMargin
+                        wrapMode: Text.Wrap
+                        font.pixelSize: Theme.fontSizeExtraSmall
+                        color: Theme.secondaryColor
+                        text: qsTr("Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.")
                     }
                 }
+                TextSwitch {
+                    id: lockSwitch
+                    text: qsTr("Allow command LOCK")
+                    description: qsTr("If device is unlocked, it will be locked into lock screen.")
+                    automaticCheck: false
+                    opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                    onClicked: dialog.toggleOrInstall(lockSwitch)
+                }
+                TextSwitch {
+                    id: deleteSwitch
+                    text: qsTr("Allow command DELETE (wipe)")
+                    description: qsTr("Will delete all userdata stored under 'home/<user>/' and reboot device afterwards.")
+                    automaticCheck: false
+                    opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                    onClicked: dialog.toggleOrInstall(deleteSwitch)
+                }
+            }
+
+            // --- camera ------------------------------------------------------
+            SettingsSection {
+                title: qsTr("Camera")
+                sectionId: "camera"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
+
+                TextSwitch {
+                    id: cameraSwitch
+                    text: qsTr("Allow command CAMERA")
+                    description: qsTr("A photo can be captured and uploaded to the configured WebDAV server.")
+                    automaticCheck: false
+                    opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                    onClicked: dialog.toggleOrInstall(cameraSwitch)
+                }
+                TextField {
+                    id: webdavUrlField
+                    width: parent.width
+                    label: qsTr("WebDAV URL (full upload path) for photo upload")
+                    inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                }
+                TextField {
+                    id: webdavUserField
+                    width: parent.width
+                    label: qsTr("WebDAV username")
+                    inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                }
+                PasswordField {
+                    id: webdavPassField
+                    width: parent.width
+                    label: qsTr("WebDAV password")
+                    inputMethodHints: Qt.ImhNoPredictiveText
+                }
+            }
+
+            // --- SMS ---------------------------------------------------------
+            SettingsSection {
+                title: qsTr("SMS")
+                sectionId: "sms"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
+
+                TextArea {
+                    id: whitelistField
+                    width: parent.width
+                    placeholderText: qsTr("+4915123456789")
+                    description: qsTr("Whitelist (Allowed senders) - one per line")
+                }
+                TextSwitch {
+                    id: smsRemoteSwitch
+                    text: qsTr("Remote control via SMS")
+                    description: qsTr("Turn on if you want accept SMS commands from the whitelist. "
+                                    + "The current TOTP code is required in SMS commands.")
+                    automaticCheck: false
+                    opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                    onClicked: dialog.toggleOrInstall(smsRemoteSwitch)
+                }
+                TextSwitch {
+                    id: smsGpsSwitch
+                    text: qsTr("Allow command GPS")
+                    description: qsTr("Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.")
+                    automaticCheck: false
+                    opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
+                    onClicked: dialog.toggleOrInstall(smsGpsSwitch)
+                }
+            }
+
+            // --- SMS two-factor (TOTP + backup codes) ------------------------
+            SettingsSection {
+                title: qsTr("SMS authentication (TOTP)")
+                sectionId: "totp"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
 
                 Label {
                     x: Theme.horizontalPageMargin
@@ -496,378 +624,312 @@ Dialog {
                     wrapMode: Text.Wrap
                     font.pixelSize: Theme.fontSizeExtraSmall
                     color: Theme.secondaryColor
-                    text: qsTr("Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.")
+                    text: qsTr("Enrol this secret in a TOTP authenticator app "
+                             + "on OTHER devices. The current code is required "
+                             + "in SMS commands. Keep backup codes safe for use "
+                             + "without an authenticator app.")
                 }
-            }
-            TextSwitch {
-                id: lockSwitch
-                text: qsTr("Allow command LOCK")
-                description: qsTr("If device is unlocked, it will be locked into lock screen.")
-                automaticCheck: false
-                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
-                onClicked: dialog.toggleOrInstall(lockSwitch)
-            }
-            TextSwitch {
-                id: deleteSwitch
-                text: qsTr("Allow command DELETE (wipe)")
-                description: qsTr("Will delete all userdata stored under 'home/<user>/' and reboot device afterwards.")
-                automaticCheck: false
-                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
-                onClicked: dialog.toggleOrInstall(deleteSwitch)
-            }
-
-            // --- camera ------------------------------------------------------
-            SectionHeader { text: qsTr("Camera") }
-            TextSwitch {
-                id: cameraSwitch
-                text: qsTr("Allow command CAMERA")
-                description: qsTr("A photo can be captured and uploaded to the configured WebDAV server.")
-                automaticCheck: false
-                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
-                onClicked: dialog.toggleOrInstall(cameraSwitch)
-            }
-            TextField {
-                id: webdavUrlField
-                width: parent.width
-                label: qsTr("WebDAV URL (full upload path) for photo upload")
-                inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
-            }
-            TextField {
-                id: webdavUserField
-                width: parent.width
-                label: qsTr("WebDAV username")
-                inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
-            }
-            PasswordField {
-                id: webdavPassField
-                width: parent.width
-                label: qsTr("WebDAV password")
-                inputMethodHints: Qt.ImhNoPredictiveText
-            }
-
-            // --- SMS ---------------------------------------------------------
-            SectionHeader { text: qsTr("SMS") }
-            TextArea {
-                id: whitelistField
-                width: parent.width
-                placeholderText: qsTr("+4915123456789")
-                description: qsTr("Whitelist (Allowed senders) - one per line")
-            }
-            TextSwitch {
-                id: smsRemoteSwitch
-                text: qsTr("Remote control via SMS")
-                description: qsTr("Turn on if you want accept SMS commands from the whitelist. "
-                                + "The current TOTP code is required in SMS commands.")
-                automaticCheck: false
-                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
-                onClicked: dialog.toggleOrInstall(smsRemoteSwitch)
-            }
-            TextSwitch {
-                id: smsGpsSwitch
-                text: qsTr("Allow command GPS")
-                description: qsTr("Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.")
-                automaticCheck: false
-                opacity: dialog.daemonStatus.installed ? 1.0 : Theme.opacityLow
-                onClicked: dialog.toggleOrInstall(smsGpsSwitch)
-            }
-
-            // --- SMS two-factor (TOTP + backup codes) ------------------------
-            SectionHeader { text: qsTr("SMS authentication (TOTP)") }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryColor
-                text: qsTr("Enrol this secret in a TOTP authenticator app "
-                         + "on OTHER devices. The current code is required "
-                         + "in SMS commands. Keep backup codes safe for use "
-                         + "without an authenticator app.")
-            }
-            BackgroundItem {
-                id: totpSecretItem
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                height: Math.max(totpNameLabel.implicitHeight, totpValueLabel.implicitHeight) + Theme.paddingMedium * 2
-                enabled: dialog.totpUriText !== ""
-                onClicked: Clipboard.text = dialog.totpSecretText
-                Label {
-                    id: totpNameLabel
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("TOTP secret")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.primaryColor
-                }
-                Row {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: totpNameLabel.right
-                    anchors.leftMargin: Theme.paddingMedium
-                    spacing: Theme.paddingSmall
-                    layoutDirection: Qt.RightToLeft
-                    Image {
-                        anchors.verticalCenter: parent.verticalCenter
-                        source: "image://theme/icon-s-clipboard"
-                        sourceSize.width: Theme.iconSizeSmall
-                        sourceSize.height: Theme.iconSizeSmall
-                        opacity: 0.6
-                        visible: dialog.totpUriText !== ""
-                    }
+                BackgroundItem {
+                    id: totpSecretItem
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    height: Math.max(totpNameLabel.implicitHeight, totpValueLabel.implicitHeight) + Theme.paddingMedium * 2
+                    enabled: dialog.totpUriText !== ""
+                    onClicked: Clipboard.text = dialog.totpSecretText
                     Label {
-                        id: totpValueLabel
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: Math.min(implicitWidth, parent.width - Theme.iconSizeSmall - Theme.paddingSmall)
-                        truncationMode: TruncationMode.Fade
-                        text: dialog.totpSecretText
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.family: Theme.fontFamilyHeading
-                        color: Theme.highlightColor
-                    }
-                }
-            }
-
-            // Scannable QR code of the otpauth:// URI for a second device.
-            QrCode {
-                anchors.horizontalCenter: parent.horizontalCenter
-                visible: dialog.totpQrMatrix !== null
-                matrix: dialog.totpQrMatrix
-                dimension: Math.min(parent.width - 2 * Theme.horizontalPageMargin,
-                                    Theme.itemSizeHuge * 3)
-            }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                visible: dialog.totpQrMatrix !== null
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryColor
-                text: qsTr("Scan with an authenticator app on another device")
-            }
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: qsTr("Generate new TOTP secret")
-                highlighted: true
-                onClicked: Bridge.call("rotate_totp_secret", [], function (r) {
-                    if (r) {
-                        dialog.totpSecretText = r.secret;
-                        dialog.totpUriText = r.uri;
-                        dialog.refreshTotpQr();
-                    }
-                })
-            }
-            SectionHeader { text: qsTr("SMS - Backup Codes") }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryColor
-                text: qsTr("If TOTP is not available, backup codes can be used for authentication. Each code can be used only once.")
-            }
-            Column {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                spacing: Theme.paddingSmall
-
-                Item {
-                    width: parent.width
-                    height: backupCodesNameLabel.implicitHeight
-                    Label {
-                        id: backupCodesNameLabel
+                        id: totpNameLabel
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("Unused backup codes")
+                        text: qsTr("TOTP secret")
                         font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.primaryColor
+                    }
+                    Row {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: totpNameLabel.right
+                        anchors.leftMargin: Theme.paddingMedium
+                        spacing: Theme.paddingSmall
+                        layoutDirection: Qt.RightToLeft
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "image://theme/icon-s-clipboard"
+                            sourceSize.width: Theme.iconSizeSmall
+                            sourceSize.height: Theme.iconSizeSmall
+                            opacity: 0.6
+                            visible: dialog.totpUriText !== ""
+                        }
+                        Label {
+                            id: totpValueLabel
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.min(implicitWidth, parent.width - Theme.iconSizeSmall - Theme.paddingSmall)
+                            truncationMode: TruncationMode.Fade
+                            text: dialog.totpSecretText
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.family: Theme.fontFamilyHeading
+                            color: Theme.highlightColor
+                        }
+                    }
+                }
+
+                // Scannable QR code of the otpauth:// URI for a second device.
+                QrCode {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: dialog.totpQrMatrix !== null
+                    matrix: dialog.totpQrMatrix
+                    dimension: Math.min(parent.width - 2 * Theme.horizontalPageMargin,
+                                        Theme.itemSizeHuge * 3)
+                }
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    visible: dialog.totpQrMatrix !== null
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryColor
+                    text: qsTr("Scan with an authenticator app on another device")
+                }
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: qsTr("Generate new TOTP secret")
+                    highlighted: true
+                    onClicked: Bridge.call("rotate_totp_secret", [], function (r) {
+                        if (r) {
+                            dialog.totpSecretText = r.secret;
+                            dialog.totpUriText = r.uri;
+                            dialog.refreshTotpQr();
+                        }
+                    })
+                }
+            }
+
+            SettingsSection {
+                title: qsTr("SMS - Backup Codes")
+                sectionId: "backup"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryColor
+                    text: qsTr("If TOTP is not available, backup codes can be used for authentication. Each code can be used only once.")
+                }
+                Column {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    spacing: Theme.paddingSmall
+
+                    Item {
+                        width: parent.width
+                        height: backupCodesNameLabel.implicitHeight
+                        Label {
+                            id: backupCodesNameLabel
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Unused backup codes")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.primaryColor
+                        }
+                        Label {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: dialog.backupCountText
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.highlightColor
+                        }
+                    }
+                }
+
+                Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: qsTr("Regenerate backup codes")
+                    highlighted: true
+                    color: Theme.primaryColor
+                    onClicked: Bridge.call("regenerate_backup_codes", [], function (codes) {
+                        if (codes) {
+                            dialog.backupCountText = "" + codes.length;
+                            pageStack.push(Qt.resolvedUrl("BackupCodesPage.qml"), { codes: codes });
+                        }
+                    })
+                }
+            }
+
+            // --- map ---------------------------------------------------------
+            SettingsSection {
+                title: qsTr("Map")
+                sectionId: "map"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryColor
+                    text: qsTr("The standard OpenStreetMap is not zoomable but you can create a free account " +
+                                "at Geoapify to get a free API key for a zoomable map. The key is optional, but " +
+                                "without it the map will not be zoomable.")
+                }
+                ComboBox {
+                    id: providerCombo
+                    width: parent.width
+                    label: qsTr("Tile provider")
+                    menu: ContextMenu {
+                        MenuItem { text: qsTr("OpenStreetMap (no key needed)") }
+                        MenuItem { text: qsTr("OpenStreetMap Geoapify") }
+                    }
+                }
+                TextField {
+                    id: geoapifyKeyField
+                    width: parent.width
+                    label: qsTr("Geoapify API key (optional)")
+                    inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                }
+            }
+
+            // ── About ────────────────────────────────────
+            SettingsSection {
+                title: qsTr("About")
+                sectionId: "about"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
+
+                ListItem {
+                    contentHeight: Theme.itemSizeMedium
+                    _backgroundColor: "transparent"
+                    highlighted: false
+
+                    Label {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("App Version")
                         color: Theme.primaryColor
                     }
                     Label {
                         anchors.right: parent.right
+                        anchors.rightMargin: Theme.horizontalPageMargin
                         anchors.verticalCenter: parent.verticalCenter
-                        text: dialog.backupCountText
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.highlightColor
+                        text: Bridge.appVersion !== "" ? Bridge.appVersion : "?.?.?"
+                        color: Theme.secondaryColor
                     }
                 }
-            }
 
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: qsTr("Regenerate backup codes")
-                highlighted: true
-                color: Theme.primaryColor
-                onClicked: Bridge.call("regenerate_backup_codes", [], function (codes) {
-                    if (codes) {
-                        dialog.backupCountText = "" + codes.length;
-                        pageStack.push(Qt.resolvedUrl("BackupCodesPage.qml"), { codes: codes });
+                Separator {
+                    width: parent.width
+                    color: Theme.primaryColor
+                    horizontalAlignment: Qt.AlignHCenter
+                }
+
+                ListItem {
+                    contentHeight: Theme.itemSizeMedium
+
+                    onClicked: Qt.openUrlExternally("https://forum.sailfishos.org/t/radar-app-find-my-device/30944")
+
+                    Label {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Report a bug or request a feature")
+                        color: Theme.primaryColor
                     }
-                })
-            }
-
-            // --- map ---------------------------------------------------------
-            SectionHeader { text: qsTr("Map") }
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                wrapMode: Text.Wrap
-                font.pixelSize: Theme.fontSizeExtraSmall
-                color: Theme.secondaryColor
-                text: qsTr("The standard OpenStreetMap is not zoomable but you can create a free account " +
-                            "at Geoapify to get a free API key for a zoomable map. The key is optional, but " +
-                            "without it the map will not be zoomable.")
-            }
-            ComboBox {
-                id: providerCombo
-                width: parent.width
-                label: qsTr("Tile provider")
-                menu: ContextMenu {
-                    MenuItem { text: qsTr("OpenStreetMap (no key needed)") }
-                    MenuItem { text: qsTr("OpenStreetMap Geoapify") }
+                    Image {
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: "image://theme/icon-m-right"
+                        width: Theme.iconSizeSmall
+                        height: Theme.iconSizeSmall
+                    }
                 }
-            }
-            TextField {
-                id: geoapifyKeyField
-                width: parent.width
-                label: qsTr("Geoapify API key (optional)")
-                inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
-            }
 
-            // ── About ────────────────────────────────────
-            SectionHeader {
-                text: qsTr("About")
-            }
-
-            ListItem {
-                contentHeight: Theme.itemSizeMedium
-                _backgroundColor: "transparent"
-                highlighted: false
-
-                Label {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("App Version")
+                Separator {
+                    width: parent.width
                     color: Theme.primaryColor
+                    horizontalAlignment: Qt.AlignHCenter
                 }
-                Label {
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Bridge.appVersion !== "" ? Bridge.appVersion : "?.?.?"
-                    color: Theme.secondaryColor
+
+                ListItem {
+                    contentHeight: Theme.itemSizeMedium
+
+                    onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/tree/main/translations")
+
+                    Label {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Add a translation")
+                        color: Theme.primaryColor
+                    }
+                    Image {
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: "image://theme/icon-m-right"
+                        width: Theme.iconSizeSmall
+                        height: Theme.iconSizeSmall
+                    }
                 }
-            }
 
-            Separator {
-                width: parent.width
-                color: Theme.primaryColor
-                horizontalAlignment: Qt.AlignHCenter
-            }
-
-            ListItem {
-                contentHeight: Theme.itemSizeMedium
-
-                onClicked: Qt.openUrlExternally("https://forum.sailfishos.org/t/radar-app-find-my-device/30944")
-
-                Label {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Report a bug or request a feature")
+                Separator {
+                    width: parent.width
                     color: Theme.primaryColor
+                    horizontalAlignment: Qt.AlignHCenter
                 }
-                Image {
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    source: "image://theme/icon-m-right"
-                    width: Theme.iconSizeSmall
-                    height: Theme.iconSizeSmall
+
+                ListItem {
+                    contentHeight: Theme.itemSizeMedium
+
+                    onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device")
+
+                    Label {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Code Repository")
+                        color: Theme.primaryColor
+                    }
+                    Image {
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: "image://theme/icon-m-right"
+                        width: Theme.iconSizeSmall
+                        height: Theme.iconSizeSmall
+                    }
                 }
-            }
 
-            Separator {
-                width: parent.width
-                color: Theme.primaryColor
-                horizontalAlignment: Qt.AlignHCenter
-            }
-
-            ListItem {
-                contentHeight: Theme.itemSizeMedium
-
-                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/tree/main/translations")
-
-                Label {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Add a translation")
+                Separator {
+                    width: parent.width
                     color: Theme.primaryColor
+                    horizontalAlignment: Qt.AlignHCenter
                 }
-                Image {
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    source: "image://theme/icon-m-right"
-                    width: Theme.iconSizeSmall
-                    height: Theme.iconSizeSmall
-                }
-            }
 
-            Separator {
-                width: parent.width
-                color: Theme.primaryColor
-                horizontalAlignment: Qt.AlignHCenter
-            }
+                ListItem {
+                    contentHeight: Theme.itemSizeMedium
 
-            ListItem {
-                contentHeight: Theme.itemSizeMedium
+                    onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/blob/main/docs/USER-GUIDE.md")
 
-                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device")
-
-                Label {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Code Repository")
-                    color: Theme.primaryColor
-                }
-                Image {
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    source: "image://theme/icon-m-right"
-                    width: Theme.iconSizeSmall
-                    height: Theme.iconSizeSmall
-                }
-            }
-
-            Separator {
-                width: parent.width
-                color: Theme.primaryColor
-                horizontalAlignment: Qt.AlignHCenter
-            }
-
-            ListItem {
-                contentHeight: Theme.itemSizeMedium
-
-                onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/blob/main/docs/USER-GUIDE.md")
-
-                Label {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("User Manual")
-                    color: Theme.primaryColor
-                }
-                Image {
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.horizontalPageMargin
-                    anchors.verticalCenter: parent.verticalCenter
-                    source: "image://theme/icon-m-right"
-                    width: Theme.iconSizeSmall
-                    height: Theme.iconSizeSmall
+                    Label {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("User Manual")
+                        color: Theme.primaryColor
+                    }
+                    Image {
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.horizontalPageMargin
+                        anchors.verticalCenter: parent.verticalCenter
+                        source: "image://theme/icon-m-right"
+                        width: Theme.iconSizeSmall
+                        height: Theme.iconSizeSmall
+                    }
                 }
             }
 

@@ -7,6 +7,9 @@ Responsibilities:
   * Topics:      fmd/<id>            location, RETAIN=true,  QoS 1
                  fmd/<id>/cmd        commands,  RETAIN=false, QoS 1
                  fmd/<id>/cmd/ack    acks,      RETAIN=false, QoS 1
+                 fmd/<id>/hc         health check, RETAIN=false, QoS 1
+                                     (published AND subscribed by the same
+                                      client -- the broker echoes it back)
   * TLS optional (default on, port 8883; plain 1883).
   * Offline tolerant: connect() never raises; callers check is_connected().
 
@@ -19,6 +22,7 @@ import logging
 import socket
 import ssl
 import threading
+import time
 
 log = logging.getLogger("fmd.mqtt")
 
@@ -90,6 +94,19 @@ TCP_KEEPCNT = 3          # give up (socket dead) after 3 missed probes
 # also ends the repeated radio wakeups of those retransmit phases.
 TCP_USER_TIMEOUT_MS = 25000  # 25s: half-open socket dies shortly after handover
 
+# Application-level liveness probe: publish to fmd/<id>/hc while subscribed to
+# that same topic, so the broker echoes every beat straight back.
+#
+# This is the only check that exercises the COMPLETE loop -- socket out, broker,
+# subscription routing, socket in, callback. Everything else this module can
+# ask is a client-side belief: paho reports "connected" from a local state
+# variable that survives a dead peer, and a broker session that has quietly
+# stopped routing to us is indistinguishable from a quiet topic.
+HEALTHCHECK_INTERVAL_S = 60
+
+# How long heartbeats may go unanswered before the channel counts as defective.
+HEALTHCHECK_TIMEOUT_S = 45
+
 
 def _enable_tcp_keepalive(sock):
     """Turn on OS TCP keepalive + TCP_USER_TIMEOUT on a (re)connect socket so a
@@ -132,6 +149,10 @@ def topic_cmd(device_id):
 
 def topic_ack(device_id):
     return "fmd/%s/cmd/ack" % device_id
+
+
+def topic_health(device_id):
+    return "fmd/%s/hc" % device_id
 
 
 def client_id(device_id, role):
@@ -212,7 +233,21 @@ class FmdMqttClient(object):
         self._client = None
         self._connected = False
         self._closed = False
-        self._subs = set()              # set of (topic, kind)
+        # Requested subscriptions (topic -> kind) and the ones the broker has
+        # actually acknowledged on the CURRENT connection. Tracked separately
+        # because subscribe() only queues a packet: it returns long before
+        # anything reaches the broker, so "we asked" and "we receive" are
+        # genuinely different facts. _subs_pending maps the SUBSCRIBE mid to
+        # its topic until the SUBACK arrives.
+        self._subs = {}
+        self._subs_confirmed = set()
+        self._subs_pending = {}
+        # Guards the three above: _add_sub writes from the caller thread while
+        # _handle_connect/_handle_subscribe read and write from the paho
+        # network thread. Iterating _subs unlocked could raise "Set changed
+        # size during iteration" inside on_connect, which paho re-raises --
+        # killing the network thread at connect time.
+        self._subs_lock = threading.Lock()
         self._clean_session = clean_session
         # Set on CONNACK rc=0, cleared on connect()/disconnect; wait_connected()
         # blocks on it (connect() is async: connect_async + loop_start).
@@ -221,6 +256,23 @@ class FmdMqttClient(object):
         # failure, ConnMan signal, net watch) never tear down the same client
         # twice in parallel.
         self._reconnect_lock = threading.Lock()
+        # Heartbeat (off unless start_healthcheck() is called).
+        # _hc_unanswered_since is the send time of the OLDEST beat that has not
+        # been echoed yet, 0.0 when everything sent has come back. It has to be
+        # the oldest, not the newest: measuring against the newest beat would
+        # reset the clock every interval, so with an interval below the timeout
+        # the check could never fire at all, and with one just above it the
+        # defect would flicker in and out faster than the watchdog can confirm
+        # it. Clearing it on the echo -- rather than comparing timestamps to
+        # wall-clock -- is also what lets this survive a suspend, when neither
+        # thread runs for minutes at a time.
+        self._hc_topic = None
+        self._hc_interval = 0
+        self._hc_timeout = HEALTHCHECK_TIMEOUT_S
+        self._hc_unanswered_since = 0.0
+        self._hc_last_echo = 0.0
+        self._hc_stop = threading.Event()
+        self._hc_thread = None
 
     # -- lifecycle --
     def connect(self):
@@ -245,9 +297,11 @@ class FmdMqttClient(object):
             if self.tls:
                 self._client.tls_set(cert_reqs=ssl.CERT_REQUIRED,
                                      tls_version=ssl.PROTOCOL_TLS)
+            self._client.suppress_exceptions = True
             self._client.on_connect = self._handle_connect
             self._client.on_disconnect = self._handle_disconnect
             self._client.on_message = self._handle_message
+            self._client.on_subscribe = self._handle_subscribe
             self._client.on_socket_open = self._handle_socket_open
             self._client.reconnect_delay_set(min_delay=1, max_delay=60)
             log.info("connecting to mqtt %s:%d (tls=%s) as %s",
@@ -265,6 +319,11 @@ class FmdMqttClient(object):
         self._client = None
         self._connected = False
         self._conn_event.clear()
+        # Confirmations belong to the connection that is going away; the next
+        # one has to earn its own SUBACKs. _subs (the wish list) is kept.
+        with self._subs_lock:
+            self._subs_confirmed.clear()
+            self._subs_pending.clear()
         if old is not None:
             # Unbind the callbacks first: an abandoned network thread must
             # never touch this wrapper again. A late on_disconnect from an old
@@ -274,6 +333,7 @@ class FmdMqttClient(object):
                 old.on_connect = None
                 old.on_disconnect = None
                 old.on_message = None
+                old.on_subscribe = None
                 old.on_socket_open = None
             except Exception:
                 pass
@@ -319,6 +379,7 @@ class FmdMqttClient(object):
         fight its successor for the identical client id at the broker.
         Use this whenever the wrapper object is being replaced or retired."""
         self._closed = True
+        self.stop_healthcheck()
         self.disconnect()
 
     def is_connected(self):
@@ -332,6 +393,110 @@ class FmdMqttClient(object):
         True. All health checks should use this."""
         return bool(self._connected and self._client is not None
                     and self._client.is_connected())
+
+    # -- health check --
+    def start_healthcheck(self, device_id, interval=HEALTHCHECK_INTERVAL_S,
+                          timeout=HEALTHCHECK_TIMEOUT_S):
+        """Subscribe to fmd/<id>/hc and start beating on it.
+
+        Survives reconnects on purpose: the thread only probes while the client
+        reports a connection and stops for good on close(), so force_reconnect()
+        does not have to tear it down and rebuild it."""
+        if self._hc_thread is not None:
+            return
+        self._hc_topic = topic_health(device_id)
+        self._hc_interval = int(interval)
+        self._hc_timeout = int(timeout)
+        self._hc_unanswered_since = 0.0
+        self._hc_last_echo = 0.0
+        self._add_sub(self._hc_topic, "hc")
+        self._hc_stop.clear()
+        self._hc_thread = threading.Thread(target=self._healthcheck_loop,
+                                           daemon=True,
+                                           name="fmd-mqtt-healthcheck")
+        self._hc_thread.start()
+        log.info("health check every %ds on %s (stale after %ds, %s)",
+                 self._hc_interval, self._hc_topic, self._hc_timeout, self.cid)
+
+    def stop_healthcheck(self):
+        self._hc_stop.set()
+        thread = self._hc_thread
+        self._hc_thread = None
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(2.0)
+
+    def _healthcheck_loop(self):
+        """Publish one beat per interval. Never waits for the PUBACK: the echo
+        is the proof we are after, and a verified publish would block this
+        thread for up to ~42s and start a reconnect of its own, racing the one
+        the watchdog is about to make."""
+        while not self._hc_stop.wait(self._hc_interval):
+            if self._closed:
+                return
+            if not self.is_really_connected():
+                continue  # nothing to probe; health_defect() reports that
+            sent = self._publish(self._hc_topic, {"t": int(time.time())},
+                                 retain=False, wait=False)
+            # Only the first beat of an unanswered run starts the clock.
+            if sent and self._hc_unanswered_since == 0.0:
+                self._hc_unanswered_since = time.time()
+
+    def healthcheck_stale(self):
+        """True when beats have gone unanswered for too long.
+
+        The clock runs from the oldest unanswered beat and is cleared by the
+        echo, so a suspend -- in which neither the beat thread nor the watchdog
+        runs -- cannot fake a defect: the echo is read on wake and clears it."""
+        if not self._hc_interval:
+            return False
+        since = self._hc_unanswered_since
+        if since <= 0.0:
+            return False  # everything sent has been echoed back
+        return (time.time() - since) > self._hc_timeout
+
+    def network_thread_alive(self):
+        """True while paho's network thread is running.
+
+        That thread is the only thing that reads the socket, answers PINGREQ
+        and drives reconnects. If it dies, nothing else notices: paho leaves
+        _state at mqtt_cs_connected, so is_connected() -- and therefore
+        is_really_connected() -- keep returning True on a client that is deaf
+        and mute. Health checks have to ask this too."""
+        client = self._client
+        if client is None:
+            return False
+        thread = getattr(client, "_thread", None)
+        return bool(thread is not None and thread.is_alive())
+
+    def subscriptions_ok(self):
+        """True when the broker acknowledged every requested subscription.
+
+        This is the check a connection test cannot make. A broker can hold a
+        perfectly healthy TCP connection whose session carries no subscription
+        at all (SUBSCRIBE lost or refused): the socket stays ESTABLISHED, paho
+        stays connected, nothing is ever delivered, and MQTT has no mechanism
+        that would surface it. Only the SUBACK does."""
+        with self._subs_lock:
+            return not (set(self._subs) - self._subs_confirmed)
+
+    def health_defect(self):
+        """Short reason string if this client needs repair, else None.
+
+        Ordered most to least fatal so callers can pick a grace period per
+        reason: a dead thread never recovers by itself, a missing connection
+        is paho's own auto-reconnect job, and an unconfirmed subscription sits
+        somewhere in between."""
+        if self._client is None:
+            return "no client"
+        if not self.network_thread_alive():
+            return "network thread dead"
+        if not self.is_really_connected():
+            return "disconnected"
+        if not self.subscriptions_ok():
+            return "subscription unconfirmed"
+        if self.healthcheck_stale():
+            return "healthcheck stale"
+        return None
 
     def wait_connected(self, timeout=CONNACK_TIMEOUT_S):
         """Block until the CONNACK arrived (connect() is asynchronous).
@@ -387,10 +552,35 @@ class FmdMqttClient(object):
         self._add_sub(topic_ack(device_id), "ack")
 
     def _add_sub(self, topic, kind):
-        self._subs.add((topic, kind))
+        with self._subs_lock:
+            self._subs[topic] = kind
         if self._client is not None and self._connected:
-            self._client.subscribe(topic, qos=QOS)
-            log.info("subscribed %s (%s, %s)", topic, kind, self.cid)
+            self._subscribe_now(self._client, topic, kind)
+        # Not connected yet is fine: _handle_connect sends every remembered
+        # topic on CONNACK, so callers may register subscriptions before the
+        # connection is up.
+
+    def _subscribe_now(self, client, topic, kind):
+        """Send one SUBSCRIBE and remember its mid until the SUBACK arrives.
+
+        Deliberately does NOT log success: subscribe() returns as soon as the
+        packet sits in paho's out-queue, before a single byte has reached the
+        socket, let alone the broker. Announcing a subscription here claims
+        something that may never become true -- and a client that believes it
+        is subscribed while the broker disagrees receives nothing, forever,
+        with every connection check still reporting green. Only
+        _handle_subscribe may confirm."""
+        try:
+            rc, mid = client.subscribe(topic, qos=QOS)
+        except Exception as exc:
+            log.error("subscribe %s failed: %s (%s)", topic, exc, self.cid)
+            return
+        if rc != mqtt.MQTT_ERR_SUCCESS:
+            log.error("subscribe %s not queued rc=%s (%s)", topic, rc, self.cid)
+            return
+        with self._subs_lock:
+            self._subs_pending[mid] = topic
+        log.info("subscribe %s sent (%s, mid=%s, %s)", topic, kind, mid, self.cid)
 
     # -- publishing --
     def publish_location(self, device_id, payload, wait=True):
@@ -505,9 +695,22 @@ class FmdMqttClient(object):
             self._connected = True
             self._conn_event.set()
             log.info("mqtt connected (%s)", self.cid)
-            for topic, _kind in self._subs:
-                client.subscribe(topic, qos=QOS)
-                log.info("re-subscribed %s (%s)", topic, self.cid)
+            # A CONNACK means a new broker session. With clean_session it
+            # carries no subscriptions, and the previous SUBACKs say nothing
+            # about it, so every topic has to be requested and confirmed
+            # again. Snapshot under the lock: this runs on the paho network
+            # thread while _add_sub may be writing from the caller's.
+            with self._subs_lock:
+                self._subs_confirmed.clear()
+                self._subs_pending.clear()
+                topics = list(self._subs.items())
+            for topic, kind in topics:
+                self._subscribe_now(client, topic, kind)
+            # A beat sent on the previous connection proves nothing about this
+            # one, and leaving it in place would report the fresh session as
+            # stale immediately.
+            self._hc_unanswered_since = 0.0
+            self._hc_last_echo = 0.0
             if self.on_connected is not None:
                 try:
                     self.on_connected()
@@ -522,32 +725,90 @@ class FmdMqttClient(object):
             return  # stale callback from an abandoned client
         self._connected = False
         self._conn_event.clear()
+        with self._subs_lock:
+            self._subs_confirmed.clear()
+            self._subs_pending.clear()
         if rc == 0:
             # rc=0 means we called disconnect() ourselves; paho won't reconnect.
             log.info("mqtt disconnected cleanly (%s)", self.cid)
         else:
             log.warning("mqtt connection lost rc=%s (will auto-reconnect)", rc)
 
+    def _handle_subscribe(self, client, userdata, mid, granted_qos, *_v5):
+        """SUBACK -- the only proof that the broker accepted a subscription.
+
+        Also the only place a refusal becomes visible: a broker that rejects a
+        topic answers 0x80 and then simply never delivers, which from the
+        client side is indistinguishable from a quiet topic. The trailing *_v5
+        swallows the properties argument the MQTT 5 signature adds."""
+        if client is not self._client:
+            return  # stale callback from an abandoned client
+        with self._subs_lock:
+            topic = self._subs_pending.pop(mid, None)
+        # MQTT 3.1.1 hands us plain ints, MQTT 5 ReasonCodes objects.
+        codes = [int(getattr(q, "value", q)) for q in (granted_qos or [])]
+        if topic is None:
+            log.warning("SUBACK for unknown mid=%s rc=%s (%s)",
+                        mid, codes, self.cid)
+            return
+        if not codes or any(c >= 0x80 for c in codes):
+            log.error("broker REFUSED subscription %s rc=%s (%s)",
+                      topic, codes, self.cid)
+            return
+        with self._subs_lock:
+            self._subs_confirmed.add(topic)
+        log.info("subscription confirmed %s (qos=%s, %s)",
+                 topic, codes, self.cid)
+
     def _handle_message(self, client, userdata, msg):
         if client is not self._client:
             return  # stale callback from an abandoned client
         topic = msg.topic
+        if topic.endswith("/hc"):
+            # Routed by suffix like /cmd and /cmd/ack, so a beat can never
+            # reach a payload handler. That matters for the clients which do
+            # NOT run a health check: the UI's on_location would store {"t":
+            # ...} as a fix with lat/lon NULL and refresh the map from it.
+            # Unreachable today (nobody subscribes to a foreign /hc), but the
+            # suffix check keeps it that way if a wildcard is ever added.
+            #
+            # Only OUR OWN beat clears the staleness clock -- another device's
+            # says nothing about our link. Handled before parsing and before
+            # the info log below: this arrives every HEALTHCHECK_INTERVAL_S and
+            # would otherwise flood the rotating file log.
+            if topic == self._hc_topic:
+                self._hc_last_echo = time.time()
+                self._hc_unanswered_since = 0.0
+                log.debug("health check echo (%s)", self.cid)
+            return
         try:
             payload = json.loads(msg.payload.decode("utf-8"))
         except Exception:
             log.warning("non-JSON message on %s, ignored", topic)
             return
+        if not isinstance(payload, dict):
+            # Valid JSON that is not an object (123, "RING", [...]) would hit
+            # payload.get() in the handlers below. Anyone can publish to these
+            # topics, so treat the shape as untrusted input, not as our bug.
+            log.warning("message on %s is not a JSON object (%s), ignored",
+                        topic, type(payload).__name__)
+            return
         device_id = _device_from_topic(topic)
         log.info("mqtt message on %s (%s)", topic, self.cid)
-        if topic.endswith("/cmd/ack"):
-            if self.on_ack:
-                self.on_ack(device_id, payload)
-        elif topic.endswith("/cmd"):
-            if self.on_command:
-                self.on_command(device_id, payload)
-        else:
-            if self.on_location:
-                self.on_location(device_id, payload)
+        try:
+            if topic.endswith("/cmd/ack"):
+                if self.on_ack:
+                    self.on_ack(device_id, payload)
+            elif topic.endswith("/cmd"):
+                if self.on_command:
+                    self.on_command(device_id, payload)
+            else:
+                if self.on_location:
+                    self.on_location(device_id, payload)
+        except Exception:
+            # Belt to suppress_exceptions' braces, and the only place the
+            # traceback reaches the file log instead of just stderr.
+            log.exception("message handler for %s failed (%s)", topic, self.cid)
 
 
 def _device_from_topic(topic):

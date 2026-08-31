@@ -85,6 +85,12 @@ under `/usr/share/harbour-find-my-device-daemon/`.
   idles otherwise. Settings changes are picked up automatically (generation
   counter), no restart needed.
 - MQTT channel: subscribes `fmd/<own-id>/cmd`, verifies the HMAC token (see below), executes the command and publishes the result to `fmd/<own-id>/cmd/ack`.
+- MQTT connection health: a subscription counts as active only once the broker
+  has confirmed it with a SUBACK, and a 60 s round-trip beat on
+  `fmd/<own-id>/hc` (see [Health check](#health-check-fmddevice-idhc)) proves
+  the link still delivers. A watchdog forces a reconnect when the beat, the
+  connection or a subscription stops checking out - the failure this guards
+  against is invisible otherwise, see the health-check section.
 - SMS channel: listens to incoming SMS via ofono (D-Bus). A command SMS must come from a whitelisted number AND carry a valid TOTP code or one-time backup code.
 - Also forwards the sandboxed GUI's queued "enable system location" requests to the privileged helper.
 - Every executed action - even a failed one - posts a notification on the device (this is not a spy app).
@@ -183,8 +189,18 @@ All traffic uses QoS 1. `<device-id>` is the id shown in the settings.
 | `fmd/<device-id>`         | device publishes | yes    | last known location         |
 | `fmd/<device-id>/cmd`     | you publish      | no     | command `{cmd, arg, token}` |
 | `fmd/<device-id>/cmd/ack` | device publishes | no     | result `{cmd, result}`      |
+| `fmd/<device-id>/hc`      | device publishes | no     | health check `{t}` *        |
+
+\* The device is **also subscribed** to its own `/hc` topic - the broker's echo
+is exactly what the check measures. See [Health check](#health-check-fmddevice-idhc).
 
 Because the location is retained, a subscriber immediately receives the last known position of every device on connect - that is how the app (and the example client) discovers devices via a single `fmd/#` subscription.
+
+**Dispatch on the topic, not on "whatever arrives".** A `fmd/#` subscription
+also picks up the health-check beats below. The example client therefore
+switches on the segment count of the topic and ignores everything it does not
+recognise; treating an unknown payload as a location would store a fix with
+empty `lat`/`lon`.
 
 Location payload example:
 
@@ -213,6 +229,43 @@ Ack payload example - `result` is one of `ok`, `disabled` (feature switched off 
 ```json
 {"cmd": "CAMERA", "result": "ok"}
 ```
+
+### Health check (`fmd/<device-id>/hc`)
+
+The command daemon publishes a beat to its own health-check topic every 60
+seconds **and is subscribed to that same topic**, so the broker echoes it
+straight back:
+
+```json
+{"t": 1788178551}
+```
+
+This is the daemon's self-test. You neither have to subscribe to it nor answer
+it - one topic is enough, there is no `/hc/ack`.
+
+It exists because none of the obvious checks can detect the failure that
+actually costs you commands: a broker session that has quietly stopped
+delivering. In that state the TCP socket stays `ESTABLISHED`, the MQTT client
+still reports "connected", and a command published to `fmd/<id>/cmd` is
+accepted by the broker and simply never arrives - with no error on either side.
+The echo is the only probe that exercises the complete loop (socket out,
+broker, subscription routing, socket in, callback), so a missing echo is the
+signal that the channel has to be rebuilt.
+
+- Interval 60 s; beats count as lost after 45 s without an echo, after which
+  the daemon forces a reconnect. Worst case from a silently dead link to the
+  repair is about two minutes.
+- Only the command daemon runs this. The GPS daemon opens a connection per fix,
+  publishes and closes it again - its verified publish (PUBACK) is its own
+  round-trip test - and the app's client is short-lived and foreground.
+- The beat schedule drifts: Sailfish suspends the CPU with the display off,
+  which freezes the daemon's threads, so gaps of 90 s and more are normal and
+  are deliberately not treated as a defect. What counts is whether an echo ever
+  comes back, not whether it came back on time.
+- Beats are logged at DEBUG, so `/tmp/fmd-cmd.log` stays readable. What you do
+  see there at INFO is `subscribe ... sent` followed by `subscription
+  confirmed ...`, and - if it ever fires - `mqtt healthcheck stale for Ns;
+  forcing reconnect`.
 
 ## Remote Command Reference
 
