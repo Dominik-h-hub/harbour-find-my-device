@@ -407,9 +407,6 @@ class _ConnmanWatcher(object):
         self._lock = threading.Lock()
         self._timer = None
         self._state = None
-        # Source address of the live socket at the last settled state, so a
-        # ConnMan event that did not move our route can be recognised.
-        self._last_ip = None
 
     def start(self):
         try:
@@ -481,18 +478,46 @@ class _ConnmanWatcher(object):
         # defective, or the kernel would now route it via a different source
         # address.
         ip = client.local_ip()
+        preferred = self._preferred_ip(client)
         defect = client.health_defect()
-        if defect is None and ip is not None and self._last_ip in (None, ip):
-            self._last_ip = ip
+        # The comparison has to be live socket vs. *fresh route lookup*, never
+        # socket vs. remembered socket address: a stranded socket keeps its old
+        # source address until the kernel tears it down, so remembering the
+        # previous value would report "unchanged" in exactly the case that
+        # needs the reconnect. preferred_src_ip() asks the routing table what
+        # the kernel would pick now -- that is what actually moves on handover.
+        if defect is None and ip is not None and preferred == ip:
             log.info("ConnMan state settled at %s; connection healthy on %s, "
                      "no reconnect", state, ip)
             return
-        log.info("ConnMan state settled at %s (defect=%s, ip %s -> %s); "
-                 "forcing cmd mqtt reconnect", state, defect, self._last_ip, ip)
-        # Forget the address: connect() is asynchronous, so the new socket may
-        # not exist yet. The next settled state adopts whatever it ends up on.
-        self._last_ip = None
+        # Anything inconclusive (no socket yet, DNS/route lookup failed) falls
+        # through to the reconnect on purpose: the suppression above is only an
+        # optimisation, and a cmd daemon that misses a RING is worse than one
+        # extra TLS handshake.
+        log.info("ConnMan state settled at %s (defect=%s, socket ip %s, "
+                 "preferred ip %s); forcing cmd mqtt reconnect",
+                 state, defect, ip, preferred)
         client.force_reconnect()
+
+    @staticmethod
+    def _preferred_ip(client):
+        """Source address the kernel would use for the broker now, or None.
+
+        None means "could not determine" (no broker configured, DNS failure,
+        no route) and must never be read as "unchanged"."""
+        try:
+            import net_watch
+        except ImportError:
+            log.debug("net_watch unavailable; cannot compare routes")
+            return None
+        server = getattr(client, "server", None)
+        if not server:
+            return None
+        try:
+            return net_watch.preferred_src_ip(server, getattr(client, "port", 0))
+        except Exception:
+            log.exception("preferred source address lookup failed")
+            return None
 
 
 def _run_active_phase(own_id, generation):

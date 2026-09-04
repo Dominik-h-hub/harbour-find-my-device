@@ -28,6 +28,7 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/components/CommandButton.qml \
     qml/components/QrCode.qml \
     qml/components/GpsSource.qml \
+    qml/components/SettingsSection.qml \
     qml/pages/MainPage.qml \
     qml/pages/MapView.qml \
     qml/pages/MapCanvas.qml \

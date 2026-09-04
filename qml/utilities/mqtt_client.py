@@ -569,16 +569,30 @@ class FmdMqttClient(object):
         something that may never become true -- and a client that believes it
         is subscribed while the broker disagrees receives nothing, forever,
         with every connection check still reporting green. Only
-        _handle_subscribe may confirm."""
-        try:
-            rc, mid = client.subscribe(topic, qos=QOS)
-        except Exception as exc:
-            log.error("subscribe %s failed: %s (%s)", topic, exc, self.cid)
-            return
-        if rc != mqtt.MQTT_ERR_SUCCESS:
-            log.error("subscribe %s not queued rc=%s (%s)", topic, rc, self.cid)
-            return
+        _handle_subscribe may confirm.
+
+        The mid must be recorded under the SAME _subs_lock hold that queues the
+        packet. subscribe() returns once the SUBSCRIBE sits in paho's out-queue,
+        and the network thread can have written it and read the SUBACK back
+        before this thread gets to run again: registering the mid afterwards
+        loses that race, _handle_subscribe discards the SUBACK as an unknown
+        mid, and the topic stays unconfirmed forever -- subscriptions_ok() then
+        reports a permanent defect and the health check reconnects in a loop,
+        re-losing the race on every new connection. Holding the lock across both
+        steps makes the callback wait instead of miss. Safe in threaded mode
+        (loop_start): paho's subscribe() path only appends to the out-queue and
+        nudges the sockpair, it never blocks on a lock the network thread holds
+        while that thread waits for _subs_lock."""
         with self._subs_lock:
+            try:
+                rc, mid = client.subscribe(topic, qos=QOS)
+            except Exception as exc:
+                log.error("subscribe %s failed: %s (%s)", topic, exc, self.cid)
+                return
+            if rc != mqtt.MQTT_ERR_SUCCESS:
+                log.error("subscribe %s not queued rc=%s (%s)",
+                          topic, rc, self.cid)
+                return
             self._subs_pending[mid] = topic
         log.info("subscribe %s sent (%s, mid=%s, %s)", topic, kind, mid, self.cid)
 

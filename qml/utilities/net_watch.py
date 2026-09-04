@@ -8,9 +8,10 @@ the socket is stranded and the client must reconnect. Works without D-Bus,
 netlink or any Sailjail permission: connect() on a UDP socket sends no packets,
 it is only a route lookup.
 
-Used by the UI process (api.py) for its persistent -ui client; the GPS daemon
-publishes connect-per-tick and has no standing connection to check, and the
--cmd daemon listens to the ConnMan state signal instead (see daemon_cmd.py).
+Used by the UI process (api.py) for its persistent -ui client and by the -cmd
+daemon, which triggers the check from the ConnMan state signal instead of from
+a UI wakeup (see daemon_cmd.py). The GPS daemon publishes connect-per-tick and
+has no standing connection to check.
 
 No timers here -- callers invoke the check only at points where the process is
 awake anyway (battery guideline).
