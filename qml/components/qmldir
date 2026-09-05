@@ -1,3 +1,4 @@
 singleton Bridge 1.0 Bridge.qml
 QrCode 1.0 QrCode.qml
 CommandButton 1.0 CommandButton.qml
+SettingsSection 1.0 SettingsSection.qml

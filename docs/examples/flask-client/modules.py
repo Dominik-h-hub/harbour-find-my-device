@@ -6,6 +6,7 @@ Protocol (see the app's qml/utilities/mqtt_client.py and fmd/tokens.py):
   fmd/<id>          location JSON, retained, QoS 1
   fmd/<id>/cmd      command JSON {cmd, arg, token}, QoS 1
   fmd/<id>/cmd/ack  ack JSON {cmd, result}, QoS 1
+  fmd/<id>/hc       the phone's own health-check beat -- not for us
 
 The command token is HMAC-SHA256(secret=PIN, "CMD:arg:timebucket"), first
 16 hex chars, 30-second buckets (receiver accepts +/-1 bucket).
@@ -87,7 +88,10 @@ def _on_message(client, userdata, msg):
         with _lock:
             _device(parts[1])["last_ack"] = "%s -> %s" % (
                 payload.get("cmd"), payload.get("result"))
-    # fmd/<id>/cmd is our own outgoing traffic; nothing to do.
+    # Everything else on fmd/# is deliberately ignored: fmd/<id>/cmd is our own
+    # outgoing traffic and fmd/<id>/hc is the phone's health-check beat.
+    # Dispatching on the topic rather than guessing from the payload is what
+    # keeps a beat from being stored as a location with empty coordinates.
 
 
 def send_command(device_id, cmd, arg=None):

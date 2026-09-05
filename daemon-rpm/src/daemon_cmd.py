@@ -65,6 +65,29 @@ _ACTIVE_KEYS = (
 IDLE_POLL_SECONDS = 15        # how often to re-check toggles while idle
 WATCHDOG_SECONDS = 5          # active-phase housekeeping timer
 
+# How long each kind of MQTT defect may persist before the watchdog forces a
+# reconnect. Not one number, because the defects differ in who else is trying
+# to fix them:
+#   * a dead network thread never recovers on its own -- act almost at once
+#   * "disconnected" is exactly what paho's auto-reconnect exists for, and it
+#     backs off up to 60s; stepping in early would only fight it, and while
+#     the device is genuinely offline every attempt is a wasted radio wakeup
+#   * an unconfirmed subscription has no owner at all: the SUBACK either
+#     arrives within a second or two of the CONNACK or it never will. The
+#     window still has to clear a slow TLS connect (CONNACK_TIMEOUT_S is 25s)
+#     so a healthy but sluggish handover is not mistaken for a defect.
+MQTT_REPAIR_GRACE_S = {
+    "no client": 60,
+    "network thread dead": 10,
+    "disconnected": 300,
+    "subscription unconfirmed": 45,
+    # healthcheck_stale() already waited HEALTHCHECK_TIMEOUT_S before saying this,
+    # so the watchdog only needs enough to see it on two consecutive ticks.
+    # Worst case from a silently dead link to the reconnect: one beat interval
+    # (60s) + the echo timeout (45s) + this = ~2 minutes.
+    "healthcheck stale": 15,
+}
+
 # Version of the installed daemon package; written into every heartbeat so the
 # UI can offer an update when the bundled RPM is newer.
 VERSION_FILE = "/usr/share/harbour-find-my-device-daemon/VERSION"
@@ -443,8 +466,58 @@ class _ConnmanWatcher(object):
         client = self._get_client()
         if client is None or _stop.is_set():
             return
-        log.info("ConnMan state settled at %s; forcing cmd mqtt reconnect", state)
+        # A ConnMan state signal is not by itself evidence that our socket is
+        # stranded: one handover walks the state machine several times, and
+        # ConnMan reports "online" again for changes that never touched the
+        # route we use. Reconnecting anyway is not free -- it costs a full TLS
+        # handshake, kills the old network thread mid-syscall (which paho logs
+        # as an EBADF traceback) and leaves the daemon without a confirmed
+        # subscription until the next SUBACK lands. A field log showed four
+        # such reconnects in eight minutes, every one on a healthy connection.
+        # So act only when something actually changed: the channel is
+        # defective, or the kernel would now route it via a different source
+        # address.
+        ip = client.local_ip()
+        preferred = self._preferred_ip(client)
+        defect = client.health_defect()
+        # The comparison has to be live socket vs. *fresh route lookup*, never
+        # socket vs. remembered socket address: a stranded socket keeps its old
+        # source address until the kernel tears it down, so remembering the
+        # previous value would report "unchanged" in exactly the case that
+        # needs the reconnect. preferred_src_ip() asks the routing table what
+        # the kernel would pick now -- that is what actually moves on handover.
+        if defect is None and ip is not None and preferred == ip:
+            log.info("ConnMan state settled at %s; connection healthy on %s, "
+                     "no reconnect", state, ip)
+            return
+        # Anything inconclusive (no socket yet, DNS/route lookup failed) falls
+        # through to the reconnect on purpose: the suppression above is only an
+        # optimisation, and a cmd daemon that misses a RING is worse than one
+        # extra TLS handshake.
+        log.info("ConnMan state settled at %s (defect=%s, socket ip %s, "
+                 "preferred ip %s); forcing cmd mqtt reconnect",
+                 state, defect, ip, preferred)
         client.force_reconnect()
+
+    @staticmethod
+    def _preferred_ip(client):
+        """Source address the kernel would use for the broker now, or None.
+
+        None means "could not determine" (no broker configured, DNS failure,
+        no route) and must never be read as "unchanged"."""
+        try:
+            import net_watch
+        except ImportError:
+            log.debug("net_watch unavailable; cannot compare routes")
+            return None
+        server = getattr(client, "server", None)
+        if not server:
+            return None
+        try:
+            return net_watch.preferred_src_ip(server, getattr(client, "port", 0))
+        except Exception:
+            log.exception("preferred source address lookup failed")
+            return None
 
 
 def _run_active_phase(own_id, generation):
@@ -471,8 +544,14 @@ def _run_active_phase(own_id, generation):
         # Runs on the paho network thread: verify + enqueue only. Executing
         # or publishing the ack here would block the thread that has to
         # process the broker traffic (see _CommandWorker).
-        cmd = (payload.get("cmd") or "").upper()
+        # Anyone can publish here, so coerce before use: a numeric "cmd" or
+        # "arg" would raise inside the network thread (tokens._hmac_message
+        # calls .lower() on arg), and an exception on this thread used to take
+        # the whole MQTT connection down with it.
+        cmd = str(payload.get("cmd") or "").upper()
         arg = payload.get("arg")
+        if arg is not None and not isinstance(arg, str):
+            arg = str(arg)
         token = payload.get("token")
         pin = executor.own_pin()
         if not tokens.verify_command_token(pin, cmd, arg, token):
@@ -494,8 +573,17 @@ def _run_active_phase(own_id, generation):
             settings.get(settings.MQTT_PASSWORD),
             mqtt_client.client_id(own_id, mqtt_client.ROLE_CMD),
             on_command=on_mqtt_command)
-        if mqtt.connect():
-            mqtt.subscribe_commands(own_id)
+        mqtt.connect()
+        # Unconditionally, not gated on connect(): _add_sub just records the
+        # topic while the connection is still coming up, and _handle_connect
+        # sends it on every CONNACK. Gating meant a single failed dispatch
+        # left the wish list empty for good -- every later reconnect then
+        # built a perfectly healthy connection subscribed to nothing.
+        mqtt.subscribe_commands(own_id)
+        # Round-trip probe on fmd/<own>/hc. This is what notices that the
+        # broker has stopped delivering to us -- neither the socket nor paho
+        # nor the SUBACK can tell us that (see mqtt_client.HEALTHCHECK_*).
+        mqtt.start_healthcheck(own_id)
         executor.set_mqtt(mqtt)
     else:
         log.info("MQTT command channel not started (disabled or unconfigured)")
@@ -540,7 +628,55 @@ def _run_active_phase(own_id, generation):
     loop = GLib.MainLoop()
     _running["loop"] = loop
 
-    state = {"last_beat": 0.0}
+    state = {"last_beat": 0.0, "defect": None, "defect_since": 0.0,
+             "repair": None, "repairs": 0}
+
+    def check_mqtt(now):
+        """Repair an MQTT channel that looks alive but no longer receives.
+
+        Nothing else would. paho leaves its state at "connected" after its
+        network thread dies, and a broker session that has lost the
+        subscription is invisible from the client side: socket ESTABLISHED, no
+        error, no traffic, is_connected() green -- the daemon simply stops
+        hearing commands. With KEEPALIVE_S at 900s the reconnect that would
+        repair it by accident is up to 22 minutes away, and every command sent
+        in the meantime is silently dropped by the broker.
+        """
+        if mqtt is None:
+            return
+        repair = state["repair"]
+        if repair is not None and repair.is_alive():
+            return  # a reconnect is already running; let it finish
+        defect = mqtt.health_defect()
+        if defect is None:
+            state["defect"] = None
+            state["repairs"] = 0
+            return
+        if state["defect"] != defect:
+            # First sighting of this defect: start its clock but do not act.
+            # Most of these are transient and fix themselves.
+            state["defect"] = defect
+            state["defect_since"] = now
+            return
+        # Back off exponentially while repairs keep failing. A broker that
+        # refuses the subscription outright would otherwise cost a full TLS
+        # handshake every grace period, forever; capped at 16x so the channel
+        # still recovers on its own once the cause goes away.
+        grace = MQTT_REPAIR_GRACE_S.get(defect, 60) * 2 ** min(state["repairs"], 4)
+        waited = now - state["defect_since"]
+        if waited < grace:
+            return
+        log.warning("mqtt %s for %ds (repair #%d); forcing reconnect",
+                    defect, int(waited), state["repairs"] + 1)
+        state["defect"] = None
+        state["repairs"] += 1
+        # force_reconnect() blocks ~2s tearing down the old network thread, so
+        # it must not run on the GLib loop -- that would stall the heartbeat
+        # (the UI reports the daemon as stopped) and D-Bus signal delivery.
+        thread = threading.Thread(target=mqtt.force_reconnect, daemon=True,
+                                  name="fmd-mqtt-repair")
+        state["repair"] = thread
+        thread.start()
 
     def watchdog():
         """Housekeeping while serving: heartbeat, settings reload, priv wishes."""
@@ -551,6 +687,7 @@ def _run_active_phase(own_id, generation):
         if now - state["last_beat"] >= runtime.HEARTBEAT_INTERVAL_S:
             runtime.write_heartbeat("cmd", "active", DAEMON_VERSION, generation)
             state["last_beat"] = now
+        check_mqtt(now)
         _process_location_requests()
         if runtime.generation() != generation or not _features_active():
             log.info("settings changed; rebuilding listeners")

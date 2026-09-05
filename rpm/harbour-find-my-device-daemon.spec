@@ -101,6 +101,7 @@ install -m 0644 daemon-rpm/src/*.py "$D"/
 cp -r qml/utilities/fmd "$D"/fmd
 cp -r qml/utilities/paho "$D"/paho
 install -m 0644 qml/utilities/mqtt_client.py "$D"/
+install -m 0644 qml/utilities/net_watch.py "$D"/
 
 # never ship caches, keep everything non-executable
 find "$D" -name '__pycache__' -type d -prune -exec rm -rf {} +
