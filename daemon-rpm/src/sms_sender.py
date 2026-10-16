@@ -37,6 +37,7 @@ import collections
 import logging
 import os
 import sys
+import time
 
 import dbus
 
@@ -44,8 +45,12 @@ log = logging.getLogger("fmd.sms_send")
 
 OFONO = "org.ofono"
 MM_IFACE = "org.ofono.MessageManager"
+MSG_IFACE = "org.ofono.Message"
 
-SendResult = collections.namedtuple("SendResult", "success message_path error")
+# `state` is the final ofono message state ("sent" / "failed"), "pending" if it
+# did not settle within the wait, or None when not waited for / only queued.
+SendResult = collections.namedtuple("SendResult", "success message_path error state")
+SendResult.__new__.__defaults__ = (None,)
 
 
 def _bus():
@@ -58,10 +63,14 @@ def list_modems(bus=None):
     return [str(path) for path, _props in mgr.GetModems()]
 
 
-def send_sms(to, text, modem=None, bus=None):
+def send_sms(to, text, modem=None, bus=None, wait_state=0):
     """Send one SMS. Long text is automatically split into multipart by ofono.
 
-    Returns SendResult(success, message_path, error). Never raises.
+    With `wait_state` > 0 (seconds, root path only) it additionally waits for
+    ofono to report the final message state and logs it -- SendMessage only
+    means "accepted into ofono's queue", not "sent".
+
+    Returns SendResult(success, message_path, error, state). Never raises.
     """
     # ofono SendMessage is not permitted to the normal user, and Sailfish has no
     # sudo; when not already root (e.g. the user command daemon), queue the message
@@ -71,6 +80,14 @@ def send_sms(to, text, modem=None, bus=None):
         import priv_client
         ok = priv_client.send_sms(to, text)
         return SendResult(ok, None, None if ok else "could not queue SMS")
+    watcher = None
+    if wait_state and bus is None:
+        try:
+            watcher = _StateWatcher()
+            bus = watcher.bus
+        except Exception as exc:
+            log.warning("cannot watch SMS state (%s); sending without", exc)
+            watcher = None
     bus = bus or _bus()
     try:
         if not modem:
@@ -80,11 +97,106 @@ def send_sms(to, text, modem=None, bus=None):
             modem = modems[0]
         mm = dbus.Interface(bus.get_object(OFONO, modem), MM_IFACE)
         path = str(mm.SendMessage(to, text))
-        log.info("SMS sent to %s via %s (%s)", to, modem, path)
-        return SendResult(True, path, None)
+        log.info("SMS to %s accepted by ofono via %s (%s)", to, modem, path)
     except Exception as exc:
         log.error("SendMessage to %s failed: %s", to, exc)
+        if watcher:
+            watcher.close()
         return SendResult(False, None, str(exc))
+    if watcher is None:
+        return SendResult(True, path, None)
+    state = watcher.wait(path, wait_state)
+    watcher.close()
+    if state == "sent":
+        log.info("SMS to %s: ofono state sent (%s)", to, path)
+        return SendResult(True, path, None, state)
+    log.error("SMS to %s: ofono state %s (%s)", to, state, path)
+    return SendResult(state != "failed", path,
+                      None if state != "failed" else "ofono state failed", state)
+
+
+class _StateWatcher(object):
+    """Collect org.ofono.Message state changes on a private bus connection.
+
+    Subscribes BEFORE SendMessage is called: ofono may report "sent" before the
+    call even returns to us, and a signal emitted before the match exists is
+    lost. Like gps_reader it owns a PRIVATE GLib main context, made this
+    thread's default before the bus connection is created and kept so until
+    close(), so it never touches a default context some other code might own.
+    """
+
+    FINAL = ("sent", "failed")
+
+    def __init__(self):
+        from dbus.mainloop.glib import DBusGMainLoop
+        from gi.repository import GLib
+        self._glib = GLib
+        self._ctx = GLib.MainContext()
+        self._ctx.push_thread_default()
+        try:
+            self.bus = dbus.SystemBus(mainloop=DBusGMainLoop(), private=True)
+        except Exception:
+            self._ctx.pop_thread_default()
+            raise
+        self._events = {}   # message path -> list of (t, what)
+        self._t0 = time.monotonic()
+        self._matches = [
+            self.bus.add_signal_receiver(
+                self._on_prop, dbus_interface=MSG_IFACE,
+                signal_name="PropertyChanged", bus_name=OFONO, path_keyword="path"),
+            self.bus.add_signal_receiver(
+                self._on_removed, dbus_interface=MM_IFACE,
+                signal_name="MessageRemoved", bus_name=OFONO),
+        ]
+
+    def _on_prop(self, name, value, path=None):
+        if str(name) == "State":
+            self._events.setdefault(str(path), []).append(
+                (time.monotonic() - self._t0, str(value)))
+
+    def _on_removed(self, path):
+        self._events.setdefault(str(path), []).append(
+            (time.monotonic() - self._t0, "removed"))
+
+    def wait(self, path, timeout):
+        """Return the final state of `path`: 'sent', 'failed', 'pending'
+        (timeout) or 'removed (state unknown)'."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            states = [w for _t, w in self._events.get(path, [])]
+            if any(s in self.FINAL for s in states) or "removed" in states:
+                break
+            if not self._ctx.iteration(False):
+                time.sleep(0.1)
+        events = self._events.get(path, [])
+        log.info("ofono state history for %s: %s", path,
+                 ", ".join("%s@%.1fs" % (w, t) for t, w in events) or "none")
+        for _t, what in reversed(events):
+            if what in self.FINAL:
+                return what
+        if any(w == "removed" for _t, w in events):
+            return "removed (state unknown)"
+        if not events:
+            # No signal at all -- ask ofono directly (message may still exist).
+            try:
+                props = dbus.Interface(self.bus.get_object(OFONO, path),
+                                       MSG_IFACE).GetProperties()
+                return "pending (GetProperties: %s)" % props.get("State")
+            except Exception as exc:
+                return "pending (no signal, GetProperties failed: %s)" % exc
+        return "pending"
+
+    def close(self):
+        for m in self._matches:
+            try:
+                m.remove()
+            except Exception:
+                pass
+        try:
+            self.bus.close()
+        except Exception:
+            pass
+        self._ctx.pop_thread_default()
 
 
 def format_gps_sms(lat, lon, fix_datetime=None, db_timestamp_local=None):

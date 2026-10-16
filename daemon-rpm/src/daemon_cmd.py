@@ -112,6 +112,23 @@ def _features_active():
     return any(settings.get_bool(k) for k in _ACTIVE_KEYS)
 
 
+def _network_state():
+    """ConnMan global state plus the connected service types, e.g.
+    'online (wifi)'; best effort, for log lines only."""
+    try:
+        import dbus
+        bus = dbus.SystemBus()
+        mgr = dbus.Interface(bus.get_object("net.connman", "/"),
+                             "net.connman.Manager")
+        state = str(mgr.GetProperties().get("State", "?"))
+        active = [str(props.get("Type", "?"))
+                  for _path, props in mgr.GetServices()
+                  if str(props.get("State", "")) in ("ready", "online")]
+        return "%s (%s)" % (state, ",".join(active) or "no active service")
+    except Exception as exc:
+        return "unknown (%s)" % exc
+
+
 def _process_location_requests():
     """Forward a queued UI 'enable system location' wish to the priv service."""
     try:
@@ -129,6 +146,9 @@ class CommandExecutor(object):
     def __init__(self, own_id=None):
         self._mqtt = None
         self._own_id = own_id
+        # Why the last command failed; only for the ack log line (diagnostics).
+        # Set and read on the command worker thread only.
+        self._reason = None
 
     def set_mqtt(self, client):
         self._mqtt = client
@@ -157,12 +177,17 @@ class CommandExecutor(object):
         acks, while publish_ack() repairs the connection itself."""
         if self._mqtt is not None:
             self._mqtt.publish_ack(self.own_id(), {"cmd": cmd, "result": result})
-        log.info("ack: %s -> %s", cmd, result)
+        reason, self._reason = self._reason, None
+        if reason and result != "ok":
+            log.info("ack: %s -> %s (%s)", cmd, result, reason)
+        else:
+            log.info("ack: %s -> %s", cmd, result)
 
     # -- dispatch --
     def execute(self, cmd, arg, channel, sender=None):
         """Run one command. Returns 'ok' | 'disabled' | 'error'. Notifies owner."""
         cmd = (cmd or "").upper()
+        self._reason = None
         if not self.feature_enabled(cmd):
             log.warning("command %s disabled in settings", cmd)
             return "disabled"
@@ -250,8 +275,13 @@ class CommandExecutor(object):
         url = settings.get(settings.WEBDAV_URL)
         user = settings.get(settings.WEBDAV_USERNAME)
         password = settings.get(settings.WEBDAV_PASSWORD)
+        # Presence only -- never log the values.
+        log.info("camera: arg=%r -> camera=%s; webdav url set=%s user set=%s "
+                 "password set=%s", arg, which, bool(url), bool(user),
+                 bool(password))
         if not (url and user):
             log.warning("camera: WebDAV credentials not set")
+            self._reason = "webdav credentials not set"
             return "error"
         import camera_capture
         from fmd import paths
@@ -261,9 +291,14 @@ class CommandExecutor(object):
         res = camera_capture.capture_to_file(which, out_path)
         if not res.success:
             log.error("camera capture failed: %s", res.error)
+            self._reason = "capture: %s" % res.error
             return "error"
         dav_url = url.rstrip("/") + "/" + fname
+        log.info("camera: network before upload: %s", _network_state())
         uploaded = camera_capture.upload_webdav(out_path, dav_url, user, password)
+        if not uploaded:
+            log.error("camera: upload failed, photo kept locally at %s", out_path)
+            self._reason = "upload failed (network: %s)" % _network_state()
         notify.notify("Find My Device",
                       "Photo (%s camera) captured remotely" % which)
         return "ok" if uploaded else "error"
@@ -754,6 +789,11 @@ def main():
     own = devices.ensure_own_device()
     own_id = own["device_id"]
     log.info("command daemon started (version %s)", DAEMON_VERSION or "?")
+    try:
+        import priv_client
+        priv_client.log_status()
+    except Exception:
+        log.exception("could not read priv service state")
 
     while not _stop.is_set():
         try:

@@ -53,6 +53,98 @@ FOCUS_CONTINUOUS = 6     # better for faces; may hang headless -> test first
 CaptureResult = collections.namedtuple(
     "CaptureResult", "success path size error vf_frames")
 
+# Captures done by this process -- tells whether failures only start after an
+# earlier capture in the same (long-running) daemon process.
+_capture_count = 0
+
+
+def _dbus_call(dest, path, iface, method):
+    import dbus
+    obj = dbus.SystemBus().get_object(dest, path)
+    return getattr(dbus.Interface(obj, iface), method)()
+
+
+def _camera_processes():
+    """Names of running processes that look like camera users."""
+    found = []
+    try:
+        for pid in os.listdir("/proc"):
+            if not pid.isdigit() or int(pid) == os.getpid():
+                continue
+            try:
+                with open("/proc/%s/cmdline" % pid, "rb") as fh:
+                    argv0 = fh.read().split(b"\0", 1)[0].decode("utf-8", "replace")
+            except OSError:
+                continue
+            name = os.path.basename(argv0)
+            if "camera" in name.lower() or name == "minimediaservice":
+                found.append("%s[%s]" % (name, pid))
+    except Exception as exc:
+        return ["unknown (%s)" % exc]
+    return found
+
+
+def capture_environment():
+    """One-line description of the device state relevant for camera access."""
+    parts = []
+    for label, method in (("display", "get_display_status"),
+                          ("tklock", "get_tklock_mode")):
+        try:
+            parts.append("%s=%s" % (label, _dbus_call(
+                "com.nokia.mce", "/com/nokia/mce/request",
+                "com.nokia.mce.request", method)))
+        except Exception as exc:
+            parts.append("%s=? (%s)" % (label, exc.__class__.__name__))
+    try:
+        parts.append("devicelock=%s" % int(_dbus_call(
+            "org.nemomobile.devicelock", "/devicelock",
+            "org.nemomobile.lipstick.devicelock", "state")))
+    except Exception as exc:
+        parts.append("devicelock=? (%s)" % exc.__class__.__name__)
+    parts.append("camera_procs=%s" % (",".join(_camera_processes()) or "none"))
+    return " ".join(parts)
+
+
+def _drain_bus_errors(bus):
+    """Pop queued ERROR/WARNING messages from the bus as readable strings."""
+    msgs = []
+    while True:
+        msg = bus.pop_filtered(Gst.MessageType.ERROR | Gst.MessageType.WARNING)
+        if msg is None:
+            return msgs
+        if msg.type == Gst.MessageType.ERROR:
+            err, dbg = msg.parse_error()
+            kind = "ERROR"
+        else:
+            err, dbg = msg.parse_warning()
+            kind = "WARNING"
+        src_name = msg.src.get_name() if msg.src is not None else "?"
+        msgs.append("%s from %s: %s (%s)" % (kind, src_name, err.message, dbg))
+
+
+def _start_pipeline(pipeline, bus):
+    """Walk NULL -> READY -> PAUSED -> PLAYING one step at a time, logging each
+    result. READY is where droidcamsrc opens the camera HAL. Returns None on
+    success or an error string carrying the GStreamer bus messages.
+
+    The bus must not have a signal watch yet, otherwise the messages explaining
+    a failure would be dispatched elsewhere before we can read them."""
+    for target in (Gst.State.READY, Gst.State.PAUSED, Gst.State.PLAYING):
+        t = time.monotonic()
+        ret = pipeline.set_state(target)
+        log.info("set_state %s -> %s (%.2fs)", target.value_nick,
+                 ret.value_nick, time.monotonic() - t)
+        if ret == Gst.StateChangeReturn.FAILURE:
+            details = _drain_bus_errors(bus)
+            for d in details:
+                log.error("gst: %s", d)
+            return "could not set %s: %s" % (
+                target.value_nick.upper(),
+                "; ".join(details) or "no bus message")
+    for d in _drain_bus_errors(bus):
+        log.warning("gst: %s", d)
+    return None
+
 
 def build_filename(device_id, which):
     """Filename per spec: <device-id>_<timestamp>_<front|back>.jpg"""
@@ -134,9 +226,14 @@ def capture_to_file(which=CAMERA_BACK, out_path=None,
     if not out_path:
         return CaptureResult(False, None, 0, "out_path required", 0)
 
+    global _capture_count
     Gst.init(None)  # idempotent
     camera_device = _DEVICE_INDEX[which]
+    _capture_count += 1
+    t0 = time.monotonic()
     log.info("capture start: camera=%s (%d) -> %s", which, camera_device, out_path)
+    log.info("capture #%d in pid %d, %s, %s", _capture_count, os.getpid(),
+             Gst.version_string(), capture_environment())
 
     pipeline = Gst.Pipeline.new("fmd-cam")
     src = Gst.ElementFactory.make("droidcamsrc", "src")
@@ -217,6 +314,8 @@ def capture_to_file(which=CAMERA_BACK, out_path=None,
             return
         st["ready_seen"] = True
         st["ready_at"] = time.monotonic()
+        log.info("ready-for-capture after %.2fs (preview frames=%d)",
+                 st["ready_at"] - t0, st["vf"])
         try:
             caps = _pick_capture_caps(
                 src.get_property("image-capture-supported-caps"), width, height)
@@ -229,8 +328,11 @@ def capture_to_file(which=CAMERA_BACK, out_path=None,
 
     src.connect("notify::ready-for-capture", on_ready)
 
-    def on_img_buffer(_pad, _info):
+    def on_img_buffer(_pad, info):
         st["captured"] += 1
+        buf = info.get_buffer()
+        log.info("image buffer received after %.2fs (%d bytes)",
+                 time.monotonic() - t0, buf.get_size() if buf else -1)
         GLib.timeout_add(500, loop.quit)  # let filesink flush
         return Gst.PadProbeReturn.OK
 
@@ -247,32 +349,40 @@ def capture_to_file(which=CAMERA_BACK, out_path=None,
             loop.quit()
         return True
 
-    bus = pipeline.get_bus()
-    bus.add_signal_watch()
-    bus.connect("message", on_bus)
-
     def on_timeout():
         if not st["captured"]:
             st["error"] = st["error"] or "timeout (vf_frames=%d)" % st["vf"]
             loop.quit()
         return False
 
-    if pipeline.set_state(Gst.State.PLAYING) == Gst.StateChangeReturn.FAILURE:
+    bus = pipeline.get_bus()
+    start_error = _start_pipeline(pipeline, bus)
+    if start_error:
         pipeline.set_state(Gst.State.NULL)
-        return CaptureResult(False, out_path, 0, "could not set PLAYING", 0)
+        log.error("capture FAILED after %.2fs: %s", time.monotonic() - t0,
+                  start_error)
+        return CaptureResult(False, out_path, 0, start_error, 0)
+    # Only now: messages posted meanwhile stay queued and are delivered here.
+    bus.add_signal_watch()
+    bus.connect("message", on_bus)
 
     GLib.timeout_add(int(timeout * 1000), on_timeout)
     try:
         loop.run()
     finally:
         pipeline.set_state(Gst.State.NULL)
+        bus.remove_signal_watch()
 
     size = os.path.getsize(out_path) if os.path.exists(out_path) else 0
     success = (st["error"] is None) and st["captured"] > 0 and size > 0
+    elapsed = time.monotonic() - t0
     if success:
-        log.info("capture OK: %s (%d bytes)", out_path, size)
+        log.info("capture OK after %.2fs: %s (%d bytes, preview frames=%d)",
+                 elapsed, out_path, size, st["vf"])
     else:
-        log.error("capture FAILED: %s", st["error"])
+        log.error("capture FAILED after %.2fs: %s (triggered=%s, image buffers=%d, "
+                  "file size=%d, preview frames=%d)", elapsed, st["error"],
+                  st["triggered"], st["captured"], size, st["vf"])
     return CaptureResult(success, out_path, size, st["error"], st["vf"])
 
 
@@ -284,22 +394,54 @@ def upload_webdav(local_path, url, username, password, timeout=30):
     Returns True on 2xx.
     """
     import base64
+    import urllib.error
     import urllib.request
 
+    safe_url = _safe_url(url)
     with open(local_path, "rb") as fh:
         data = fh.read()
     req = urllib.request.Request(url, data=data, method="PUT")
     token = base64.b64encode("{}:{}".format(username, password).encode()).decode()
     req.add_header("Authorization", "Basic " + token)
     req.add_header("Content-Type", "image/jpeg")
+    log.info("webdav upload start: %s (%d bytes, timeout %ss)",
+             safe_url, len(data), timeout)
+    t0 = time.monotonic()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             ok = 200 <= resp.status < 300
-            log.info("webdav upload %s -> HTTP %s", url, resp.status)
+            log.info("webdav upload %s -> HTTP %s %s (%.2fs)", safe_url,
+                     resp.status, resp.reason, time.monotonic() - t0)
             return ok
-    except Exception as exc:
-        log.error("webdav upload failed: %s", exc)
+    except urllib.error.HTTPError as exc:
+        try:
+            body = exc.read(200).decode("utf-8", "replace")
+        except Exception:
+            body = "?"
+        log.error("webdav upload %s failed after %.2fs: HTTP %s %s, body: %r",
+                  safe_url, time.monotonic() - t0, exc.code, exc.reason, body)
         return False
+    except urllib.error.URLError as exc:
+        log.error("webdav upload %s failed after %.2fs: URLError %r",
+                  safe_url, time.monotonic() - t0, exc.reason)
+        return False
+    except Exception as exc:
+        log.error("webdav upload %s failed after %.2fs: %s: %s", safe_url,
+                  time.monotonic() - t0, exc.__class__.__name__, exc)
+        return False
+
+
+def _safe_url(url):
+    """URL for logging: scheme://host[:port]/path, never user:pass@ or query."""
+    import urllib.parse
+    try:
+        parts = urllib.parse.urlsplit(url)
+        host = parts.hostname or ""
+        if parts.port:
+            host = "%s:%d" % (host, parts.port)
+        return urllib.parse.urlunsplit((parts.scheme, host, parts.path, "", ""))
+    except Exception:
+        return "<unparsable url>"
 
 
 def _main(argv=None):

@@ -26,7 +26,7 @@
 
 Name:       harbour-find-my-device
 Summary:    Radar App (Find My Device)
-Version:    2.1
+Version:    2.2
 Release:    1
 # Own code is Apache-2.0. The BSD-3-Clause part covers the vendored
 # qml/utilities/paho (EDL-1.0, which SPDX expresses as BSD-3-Clause) and
