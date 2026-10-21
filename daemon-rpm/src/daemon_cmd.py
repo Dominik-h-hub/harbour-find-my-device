@@ -633,7 +633,13 @@ def _run_active_phase(own_id, generation):
             log.warning("SMS %s rejected: feature disabled (no code consumed)", cmd)
             return False
         # Consumes a backup code only on success; TOTP is non-destructive.
-        return tokens.verify_sms_code(code)
+        if tokens.verify_sms_code(code):
+            return True
+        # Only whitelisted senders get this far, so this cannot be used to
+        # flood the owner with notifications from arbitrary numbers.
+        notify.notify("Find My Device",
+                      "Rejected %s from %s (wrong TOTP/backup code)" % (cmd, sender))
+        return False
 
     def sms_on_command(cmd, arg, sender):
         # Runs on the GLib main loop (D-Bus signal): enqueue only, a GPS fix

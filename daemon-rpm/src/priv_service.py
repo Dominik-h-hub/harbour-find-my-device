@@ -77,7 +77,7 @@ def _do_location(req):
              ", ".join("%s: %s" % (r["path"], r["error"] or "ok") for r in results))
 
 
-def _process(path):
+def _process(path, req_id):
     try:
         # Open first, validate afterwards via fstat() on the opened fd: checking
         # the path before opening would be racy (TOCTOU), as a same-uid writer
@@ -118,8 +118,7 @@ def _process(path):
         return
     cmd = (req.get("cmd") or "").lower()
     log.info("processing request %s (cmd=%r, queued %.1fs ago)",
-             os.path.basename(path)[:-len(".json")], cmd,
-             time.time() - st.st_mtime)
+             req_id, cmd, time.time() - st.st_mtime)
     try:
         if cmd == "reboot":
             _do_reboot()
@@ -172,15 +171,34 @@ def main():
         return 0
     log.info("priv service started (pid %d), spool: %s", os.getpid(),
              _spool_listing())
-    for path in sorted(glob.glob(os.path.join(SPOOL_DIR, "*.json"))):
+    # Leftovers of an interrupted run would keep the spool non-empty and make
+    # the path unit retrigger us endlessly; their action may be half done, so
+    # drop them rather than repeat it.
+    for path in glob.glob(os.path.join(SPOOL_DIR, "*.work")):
+        log.warning("removing stale in-progress request %s",
+                    os.path.basename(path))
         try:
-            _process(path)
+            os.remove(path)
+        except OSError as exc:
+            log.error("could not remove %s: %s", path, exc)
+    for path in sorted(glob.glob(os.path.join(SPOOL_DIR, "*.json"))):
+        req_id = os.path.basename(path)[:-len(".json")]
+        # Claim the request first: the user daemon treats "the .json is gone"
+        # as picked up, and an SMS may take up to SMS_STATE_TIMEOUT_S here.
+        work = path[:-len(".json")] + ".work"
+        try:
+            os.rename(path, work)
+        except OSError as exc:
+            log.error("could not claim request %s: %s", req_id, exc)
+            work = path
+        try:
+            _process(work, req_id)
         finally:
             # Always remove the request so the .path unit does not loop.
             try:
-                os.remove(path)
+                os.remove(work)
             except OSError as exc:
-                log.error("could not remove request %s: %s", path, exc)
+                log.error("could not remove request %s: %s", work, exc)
     log.info("priv service done, spool now: %s", _spool_listing())
     return 0
 

@@ -105,39 +105,46 @@ def send_sms(to, text, modem=None, bus=None, wait_state=0):
         return SendResult(False, None, str(exc))
     if watcher is None:
         return SendResult(True, path, None)
-    state = watcher.wait(path, wait_state)
+    try:
+        state = watcher.wait(path, wait_state, modem)
+    except Exception as exc:
+        state = "unknown (watch failed: %s)" % exc
     watcher.close()
     if state == "sent":
         log.info("SMS to %s: ofono state sent (%s)", to, path)
         return SendResult(True, path, None, state)
-    log.error("SMS to %s: ofono state %s (%s)", to, state, path)
-    return SendResult(state != "failed", path,
-                      None if state != "failed" else "ofono state failed", state)
+    if state == "failed":
+        log.error("SMS to %s: ofono state failed (%s)", to, path)
+        return SendResult(False, path, "ofono state failed", state)
+    log.warning("SMS to %s: ofono state %s (%s)", to, state, path)
+    return SendResult(True, path, None, state)
 
 
 class _StateWatcher(object):
-    """Collect org.ofono.Message state changes on a private bus connection.
+    """Track the final ofono state of one outgoing SMS.
 
-    Subscribes BEFORE SendMessage is called: ofono may report "sent" before the
-    call even returns to us, and a signal emitted before the match exists is
-    lost. Like gps_reader it owns a PRIVATE GLib main context, made this
-    thread's default before the bus connection is created and kept so until
-    close(), so it never touches a default context some other code might own.
+    Two independent sources, because either may fail on a given ofono build:
+      * signals: org.ofono.Message.PropertyChanged(State) and
+        MessageManager.MessageRemoved, subscribed BEFORE SendMessage is called
+        (ofono may report "sent" before the call even returns to us);
+      * polling: MessageManager.GetMessages() lists the messages ofono is still
+        working on, with their State -- once ours is gone, ofono is done.
+
+    dbus-python dispatches signals on the process-DEFAULT GLib context (a
+    private, thread-default context is not honoured -- a field test received
+    no signal at all that way), so this iterates the default context. Only use
+    it in a process where nothing else runs that context, i.e. the
+    single-threaded root priv service.
     """
 
     FINAL = ("sent", "failed")
+    POLL_S = 1.0
 
     def __init__(self):
         from dbus.mainloop.glib import DBusGMainLoop
         from gi.repository import GLib
-        self._glib = GLib
-        self._ctx = GLib.MainContext()
-        self._ctx.push_thread_default()
-        try:
-            self.bus = dbus.SystemBus(mainloop=DBusGMainLoop(), private=True)
-        except Exception:
-            self._ctx.pop_thread_default()
-            raise
+        self._ctx = GLib.MainContext.default()
+        self.bus = dbus.SystemBus(mainloop=DBusGMainLoop(), private=True)
         self._events = {}   # message path -> list of (t, what)
         self._t0 = time.monotonic()
         self._matches = [
@@ -149,41 +156,63 @@ class _StateWatcher(object):
                 signal_name="MessageRemoved", bus_name=OFONO),
         ]
 
+    def _add(self, path, what):
+        events = self._events.setdefault(str(path), [])
+        # Polling repeats the same state every second; keep only changes.
+        if not events or events[-1][1] != what:
+            events.append((time.monotonic() - self._t0, what))
+
     def _on_prop(self, name, value, path=None):
         if str(name) == "State":
-            self._events.setdefault(str(path), []).append(
-                (time.monotonic() - self._t0, str(value)))
+            self._add(path, "signal:%s" % value)
 
     def _on_removed(self, path):
-        self._events.setdefault(str(path), []).append(
-            (time.monotonic() - self._t0, "removed"))
+        self._add(path, "signal:removed")
 
-    def wait(self, path, timeout):
-        """Return the final state of `path`: 'sent', 'failed', 'pending'
-        (timeout) or 'removed (state unknown)'."""
+    def _poll(self, mm, path):
+        try:
+            for msg_path, props in mm.GetMessages():
+                if str(msg_path) == path:
+                    self._add(path, "poll:%s" % props.get("State", "?"))
+                    return
+            self._add(path, "poll:gone")
+        except Exception as exc:
+            self._add(path, "poll:error %s" % exc.__class__.__name__)
+
+    def _states(self, path):
+        return [w.split(":", 1)[1] for _t, w in self._events.get(path, [])]
+
+    def wait(self, path, timeout, modem):
+        """Return the final state of `path`: 'sent' / 'failed' (reported by
+        ofono), 'done (state unknown)' (ofono dropped the message without us
+        seeing its last state) or 'pending' (still queued after `timeout`)."""
+        mm = dbus.Interface(self.bus.get_object(OFONO, modem), MM_IFACE)
         deadline = time.monotonic() + timeout
+        next_poll = 0.0
         while time.monotonic() < deadline:
-            states = [w for _t, w in self._events.get(path, [])]
-            if any(s in self.FINAL for s in states) or "removed" in states:
+            while self._ctx.pending():
+                self._ctx.iteration(False)
+            if time.monotonic() >= next_poll:
+                self._poll(mm, path)
+                next_poll = time.monotonic() + self.POLL_S
+            states = self._states(path)
+            if any(st in self.FINAL or st in ("removed", "gone") for st in states):
+                # Let a "sent" signal that races the removal still arrive.
+                end = time.monotonic() + 0.5
+                while time.monotonic() < end:
+                    if not self._ctx.iteration(False):
+                        time.sleep(0.05)
                 break
-            if not self._ctx.iteration(False):
-                time.sleep(0.1)
+            time.sleep(0.1)
         events = self._events.get(path, [])
         log.info("ofono state history for %s: %s", path,
                  ", ".join("%s@%.1fs" % (w, t) for t, w in events) or "none")
-        for _t, what in reversed(events):
-            if what in self.FINAL:
-                return what
-        if any(w == "removed" for _t, w in events):
-            return "removed (state unknown)"
-        if not events:
-            # No signal at all -- ask ofono directly (message may still exist).
-            try:
-                props = dbus.Interface(self.bus.get_object(OFONO, path),
-                                       MSG_IFACE).GetProperties()
-                return "pending (GetProperties: %s)" % props.get("State")
-            except Exception as exc:
-                return "pending (no signal, GetProperties failed: %s)" % exc
+        states = self._states(path)
+        for st in reversed(states):
+            if st in self.FINAL:
+                return st
+        if "removed" in states or "gone" in states:
+            return "done (state unknown)"
         return "pending"
 
     def close(self):
@@ -196,7 +225,6 @@ class _StateWatcher(object):
             self.bus.close()
         except Exception:
             pass
-        self._ctx.pop_thread_default()
 
 
 def format_gps_sms(lat, lon, fix_datetime=None, db_timestamp_local=None):
