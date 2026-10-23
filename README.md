@@ -15,11 +15,10 @@ Radar (Find My Device) is a native find-my-device app for Sailfish OS: see your 
 For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical internals (daemons, logs, MQTT topics, token generation) see the [Technical Infos](docs/TECHNICAL-INFOS.md).
 
 <p align="center">
+<a href="https://store.jolla.com"><img src="docs/images/get-it-on-logos/get-it-on-jollaStore.png" alt="Get it on the Jolla Store" height="55"></a>
+<a href="https://sailfishos-chum.github.io/apps/harbour-find-my-device/"><img src="docs/images/get-it-on-logos/get-it-on-chum.png" alt="Get it on CHUM" height="55"></a>
 <a href="https://openrepos.net/content/domih/radar-find-my-device"><img src="docs/images/get-it-on-logos/get-it-on-openrepos.png" alt="Get it on OpenRepos" height="55"></a>
 <a href="https://github.com/Dominik-h-hub/harbour-find-my-device/releases"><img src="docs/images/get-it-on-logos/direct-rpm-download.png" alt="Direct RPM Download" height="55"></a>
-<a href="https://store.jolla.com"><img src="docs/images/get-it-on-logos/get-it-on-jollaStore.png" alt="Get it on the Jolla Store" height="55"></a>
-<!-- <a href="https://sailfishos-chum.github.io/"><img src="docs/images/get-it-on-logos/get-it-on-chum.png" alt="Get it on CHUM" height="55"></a> -->
-
 </p>
 
 ## Features
