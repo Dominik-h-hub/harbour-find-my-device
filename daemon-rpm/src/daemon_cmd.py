@@ -276,16 +276,39 @@ class CommandExecutor(object):
         own_id = self.own_id()
         fix_dt = None
         lat = lon = None
+        fix = None
+        battery = None
+        loc_note = None
+        # Same rule as the GPS daemon (daemon_gps.tick): turn the system
+        # location on only if it is off AND the user opted in; with location
+        # off and no opt-in, skip the fix (it would just time out after 90s)
+        # and fall back to the last DB position below.
+        try_fix = True
+        if not location_control.is_enabled():
+            if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
+                log.info("GPS command: location disabled; auto-enabling "
+                         "location services")
+                location_control.set_location_enabled(enable=True)
+                # The priv service applies it asynchronously.
+                enabled = location_control.wait_until_enabled()
+                log.info("GPS command: location enabled=%s", enabled)
+                time.sleep(3)   # allow the provider to start before the fix
+                loc_note = "Location services were off, enabled automatically"
+            else:
+                log.info("GPS command: location disabled and auto-enable off; "
+                         "skipping fix")
+                loc_note = ("Location services are off "
+                            "(auto-enable not allowed in Settings)")
+                try_fix = False
         try:
             import gps_reader
-            # should_abort: don't block shutdown for up to 90s, or systemd's stop
-            # timeout SIGKILLs the daemon and leaves the unit in "failed".
-            fix = gps_reader.get_fix(timeout=90, should_abort=_stop.is_set)
+            if try_fix:
+                # should_abort: don't block shutdown for up to 90s, or systemd's
+                # stop timeout SIGKILLs the daemon and leaves the unit "failed".
+                fix = gps_reader.get_fix(timeout=90, should_abort=_stop.is_set)
             battery = gps_reader.read_battery_level()
         except Exception as exc:
             log.warning("gps_reader unavailable: %s", exc)
-            fix = None
-            battery = None
 
         payload = None
         if fix and fix.success:
@@ -326,6 +349,8 @@ class CommandExecutor(object):
                 msg = ("GPS location requested remotely\nNo current fix and "
                        "no stored position, nothing sent")
 
+        if loc_note:
+            msg += "\n" + loc_note
         if payload is not None and settings.get_bool(settings.MQTT_ENABLED):
             published = self._publish_location(own_id, payload)
             msg += ("\nSent via MQTT" if published
