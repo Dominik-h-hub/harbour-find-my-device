@@ -2,6 +2,10 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import "../components"
 
+// Main page with two swipeable tabs (Map, Devices). The tab bar is pinned to
+// the bottom of the page so the labels stay clear of the device notch; the
+// tab contents keep a Theme.itemSizeSmall gap at the top for the same reason
+// (same layout as harbour-ferry).
 Page {
     id: mainPage
     allowedOrientations: Orientation.Portrait
@@ -32,105 +36,115 @@ Page {
         onTriggered: mainPage.checkDaemonBanner()
     }
 
-    Column {
-        anchors.fill: parent
+    // --- swipeable content ------------------------------------------------
+    ListView {
+        id: tabView
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: daemonBanner.top
+        clip: true
+        orientation: ListView.Horizontal
+        snapMode: ListView.SnapOneItem
+        highlightRangeMode: ListView.StrictlyEnforceRange
+        boundsBehavior: Flickable.StopAtBounds
+        cacheBuffer: width * 2
+        model: 2
 
-        // --- tab bar -------------------------------------------------------
-        Item {
-            id: tabBar
-            width: parent.width
-            height: Theme.itemSizeMedium
-            z: 1
+        delegate: Loader {
+            width: tabView.width
+            height: tabView.height
+            sourceComponent: index === 0 ? mapComponent : devicesComponent
+        }
+    }
 
-            Row {
-                anchors.fill: parent
-                Repeater {
-                    model: mainPage.tabTitles
-                    delegate: Item {
-                        width: tabBar.width / 2
-                        height: tabBar.height
-                        Label {
-                            anchors.centerIn: parent
-                            text: modelData
-                            color: index === mainPage.currentIndex
-                                   ? Theme.highlightColor : Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeLarge
-                        }
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            width: parent.width
-                            height: Theme.paddingSmall / 2
-                            color: Theme.highlightColor
-                            visible: index === mainPage.currentIndex
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: tabView.positionViewAtIndex(index, ListView.SnapPosition)
-                        }
-                    }
+    // --- background-service hint banner (above the tab bar) ---------------
+    Rectangle {
+        id: daemonBanner
+        anchors.bottom: tabDivider.top
+        width: parent.width
+        height: mainPage.daemonBannerVisible
+                ? bannerRow.implicitHeight + Theme.paddingMedium : 0
+        visible: mainPage.daemonBannerVisible
+        color: Theme.rgba(Theme.highlightDimmerColor, 0.9)
+        z: 2
+
+        Row {
+            id: bannerRow
+            anchors.verticalCenter: parent.verticalCenter
+            x: Theme.horizontalPageMargin
+            width: parent.width - x - Theme.paddingSmall
+            spacing: Theme.paddingSmall
+
+            Label {
+                width: parent.width - bannerClose.width - Theme.paddingSmall
+                anchors.verticalCenter: parent.verticalCenter
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.primaryColor
+                text: qsTr("Remote commands and background tracking need "
+                         + "the background service. Tap to set it up in "
+                         + "the Settings.")
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
+                }
+            }
+            IconButton {
+                id: bannerClose
+                anchors.verticalCenter: parent.verticalCenter
+                icon.source: "image://theme/icon-m-clear"
+                onClicked: {
+                    mainPage.daemonBannerVisible = false;
+                    Bridge.call("dismiss_daemon_banner", [], function () {});
                 }
             }
         }
+    }
 
-        // --- swipeable content --------------------------------------------
-        ListView {
-            id: tabView
-            width: parent.width
-            height: parent.height - tabBar.height
-                    - (mainPage.daemonBannerVisible ? daemonBanner.height : 0)
-            clip: true
-            orientation: ListView.Horizontal
-            snapMode: ListView.SnapOneItem
-            highlightRangeMode: ListView.StrictlyEnforceRange
-            boundsBehavior: Flickable.StopAtBounds
-            cacheBuffer: width * 2
-            model: 2
+    // Thin divider so content scrolling up to the bar stays readable.
+    Rectangle {
+        id: tabDivider
+        anchors.bottom: tabBar.top
+        width: parent.width
+        height: 1
+        z: 1
+        color: Theme.secondaryColor
+        opacity: 0.4
+    }
 
-            delegate: Loader {
-                width: tabView.width
-                height: tabView.height
-                sourceComponent: index === 0 ? mapComponent : devicesComponent
-            }
-        }
-        // --- background-service hint banner --------------------------------
-        Rectangle {
-            id: daemonBanner
-            width: parent.width
-            height: mainPage.daemonBannerVisible
-                    ? bannerRow.implicitHeight + Theme.paddingMedium : 0
-            visible: mainPage.daemonBannerVisible
-            color: Theme.rgba(Theme.highlightDimmerColor, 0.9)
-            z: 2
+    // --- tab bar ----------------------------------------------------------
+    Row {
+        id: tabBar
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: Theme.itemSizeMedium
+        z: 1
 
-            Row {
-                id: bannerRow
-                anchors.verticalCenter: parent.verticalCenter
-                x: Theme.horizontalPageMargin
-                width: parent.width - x - Theme.paddingSmall
-                spacing: Theme.paddingSmall
+        Repeater {
+            model: mainPage.tabTitles
+
+            delegate: BackgroundItem {
+                width: tabBar.width / 2
+                height: tabBar.height
+                onClicked: tabView.positionViewAtIndex(index, ListView.SnapPosition)
 
                 Label {
-                    width: parent.width - bannerClose.width - Theme.paddingSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    wrapMode: Text.Wrap
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.primaryColor
-                    text: qsTr("Remote commands and background tracking need "
-                             + "the background service. Tap to set it up in "
-                             + "the Settings.")
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
-                    }
+                    anchors.centerIn: parent
+                    text: modelData
+                    font.pixelSize: Theme.fontSizeLarge
+                    color: mainPage.currentIndex === index ? Theme.highlightColor
+                                                           : Theme.secondaryColor
                 }
-                IconButton {
-                    id: bannerClose
-                    anchors.verticalCenter: parent.verticalCenter
-                    icon.source: "image://theme/icon-m-clear"
-                    onClicked: {
-                        mainPage.daemonBannerVisible = false;
-                        Bridge.call("dismiss_daemon_banner", [], function () {});
-                    }
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width - 2 * Theme.paddingLarge
+                    height: Math.round(Theme.paddingSmall / 2) + 1
+                    radius: height / 2
+                    color: Theme.highlightColor
+                    visible: mainPage.currentIndex === index
                 }
             }
         }
