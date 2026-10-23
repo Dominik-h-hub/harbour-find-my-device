@@ -607,9 +607,11 @@ class FmdMqttClient(object):
         return self._publish(topic_cmd(device_id), payload, retain=False,
                              wait=wait)
 
-    def publish_ack(self, device_id, payload):
-        """Publish a command result on the ack topic (retain=false, QoS1)."""
-        return self._publish(topic_ack(device_id), payload, retain=False)
+    def publish_ack(self, device_id, payload, wait=True):
+        """Publish a command result on the ack topic (retain=false, QoS1).
+        wait=False: fire and forget, no PUBACK wait and no reconnect repair."""
+        return self._publish(topic_ack(device_id), payload, retain=False,
+                             wait=wait)
 
     def _publish(self, topic, payload, retain, wait=True):
         """Publish with delivery verification and one self-repair attempt.

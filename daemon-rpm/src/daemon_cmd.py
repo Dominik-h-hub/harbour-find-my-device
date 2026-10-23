@@ -63,6 +63,10 @@ _ACTIVE_KEYS = (
 )
 
 IDLE_POLL_SECONDS = 15        # how often to re-check toggles while idle
+# Photos whose WebDAV upload failed wait in photos/pending/. They are retried
+# right away when the network comes back, otherwise at most this often (a
+# server-side failure would just repeat).
+UPLOAD_RETRY_SECONDS = 300
 WATCHDOG_SECONDS = 5          # active-phase housekeeping timer
 
 # How long each kind of MQTT defect may persist before the watchdog forces a
@@ -112,14 +116,17 @@ def _features_active():
     return any(settings.get_bool(k) for k in _ACTIVE_KEYS)
 
 
+def _connman_manager():
+    import dbus
+    return dbus.Interface(dbus.SystemBus().get_object("net.connman", "/"),
+                          "net.connman.Manager")
+
+
 def _network_state():
     """ConnMan global state plus the connected service types, e.g.
     'online (wifi)'; best effort, for log lines only."""
     try:
-        import dbus
-        bus = dbus.SystemBus()
-        mgr = dbus.Interface(bus.get_object("net.connman", "/"),
-                             "net.connman.Manager")
+        mgr = _connman_manager()
         state = str(mgr.GetProperties().get("State", "?"))
         active = [str(props.get("Type", "?"))
                   for _path, props in mgr.GetServices()
@@ -127,6 +134,29 @@ def _network_state():
         return "%s (%s)" % (state, ",".join(active) or "no active service")
     except Exception as exc:
         return "unknown (%s)" % exc
+
+
+def _network_online():
+    """False only when ConnMan positively reports no connectivity (idle /
+    offline). If ConnMan cannot be asked, assume online so nothing is skipped
+    that used to be attempted."""
+    try:
+        return str(_connman_manager().GetProperties().get("State", "")) \
+            in ("ready", "online")
+    except Exception:
+        return True
+
+
+def _fmt_accuracy(acc):
+    try:
+        return "+/-%d m" % round(float(acc))
+    except (TypeError, ValueError):
+        return "accuracy unknown"
+
+
+def _shorten(text, limit=80):
+    text = str(text or "unknown error")
+    return text if len(text) <= limit else text[:limit - 3] + "..."
 
 
 def _process_location_requests():
@@ -149,6 +179,10 @@ class CommandExecutor(object):
         # Why the last command failed; only for the ack log line (diagnostics).
         # Set and read on the command worker thread only.
         self._reason = None
+        # Pending photo uploads: earliest time for the next automatic retry,
+        # and whether a retry job already sits in the worker queue.
+        self.upload_retry_at = 0.0
+        self.upload_job_queued = False
 
     def set_mqtt(self, client):
         self._mqtt = client
@@ -176,7 +210,15 @@ class CommandExecutor(object):
         is_really_connected() pre-check: a stale flag would silently drop
         acks, while publish_ack() repairs the connection itself."""
         if self._mqtt is not None:
-            self._mqtt.publish_ack(self.own_id(), {"cmd": cmd, "result": result})
+            # Offline (ConnMan idle/offline) the verified publish would only
+            # spend up to ~40s reconnecting to nowhere and hold up every
+            # command queued behind it -- fire and forget instead.
+            online = _network_online()
+            if not online:
+                log.info("ack %s: network offline, sending without delivery "
+                         "check", cmd)
+            self._mqtt.publish_ack(self.own_id(), {"cmd": cmd, "result": result},
+                                   wait=online)
         reason, self._reason = self._reason, None
         if reason and result != "ok":
             log.info("ack: %s -> %s (%s)", cmd, result, reason)
@@ -245,20 +287,49 @@ class CommandExecutor(object):
             fix = None
             battery = None
 
+        payload = None
         if fix and fix.success:
             lat, lon, fix_dt = fix.lat, fix.lon, fix.timestamp_local
             gpsstore.store_fix(own_id, fix.timestamp_utc, fix.timestamp_local,
                                fix.lat, fix.lon, fix.alt, fix.speed,
                                fix.accuracy_h, battery)
-            if settings.get_bool(settings.MQTT_ENABLED):
-                self._publish_location(own_id, fix, battery)
+            payload = {
+                "device_id": own_id,
+                "timestamp_utc": fix.timestamp_utc,
+                "timestamp_local": fix.timestamp_local,
+                "lat": fix.lat, "lon": fix.lon, "alt": fix.alt,
+                "speed": fix.speed, "accuracy": fix.accuracy_h,
+                "battery": battery, "source": "live",
+            }
+            msg = "GPS location requested remotely\nCurrent fix %s (%s)" % (
+                fix.timestamp_local, _fmt_accuracy(fix.accuracy_h))
         else:
-            # Fall back to the last DB position (note only added to the SMS reply).
+            # Fall back to the last DB position, on every channel. It keeps its
+            # original timestamp, so the receiver can tell it is not fresh.
             last = gpsstore.get_latest(own_id)
             if last:
                 lat, lon = last["latitude"], last["longitude"]
+                payload = {
+                    "device_id": own_id,
+                    "timestamp_utc": last["timestamp_utc"],
+                    "timestamp_local": last["timestamp_local"],
+                    "lat": lat, "lon": lon, "alt": last["altitude"],
+                    "speed": last["speed"], "accuracy": last["accuracy"],
+                    "battery": last["battery_level"], "source": "db",
+                }
+                log.info("no current fix; using last fix from DB (%s)",
+                         last["timestamp_local"])
+                msg = ("GPS location requested remotely\nNo current fix, "
+                       "last fix from DB (%s)" % last["timestamp_local"])
+            else:
+                log.warning("no current fix and no stored position")
+                msg = ("GPS location requested remotely\nNo current fix and "
+                       "no stored position, nothing sent")
 
-        msg = "GPS location requested remotely"
+        if payload is not None and settings.get_bool(settings.MQTT_ENABLED):
+            published = self._publish_location(own_id, payload)
+            msg += ("\nSent via MQTT" if published
+                    else "\nMQTT publish failed")
         if channel == "sms" and sender:
             sent = self._reply_gps_sms(sender, lat, lon, fix_dt,
                                        None if fix_dt else self._db_time(own_id))
@@ -282,6 +353,9 @@ class CommandExecutor(object):
         if not (url and user):
             log.warning("camera: WebDAV credentials not set")
             self._reason = "webdav credentials not set"
+            notify.notify("Find My Device",
+                          "Photo (%s camera) requested remotely\n"
+                          "Not taken: WebDAV upload is not configured" % which)
             return "error"
         import camera_capture
         from fmd import paths
@@ -292,16 +366,95 @@ class CommandExecutor(object):
         if not res.success:
             log.error("camera capture failed: %s", res.error)
             self._reason = "capture: %s" % res.error
+            notify.notify("Find My Device",
+                          "Photo (%s camera) requested remotely\n"
+                          "Capture failed: %s" % (which, _shorten(res.error)))
             return "error"
         dav_url = url.rstrip("/") + "/" + fname
         log.info("camera: network before upload: %s", _network_state())
         uploaded = camera_capture.upload_webdav(out_path, dav_url, user, password)
-        if not uploaded:
-            log.error("camera: upload failed, photo kept locally at %s", out_path)
-            self._reason = "upload failed (network: %s)" % _network_state()
+        if uploaded:
+            notify.notify("Find My Device",
+                          "Photo (%s camera) captured remotely\nUploaded" % which)
+            return "ok"
+        online = _network_online()
+        self._reason = "upload failed (network: %s)" % _network_state()
+        pending = self._park_for_retry(out_path)
         notify.notify("Find My Device",
-                      "Photo (%s camera) captured remotely" % which)
-        return "ok" if uploaded else "error"
+                      "Photo (%s camera) captured remotely\nUpload failed (%s); "
+                      "stored on the device%s" % (
+                          which, "no network" if not online else "server error",
+                          ", will retry automatically" if pending else ""))
+        return "error"
+
+    # -- pending photo uploads --
+    @staticmethod
+    def _pending_dir():
+        from fmd import paths
+        return os.path.join(paths.photos_dir(), "pending")
+
+    def _park_for_retry(self, path):
+        """Move a photo whose upload failed to photos/pending/. True on success."""
+        pending_dir = self._pending_dir()
+        try:
+            os.makedirs(pending_dir, exist_ok=True)
+            target = os.path.join(pending_dir, os.path.basename(path))
+            os.rename(path, target)
+        except OSError as exc:
+            log.error("camera: could not queue %s for upload retry: %s", path, exc)
+            return False
+        self.upload_retry_at = time.time() + UPLOAD_RETRY_SECONDS
+        log.info("camera: upload failed, photo queued for retry at %s", target)
+        return True
+
+    def pending_uploads(self):
+        try:
+            return sorted(f for f in os.listdir(self._pending_dir())
+                          if f.endswith(".jpg"))
+        except OSError:
+            return []
+
+    def retry_uploads(self):
+        """Upload the photos in photos/pending/ (command worker thread).
+        Stops at the first failure: the next one would almost surely fail too."""
+        self.upload_job_queued = False
+        files = self.pending_uploads()
+        if not files:
+            return
+        url = settings.get(settings.WEBDAV_URL)
+        user = settings.get(settings.WEBDAV_USERNAME)
+        password = settings.get(settings.WEBDAV_PASSWORD)
+        if not (url and user):
+            log.warning("camera: %d pending upload(s), but WebDAV is not "
+                        "configured", len(files))
+            self.upload_retry_at = time.time() + UPLOAD_RETRY_SECONDS
+            return
+        import camera_capture
+        from fmd import paths
+        log.info("camera: retrying %d pending upload(s), network %s",
+                 len(files), _network_state())
+        for fname in files:
+            src = os.path.join(self._pending_dir(), fname)
+            if not camera_capture.upload_webdav(
+                    src, url.rstrip("/") + "/" + fname, user, password):
+                self.upload_retry_at = time.time() + UPLOAD_RETRY_SECONDS
+                log.warning("camera: pending upload of %s failed again; next "
+                            "attempt in %ds or when the network comes back",
+                            fname, UPLOAD_RETRY_SECONDS)
+                return
+            try:
+                # Keep the local copy where successful uploads live.
+                os.rename(src, os.path.join(paths.photos_dir(), fname))
+            except OSError as exc:
+                log.error("camera: uploaded %s but could not move it out of "
+                          "pending (%s); removing it", fname, exc)
+                try:
+                    os.remove(src)
+                except OSError:
+                    pass
+            log.info("camera: pending upload of %s done", fname)
+            notify.notify("Find My Device",
+                          "Photo %s\nUploaded (delayed)" % fname)
 
     def _do_delete(self):
         """Wipe user data, then reboot via the root priv service (queued request)."""
@@ -324,20 +477,18 @@ class CommandExecutor(object):
         return "ok"
 
     # -- gps helpers --
-    def _publish_location(self, own_id, fix, battery):
+    def _publish_location(self, own_id, payload):
+        """Publish a location payload; True if the broker confirmed it."""
         # No is_really_connected() pre-check: publish_location() repairs a
         # dead/stale connection itself; gating on the wrapper flag dropped
         # the fix whenever the flag had gone stale.
         if self._mqtt is None:
             log.warning("MQTT client not running; GPS fix not published")
-            return
-        self._mqtt.publish_location(own_id, {
-            "device_id": own_id,
-            "timestamp_utc": fix.timestamp_utc,
-            "timestamp_local": fix.timestamp_local,
-            "lat": fix.lat, "lon": fix.lon, "alt": fix.alt,
-            "speed": fix.speed, "accuracy": fix.accuracy_h, "battery": battery,
-        })
+            return False
+        ok = bool(self._mqtt.publish_location(own_id, payload))
+        log.info("location (%s fix) published via MQTT -> %s",
+                 payload.get("source"), "ok" if ok else "FAILED")
+        return ok
 
     def _reply_gps_sms(self, sender, lat, lon, fix_dt, db_time):
         """Send the GPS reply SMS. Returns True if it was sent/queued."""
@@ -385,6 +536,11 @@ class _CommandWorker(object):
         """Queue a bare ack without executing (e.g. auth_failed)."""
         self._queue.put(("ack", cmd, result, None, None))
 
+    def submit_uploads(self):
+        """Queue a retry of the pending photo uploads (runs between commands,
+        so an upload never races a capture writing into the same directory)."""
+        self._queue.put(("uploads", None, None, None, None))
+
     def stop(self, timeout=5):
         """Signal shutdown and wait briefly. A worker stuck in a long job is
         abandoned (daemon thread); it drains the queue up to the sentinel and
@@ -404,6 +560,8 @@ class _CommandWorker(object):
             try:
                 if kind == "ack":
                     self._executor.publish_ack(cmd, a)
+                elif kind == "uploads":
+                    self._executor.retry_uploads()
                 else:
                     result = self._executor.execute(cmd, a, channel=b,
                                                     sender=sender)
@@ -719,6 +877,24 @@ def _run_active_phase(own_id, generation):
         state["repair"] = thread
         thread.start()
 
+    def check_uploads(now):
+        """Schedule a retry of pending photo uploads: at once when the network
+        has come back, otherwise every UPLOAD_RETRY_SECONDS. ConnMan is only
+        asked while photos are actually waiting."""
+        if executor.upload_job_queued or not executor.pending_uploads():
+            return
+        if not _network_online():
+            state["upload_offline"] = True
+            return
+        if state.get("upload_offline"):
+            state["upload_offline"] = False
+            log.info("network back; retrying pending photo uploads now")
+            executor.upload_retry_at = 0.0
+        if now < executor.upload_retry_at:
+            return
+        executor.upload_job_queued = True
+        worker.submit_uploads()
+
     def watchdog():
         """Housekeeping while serving: heartbeat, settings reload, priv wishes."""
         if _stop.is_set():
@@ -729,6 +905,7 @@ def _run_active_phase(own_id, generation):
             runtime.write_heartbeat("cmd", "active", DAEMON_VERSION, generation)
             state["last_beat"] = now
         check_mqtt(now)
+        check_uploads(now)
         _process_location_requests()
         if runtime.generation() != generation or not _features_active():
             log.info("settings changed; rebuilding listeners")

@@ -168,6 +168,7 @@ journalctl --since "30 min ago" --no-pager _SYSTEMD_USER_UNIT=harbour-find-my-de
 | ---------------------------------------------------------- | ------------------------------------------ |
 | `~/.local/share/harbour-find-my-device/harbour-find-my-device/findmydevice.db` | SQLite DB: settings, devices, GPS fixes, daemon heartbeats |
 | `~/.local/share/harbour-find-my-device/harbour-find-my-device/photos/` | camera captures before WebDAV upload |
+| `~/.local/share/harbour-find-my-device/harbour-find-my-device/photos/pending/` | captures whose upload failed; retried automatically when the network is back (otherwise every 5 min) |
 | `/run/harbour-find-my-device/spool/`                       | privileged action request spool (volatile) |
 | `/tmp/fmd-gps.log`, `/tmp/fmd-cmd.log`, `/tmp/fmd-app.log`| rotating log files (max 1 MB, 3 backups)  |
 | `/usr/share/harbour-find-my-device/`                       | installed app files (QML + Python + bundled daemon RPM under `daemon/`) |
