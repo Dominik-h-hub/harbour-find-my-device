@@ -104,10 +104,6 @@
         <translation>Aktualisieren</translation>
     </message>
     <message>
-        <source>Devices</source>
-        <translation>Geräte</translation>
-    </message>
-    <message>
         <source>Commands</source>
         <translation>Commands</translation>
     </message>

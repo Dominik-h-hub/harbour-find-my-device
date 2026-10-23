@@ -92,10 +92,6 @@
 <context>
     <name>DevicesView</name>
     <message>
-        <source>Devices</source>
-        <translation>Enheter</translation>
-    </message>
-    <message>
         <source>Commands</source>
         <translation>Kommandon</translation>
     </message>

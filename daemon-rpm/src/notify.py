@@ -8,6 +8,7 @@ on the USER SESSION bus, which Lipstick implements on Sailfish OS.
 """
 
 import logging
+import os
 
 log = logging.getLogger("fmd.notify")
 
@@ -17,9 +18,24 @@ _FDN_IFACE = "org.freedesktop.Notifications"
 
 APP_NAME = "harbour-find-my-device"
 
+# The app logo, installed by the app package
+_APP_ICON_SIZES = ("172x172", "128x128", "108x108", "86x86")
+_APP_ICON_PATH = "/usr/share/icons/hicolor/{}/apps/" + APP_NAME + ".png"
+# Theme icon used when the app package (and with it the logo) is not installed.
+_FALLBACK_ICON = "icon-lock-information"
 
-def notify(summary, body="", icon="icon-lock-information"):
+
+def _app_icon():
+    for size in _APP_ICON_SIZES:
+        path = _APP_ICON_PATH.format(size)
+        if os.path.isfile(path):
+            return path
+    return _FALLBACK_ICON
+
+
+def notify(summary, body="", icon=None):
     #Post a local notification. Returns the notification id (int) or 0.
+    icon = icon or _app_icon()
     try:
         import dbus
         bus = dbus.SessionBus()
