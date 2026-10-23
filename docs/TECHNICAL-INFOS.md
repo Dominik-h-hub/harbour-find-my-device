@@ -343,6 +343,13 @@ every build has to name one:
   (or `mb2 -s rpm/harbour-find-my-device.spec build`), run from the project root.
 - **CI**: handled by [.github/actions/sfos-build](../.github/actions/sfos-build/action.yaml),
   which passes `-s` to mb2.
+- **Daemon RPM locally**: either switch the *RPM SPEC file* in Qt Creator
+  temporarily to `rpm/harbour-find-my-device-daemon.spec`, or build it on the
+  command line from the project root:
+  `sfdk -c specfile=rpm/harbour-find-my-device-daemon.spec build`.
+  The result lands in `RPMS/`; to have the next app build bundle it (see
+  [Build order](#build-order-of-the-two-packages)), copy it to `daemon-rpm/RPMS/`
+  first.
 
 Only one `.changes` file may exist in `rpm/` - obs-service-tar_git aborts with
 "Need single changes file in rpm" otherwise.
