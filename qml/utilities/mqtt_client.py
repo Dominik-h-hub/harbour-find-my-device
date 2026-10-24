@@ -68,6 +68,10 @@ PUBLISH_ACK_RETRY_TIMEOUT_S = 10
 # one threw away a payload that the link would have carried a second later).
 CONNACK_TIMEOUT_S = 25
 
+# How long disconnect() lets the network thread send DISCONNECT and exit on its
+# own before it force-closes the socket under it.
+DISCONNECT_GRACE_S = 1.0
+
 # OS-level TCP keepalive. The MQTT keepalive above is deliberately long, but a
 # WLAN<->mobile handover leaves the old socket "half-open".
 #
@@ -350,19 +354,26 @@ class FmdMqttClient(object):
                 old.disconnect()
             except Exception:
                 pass
+            thread = getattr(old, "_thread", None)
+            own_thread = thread is threading.current_thread()
             try:
-                # Close the socket to unstick a thread blocked in a TLS
-                # read/handshake; together with _thread_terminate it then exits
-                # instead of finishing a reconnect that would fight the
-                # successor for the (identical) client id.
-                sock = old.socket()
-                if sock is not None:
-                    sock.close()
+                if thread is not None and not own_thread:
+                    thread.join(DISCONNECT_GRACE_S)
             except Exception:
                 pass
             try:
-                thread = getattr(old, "_thread", None)
-                if thread is not None and thread is not threading.current_thread():
+                # Still running: close the socket to unstick a thread blocked
+                # in a TLS read/handshake; together with _thread_terminate it
+                # then exits instead of finishing a reconnect that would fight
+                # the successor for the (identical) client id.
+                if thread is None or own_thread or thread.is_alive():
+                    sock = old.socket()
+                    if sock is not None:
+                        sock.close()
+            except Exception:
+                pass
+            try:
+                if thread is not None and not own_thread:
                     thread.join(2.0)
                     if thread.is_alive():
                         log.warning("mqtt network thread still busy; abandoned")

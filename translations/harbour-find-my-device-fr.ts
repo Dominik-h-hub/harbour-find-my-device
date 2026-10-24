@@ -624,5 +624,21 @@
         <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
         <translation>Effacera toutes les données utilisateur sous « home/&lt;user&gt;/ » et redémarrera l’appareil ensuite.</translation>
     </message>
+    <message>
+        <source>GPS coordinates to push (latitude, longitude)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GPS at Home</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>If both fields are filled and the phone is connected to this WiFi network, these coordinates are sent instead of querying GPS (periodic updates and MQTT/SMS commands).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>WiFi SSID, e.g. MyHomeNetwork</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>

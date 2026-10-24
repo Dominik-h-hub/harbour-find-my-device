@@ -39,6 +39,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fmd import db, devices, gpsstore, runtime, settings, tokens
+import fixed_location
 import location_control
 import mqtt_client
 import notify
@@ -279,12 +280,18 @@ class CommandExecutor(object):
         fix = None
         battery = None
         loc_note = None
+        # Connected to the configured WiFi: push the fixed coordinates, no
+        # GPS query and no location auto-enable.
+        fixed = fixed_location.get()
         # Same rule as the GPS daemon (daemon_gps.tick): turn the system
         # location on only if it is off AND the user opted in; with location
         # off and no opt-in, skip the fix (it would just time out after 90s)
         # and fall back to the last DB position below.
-        try_fix = True
-        if not location_control.is_enabled():
+        try_fix = fixed is None
+        if fixed is not None:
+            log.info("GPS command: connected to configured WiFi; sending "
+                     "fixed coordinates instead of a GPS fix")
+        elif not location_control.is_enabled():
             if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
                 log.info("GPS command: location disabled; auto-enabling "
                          "location services")
@@ -311,7 +318,27 @@ class CommandExecutor(object):
             log.warning("gps_reader unavailable: %s", exc)
 
         payload = None
-        if fix and fix.success:
+        if fixed is not None:
+            import gps_reader
+            lat, lon = fixed
+            now = time.time()
+            ts_utc, fix_dt = gps_reader.iso_utc(now), gps_reader.iso_local(now)
+            gpsstore.store_fix(own_id, ts_utc, fix_dt, lat, lon,
+                               speed=fixed_location.SPEED,
+                               accuracy=fixed_location.ACCURACY_M,
+                               battery=battery)
+            payload = {
+                "device_id": own_id,
+                "timestamp_utc": ts_utc,
+                "timestamp_local": fix_dt,
+                "lat": lat, "lon": lon, "alt": None,
+                "speed": fixed_location.SPEED,
+                "accuracy": fixed_location.ACCURACY_M,
+                "battery": battery, "source": "wifi",
+            }
+            msg = ("GPS location requested remotely\nConnected to configured "
+                   "WiFi, sent fixed coordinates")
+        elif fix and fix.success:
             lat, lon, fix_dt = fix.lat, fix.lon, fix.timestamp_local
             gpsstore.store_fix(own_id, fix.timestamp_utc, fix.timestamp_local,
                                fix.lat, fix.lon, fix.alt, fix.speed,
@@ -929,6 +956,7 @@ def _run_active_phase(own_id, generation):
         if now - state["last_beat"] >= runtime.HEARTBEAT_INTERVAL_S:
             runtime.write_heartbeat("cmd", "active", DAEMON_VERSION, generation)
             state["last_beat"] = now
+            fixed_location.publish_wifi_state()
         check_mqtt(now)
         check_uploads(now)
         _process_location_requests()
@@ -1011,6 +1039,9 @@ def main():
             # The UI's location wish must be served even while idle (used by
             # the foreground GPS flow when no remote feature is on).
             _process_location_requests()
+            # The GUI's foreground poll needs the connected WiFi for
+            # "GPS at Home" even while idle.
+            fixed_location.publish_wifi_state()
             if _features_active():
                 _run_active_phase(own_id, gen)
             else:

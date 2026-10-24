@@ -16,7 +16,7 @@ import queue
 import threading
 import time
 
-from fmd import db, devices, gpsstore, runtime, settings, tokens
+from fmd import db, devices, fixedloc, gpsstore, runtime, settings, tokens
 import mqtt_client
 
 try:
@@ -695,7 +695,14 @@ def _do_refresh_location(notify=True, notify_fail=None):
         notify_fail = notify
     own_id = devices.own_device_id()
 
-    if not _location_enabled():
+    # "GPS at Home": connected to the configured WiFi (as reported by the cmd
+    # daemon) -> use the fixed coordinates, no GPS query.
+    fixed = fixedloc.match(runtime.connected_wifi)
+    if fixed is not None:
+        _log_ui("connected to configured WiFi; using fixed coordinates")
+        fix = _QmlFix(True, lat=fixed[0], lon=fixed[1],
+                      speed=fixedloc.SPEED, accuracy_h=fixedloc.ACCURACY_M)
+    elif not _location_enabled():
         if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
             # The sandboxed GUI cannot flip the system switch itself; it queues
             # a wish that the (unsandboxed) cmd daemon forwards to the priv
@@ -710,7 +717,8 @@ def _do_refresh_location(notify=True, notify_fail=None):
             _emit("mapUpdated")
             return {"ok": False, "error": "gps_disabled"}
 
-    fix = _qml_fix(timeout=90)
+    if fixed is None:
+        fix = _qml_fix(timeout=90)
     battery = _read_battery_level()
     if not fix.success:
         # Keep the raw error in the log; show a clean message in the UI banner.

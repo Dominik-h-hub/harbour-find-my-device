@@ -50,6 +50,7 @@ OTHER_FILES += qml/harbour-find-my-device.qml \
     qml/utilities/fmd/devices.py \
     qml/utilities/fmd/tokens.py \
     qml/utilities/fmd/gpsstore.py \
+    qml/utilities/fmd/fixedloc.py \
     qml/utilities/paho/__init__.py \
     qml/utilities/paho/edl-v10 \
     qml/utilities/paho/epl-v20 \

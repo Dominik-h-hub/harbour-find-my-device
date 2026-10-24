@@ -35,6 +35,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fmd import db, devices, gpsstore, runtime, settings
+import fixed_location
 import location_control
 import mqtt_client
 
@@ -206,6 +207,31 @@ class GpsDaemon(object):
         asked for anymore."""
         own_id = devices.own_device_id()
 
+        # Connected to the configured WiFi: store/publish the fixed
+        # coordinates, no GPS query and no location auto-enable.
+        fixed = fixed_location.get()
+        if fixed is not None:
+            import gps_reader
+            log.info("connected to configured WiFi; using fixed coordinates "
+                     "instead of a GPS fix")
+            lat, lon = fixed
+            now = time.time()
+            ts_utc, ts_local = gps_reader.iso_utc(now), gps_reader.iso_local(now)
+            battery = gps_reader.read_battery_level()
+            gpsstore.store_fix(own_id, ts_utc, ts_local, lat, lon,
+                               speed=fixed_location.SPEED,
+                               accuracy=fixed_location.ACCURACY_M,
+                               battery=battery)
+            self._publish_new(own_id, {
+                "device_id": own_id,
+                "timestamp_utc": ts_utc,
+                "timestamp_local": ts_local,
+                "lat": lat, "lon": lon, "alt": None,
+                "speed": fixed_location.SPEED,
+                "accuracy": fixed_location.ACCURACY_M, "battery": battery,
+            })
+            return
+
         # Auto-enable location if opted in and currently off.
         if not location_control.is_enabled():
             if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
@@ -244,13 +270,16 @@ class GpsDaemon(object):
         gpsstore.store_fix(own_id, fix.timestamp_utc, fix.timestamp_local,
                            fix.lat, fix.lon, fix.alt, fix.speed,
                            fix.accuracy_h, battery)
-        payload = {
+        self._publish_new(own_id, {
             "device_id": own_id,
             "timestamp_utc": fix.timestamp_utc,
             "timestamp_local": fix.timestamp_local,
             "lat": fix.lat, "lon": fix.lon, "alt": fix.alt,
             "speed": fix.speed, "accuracy": fix.accuracy_h, "battery": battery,
-        }
+        })
+
+    def _publish_new(self, own_id, payload):
+        """Publish a new fix; keep it pending if it cannot be delivered."""
         if self._pending is not None:
             # retain=True: only the newest position matters.
             log.info("pending fix superseded by a newer one")
