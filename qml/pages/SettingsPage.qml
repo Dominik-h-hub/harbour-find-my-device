@@ -109,6 +109,7 @@ Dialog {
         ownIdLabel.value = cfg.own_device_id || "";
         intervalField.text = "" + (cfg.gps_interval_min || "5");
         autoLocSwitch.checked = cfg.auto_enable_location === "1";
+        autoDataSwitch.checked = cfg.auto_enable_mobile_data === "1";
         fixedWifiField.text = cfg.fixed_location_wifi || "";
         fixedCoordsField.text = cfg.fixed_location_coords || "";
 
@@ -157,6 +158,7 @@ Dialog {
         var values = {
             gps_interval_min: intervalField.text,
             auto_enable_location: autoLocSwitch.checked ? "1" : "0",
+            auto_enable_mobile_data: autoDataSwitch.checked ? "1" : "0",
             fixed_location_wifi: fixedWifiField.text.trim(),
             fixed_location_coords: fixedCoordsField.text.trim(),
             mqtt_enabled: mqttSwitch.checked ? "1" : "0",
@@ -400,7 +402,15 @@ Dialog {
                     id: autoLocSwitch
                     text: qsTr("Auto-enable location when needed")
                     description: qsTr("Lets the daemon turn on the system location "
-                                    + "services and accept the agreement. Opt-in.")
+                                    + "services and accept the agreement.")
+                }
+                TextSwitch {
+                    id: autoDataSwitch
+                    text: qsTr("Auto-enable mobile data when needed")
+                    description: qsTr("Lets the daemon turn on mobile data for a "
+                                    + "position push or photo upload and turn it "
+                                    + "off again afterwards. Not while connected "
+                                    + "to WLAN or roaming.")
                 }
             }
 

@@ -24,6 +24,7 @@ log = logging.getLogger("fmd.settings")
 DEVICE_LABEL = "device_label"
 GPS_INTERVAL_MIN = "gps_interval_min"
 AUTO_ENABLE_LOCATION = "auto_enable_location"
+AUTO_ENABLE_MOBILE_DATA = "auto_enable_mobile_data"  # temporarily, for a push
 FIXED_LOCATION_WIFI = "fixed_location_wifi"       # SSID; GPS command sends the
 FIXED_LOCATION_COORDS = "fixed_location_coords"   # fixed "lat, lon" instead of a fix
 # MQTT
@@ -66,6 +67,7 @@ DEFAULTS = {
     DEVICE_LABEL: "",
     GPS_INTERVAL_MIN: "5",
     AUTO_ENABLE_LOCATION: "0",
+    AUTO_ENABLE_MOBILE_DATA: "0",
     FIXED_LOCATION_WIFI: "",
     FIXED_LOCATION_COORDS: "",
     MQTT_ENABLED: "0",

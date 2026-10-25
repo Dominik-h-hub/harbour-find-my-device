@@ -75,6 +75,7 @@ under `/usr/share/harbour-find-my-device-daemon/`.
 - Periodically obtains a GPS fix (via geoclue on the D-Bus session), stores it in the SQLite DB and - if MQTT is enabled - publishes it retained to `fmd/<device-id>`.
 - The poll interval is the "GPS query interval (minutes)" from the settings; while the background switch is off the daemon idles and the running GUI app polls instead via QtPositioning (positions keep being published until you close the app).
 - Optionally switches the system location services on before a fix ("Auto-enable location when needed" setting, opt-in) - this goes through the privileged action processor.
+- Optionally switches mobile data on for the MQTT push only and off again right after ("Auto-enable mobile data when needed", opt-in; see [Mobile data](#mobile-data-auto-enable)).
 
 ### Command daemon - `harbour-find-my-device-daemon-cmd.service`
 
@@ -94,6 +95,23 @@ under `/usr/share/harbour-find-my-device-daemon/`.
 - SMS channel: listens to incoming SMS via ofono (D-Bus). A command SMS must come from a whitelisted number AND carry a valid TOTP code or one-time backup code.
 - Also forwards the sandboxed GUI's queued "enable system location" requests to the privileged helper.
 - Every executed action - even a failed one - posts a notification on the device (this is not a spy app).
+- GPS and CAMERA: with "Auto-enable mobile data when needed" on, mobile data is switched on for the location push / photo upload and off again afterwards (see [Mobile data](#mobile-data-auto-enable)).
+
+### Mobile data auto-enable
+
+`mobiledata_control.py`, used by both daemons around a network action (GPS
+push, location publish of the GPS command, photo upload):
+
+- Same switch as Settings / the top menu: `AutoConnect` on the ConnMan cellular
+  service of the data SIM (`/net/connman/service/cellular_<IMSI>_context1`; the
+  IMSI comes from `org.nemomobile.ofono.ModemManager.GetAll()`). Allowed for the
+  normal user, so no privileged helper is involved.
+- Only when opted in, no WLAN is connected, the data SIM is not roaming and
+  mobile data is currently off. Mobile data the user switched on is never
+  touched; data the daemon switched on is switched off again right after the
+  action, also on errors.
+- A lock file in `$XDG_RUNTIME_DIR` serializes the two daemons, so one cannot
+  switch data off while the other is still uploading.
 
 ### Privileged action processor - `harbour-find-my-device-priv.service`
 

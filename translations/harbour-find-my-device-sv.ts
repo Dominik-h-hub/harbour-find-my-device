@@ -360,6 +360,14 @@
         <translation>Låter demontjänsten aktivera systemets platstjänster och godkänna villkoren. Opt-in.</translation>
     </message>
     <message>
+        <source>Auto-enable mobile data when needed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lets the daemon turn on mobile data for a position push or photo upload and turn it off again afterwards. Not while connected to WLAN or roaming. Opt-in.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>MQTT</source>
         <translation>MQTT</translation>
     </message>

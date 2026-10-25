@@ -160,6 +160,14 @@ def _shorten(text, limit=80):
     return text if len(text) <= limit else text[:limit - 3] + "..."
 
 
+def _mobile_data():
+    """Context manager: mobile data on for the enclosed network action if the
+    user opted in and it is off (see mobiledata_control); off again after."""
+    import mobiledata_control
+    return mobiledata_control.temporarily_enabled(
+        settings.get_bool(settings.AUTO_ENABLE_MOBILE_DATA))
+
+
 def _process_location_requests():
     """Forward a queued UI 'enable system location' wish to the priv service."""
     try:
@@ -379,9 +387,12 @@ class CommandExecutor(object):
         if loc_note:
             msg += "\n" + loc_note
         if payload is not None and settings.get_bool(settings.MQTT_ENABLED):
-            published = self._publish_location(own_id, payload)
+            with _mobile_data() as md:
+                published = self._publish_location(own_id, payload)
             msg += ("\nSent via MQTT" if published
                     else "\nMQTT publish failed")
+            if md.note:
+                msg += "\n" + md.note
         if channel == "sms" and sender:
             sent = self._reply_gps_sms(sender, lat, lon, fix_dt,
                                        None if fix_dt else self._db_time(own_id))
@@ -423,20 +434,27 @@ class CommandExecutor(object):
                           "Capture failed: %s" % (which, _shorten(res.error)))
             return "error"
         dav_url = url.rstrip("/") + "/" + fname
-        log.info("camera: network before upload: %s", _network_state())
-        uploaded = camera_capture.upload_webdav(out_path, dav_url, user, password)
+        with _mobile_data() as md:
+            log.info("camera: network before upload: %s", _network_state())
+            uploaded = camera_capture.upload_webdav(out_path, dav_url, user,
+                                                    password)
+            # Judged while a temporarily enabled connection is still up.
+            online = uploaded or _network_online()
+            net_state = _network_state()
+        data_note = ("\n" + md.note) if md.note else ""
         if uploaded:
             notify.notify("Find My Device",
-                          "Photo (%s camera) captured remotely\nUploaded" % which)
+                          "Photo (%s camera) captured remotely\nUploaded%s"
+                          % (which, data_note))
             return "ok"
-        online = _network_online()
-        self._reason = "upload failed (network: %s)" % _network_state()
+        self._reason = "upload failed (network: %s)" % net_state
         pending = self._park_for_retry(out_path)
         notify.notify("Find My Device",
                       "Photo (%s camera) captured remotely\nUpload failed (%s); "
-                      "stored on the device%s" % (
+                      "stored on the device%s%s" % (
                           which, "no network" if not online else "server error",
-                          ", will retry automatically" if pending else ""))
+                          ", will retry automatically" if pending else "",
+                          data_note))
         return "error"
 
     # -- pending photo uploads --

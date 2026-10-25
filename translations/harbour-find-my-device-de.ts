@@ -360,6 +360,14 @@
         <translation>Erlaubt dem Daemon, selbstständig die Standortdienste des Systems einzuschalten und die Nutzungsbedingungen zu akzeptieren. Opt-in.</translation>
     </message>
     <message>
+        <source>Auto-enable mobile data when needed</source>
+        <translation>Mobile Daten bei Bedarf automatisch aktivieren</translation>
+    </message>
+    <message>
+        <source>Lets the daemon turn on mobile data for a position push or photo upload and turn it off again afterwards. Not while connected to WLAN or roaming. Opt-in.</source>
+        <translation>Erlaubt dem Daemon, für das Senden der Position oder das Hochladen eines Fotos die mobilen Daten einzuschalten und danach wieder auszuschalten. Nicht bei bestehender WLAN-Verbindung und nicht im Roaming. Opt-in.</translation>
+    </message>
+    <message>
         <source>MQTT</source>
         <translation>MQTT</translation>
     </message>

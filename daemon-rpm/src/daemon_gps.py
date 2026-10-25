@@ -157,6 +157,14 @@ class GpsDaemon(object):
         server = settings.get(settings.MQTT_SERVER)
         if not server or not mqtt_client.paho_available():
             return True
+        import mobiledata_control
+        # Mobile data on for this push only, if opted in and currently off
+        # (never on WLAN / while roaming); switched off again right after.
+        with mobiledata_control.temporarily_enabled(
+                settings.get_bool(settings.AUTO_ENABLE_MOBILE_DATA)):
+            return self._connect_and_publish(own_id, payload, server)
+
+    def _connect_and_publish(self, own_id, payload, server):
         tls = settings.get_bool(settings.MQTT_TLS)
         port = settings.get_int(settings.MQTT_PORT, 8883 if tls else 1883)
         client = mqtt_client.FmdMqttClient(

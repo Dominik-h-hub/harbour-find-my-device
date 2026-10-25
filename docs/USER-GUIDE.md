@@ -99,6 +99,7 @@ The app starts and stops the daemons automatically whenever you save the setting
 - Device-Id: The unique id of your device — this is what you enter on another device to pair it with yours. Tap the row to copy the id to the clipboard.
 - GPS query interval (minutes): Sets the interval for GPS position updates.
 - Auto-enable location when needed: If enabled, the app will automatically turn on the system location services (and accept the agreement) when needed.
+- Auto-enable mobile data when needed: If enabled and mobile data is off, the background service turns mobile data on to send a position or upload a photo and turns it off again right afterwards. Nothing happens while connected to WLAN or while roaming.
 
 <div class="row">
   <img src="images/settings-view-1.png" alt="Settings View" width="200">
