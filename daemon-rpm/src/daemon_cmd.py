@@ -103,6 +103,7 @@ DAEMON_VERSION = ""
 # a running active phase immediately.
 _stop = threading.Event()
 _running = {"loop": None}
+_sms_failure_notified = threading.Event()
 
 
 def _handle_signal(signum, _frame):
@@ -111,6 +112,22 @@ def _handle_signal(signum, _frame):
     loop = _running.get("loop")
     if loop is not None:
         loop.quit()
+
+
+def _install_dbus_mainloop():
+    """Make GLib the default D-Bus main loop before anything opens the bus.
+
+    dbus.SystemBus() hands out one shared connection per process, and that
+    connection keeps the main loop that was default when it was created.
+    Whoever touches the bus first (fixed_location, _network_state, ...)
+    would otherwise create it without one, and every later
+    add_signal_receiver (SMS listener, ConnMan watcher) fails with "D-Bus
+    connections must be attached to a main loop"."""
+    try:
+        from dbus.mainloop.glib import DBusGMainLoop
+        DBusGMainLoop(set_as_default=True)
+    except Exception as exc:
+        log.warning("could not install the D-Bus main loop: %s", exc)
 
 
 def _features_active():
@@ -885,7 +902,15 @@ def _run_active_phase(own_id, generation):
         sms_listener.start()
         log.info("SMS command channel started (whitelist size %d)", len(whitelist))
     except Exception as exc:
+        # None, so "serving (..., SMS off)" below tells the truth.
+        sms_listener = None
         log.warning("SMS channel not started: %s", exc)
+        if settings.get_bool(settings.SMS_REMOTE_ENABLED) \
+                and not _sms_failure_notified.is_set():
+            # Once per process: listeners are rebuilt on every settings save.
+            _sms_failure_notified.set()
+            notify.notify("Find My Device",
+                          "SMS remote control is not working (%s)" % exc)
 
     # --- network handover watcher (event-driven, no polling) --------------
     connman_watcher = _ConnmanWatcher(lambda: mqtt)
@@ -1037,6 +1062,7 @@ def main():
         handlers=[logging.StreamHandler(), _fh])
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
+    _install_dbus_mainloop()
     DAEMON_VERSION = runtime.read_version_file(VERSION_FILE)
 
     db.init_schema()

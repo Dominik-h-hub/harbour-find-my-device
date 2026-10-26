@@ -346,6 +346,21 @@ class GpsDaemon(object):
             _stop.wait(min(remaining, runtime.HEARTBEAT_INTERVAL_S))
 
 
+def _install_dbus_mainloop():
+    """Make GLib the default D-Bus main loop before anything opens the bus.
+
+    dbus.SystemBus() hands out one shared connection per process, and that
+    connection keeps the main loop that was default when it was created.
+    Whoever touches the bus first (fixed_location, ...) would otherwise
+    create it without one, and any later signal receiver on it fails with
+    "D-Bus connections must be attached to a main loop"."""
+    try:
+        from dbus.mainloop.glib import DBusGMainLoop
+        DBusGMainLoop(set_as_default=True)
+    except Exception as exc:
+        log.warning("could not install the D-Bus main loop: %s", exc)
+
+
 def main():
     global DAEMON_VERSION
     _fh = logging.handlers.RotatingFileHandler(
@@ -357,6 +372,7 @@ def main():
         handlers=[logging.StreamHandler(), _fh])
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
+    _install_dbus_mainloop()
     DAEMON_VERSION = runtime.read_version_file(VERSION_FILE)
     GpsDaemon().run()
     return 0
