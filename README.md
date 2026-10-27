@@ -1,7 +1,8 @@
 <!-- markdownlint-disable MD041 -->
 <p align="center">
     <a href="https://github.com/Dominik-h-hub/harbour-find-my-device/actions/workflows/build.yaml"><img alt="GitHub Action" src="https://github.com/Dominik-h-hub/harbour-find-my-device/actions/workflows/build.yaml/badge.svg"></a>
-    <br>
+    <a href="https://hosted.weblate.org/projects/harbour-find-my-device/"><img alt="Crowdin" src="https://hosted.weblate.org/widget/harbour-find-my-device/svg-badge.svg?native=1"></a>
+ <br>
     <img alt="Logo" src="icons/172x172/harbour-find-my-device.png" width="100">
     <br>
     <b>Radar App for Sailfish OS </b><br>
@@ -33,7 +34,7 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
   - CAMERA — take a photo (front or back camera) and upload it to your WebDAV folder
   - DELETE — wipe all user data (`/home/<defaultuser | nemo>`) and reboot — NOT a factory reset
 - **Everything is opt-in**: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
-- **Translations via [Weblate](https://hosted.weblate.org/projects/harbour-find-my-device/)**:: EN, DE, SV, FR, ET
+- **Translations via [Weblate](https://hosted.weblate.org/projects/harbour-find-my-device/)**: EN, DE, SV, FR, ET
 
 ## Two Packages: App + Background Service
 
