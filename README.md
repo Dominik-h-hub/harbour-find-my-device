@@ -33,7 +33,7 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
   - CAMERA — take a photo (front or back camera) and upload it to your WebDAV folder
   - DELETE — wipe all user data (`/home/<defaultuser | nemo>`) and reboot — NOT a factory reset
 - **Everything is opt-in**: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
-- **Translations**: EN, DE, SV, FR
+- **Translations via [Weblate](https://hosted.weblate.org/projects/harbour-find-my-device/)**:: EN, DE, SV, FR, ET
 
 ## Two Packages: App + Background Service
 
@@ -84,30 +84,9 @@ We are happy about any contribution to the project, whether it's bug fixes, new 
 
 ## Localization
 
-All language/regional translations are managed here [translations/*](translations/) in the GitHub repository.
-If you want to contribute translations, please submit them as pull requests against the `translations/harbour-find-my-device-{language-code}.ts` files directly.
+All language/regional translations are managed via [hosted.weblate.org](https://hosted.weblate.org/projects/harbour-find-my-device/)
 
-- Go to folder translations.
-- If there is a file with your language code, click on it and select the edit icon
-- If not:
-  - Click on harbour-find-my-device.ts file
-  - Select copy icon (Copy raw file)
-  - Go back, click Add file -> Create new file
-  - Enter harbour-find-my-device-xx.ts replacing xx with your language code as the name. For example, de for german
-  - Paste the copied file in the new file's contents
-- replace:
-
-  ```xml
-  <source>Save</source>
-  <translation type="unfinished"></translation>
-  ```
-
-  with the correct translation for your language (remove "type="unfinished" and add the translation in between the <translation> tags). For example, for german:
-
-  ```xml
-  <source>Save</source>
-  <translation>Speichern</translation>
-  ```
+If you want to contribute or create a new translations, please submit them via Weblate and don't submit them as pull requests.
 
 Thanks for your consideration and contribution!
 

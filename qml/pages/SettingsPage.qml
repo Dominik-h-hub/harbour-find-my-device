@@ -903,7 +903,7 @@ Dialog {
                 ListItem {
                     contentHeight: Theme.itemSizeMedium
 
-                    onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/tree/main/translations")
+                    onClicked: Qt.openUrlExternally("https://hosted.weblate.org/projects/harbour-find-my-device/")
 
                     Label {
                         anchors.left: parent.left
