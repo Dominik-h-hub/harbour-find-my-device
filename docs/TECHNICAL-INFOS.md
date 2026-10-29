@@ -105,7 +105,8 @@ under `/usr/share/harbour-find-my-device-daemon/`.
 ### Mobile data auto-enable
 
 `mobiledata_control.py`, used by both daemons around a network action (GPS
-push, location publish of the GPS command, photo upload):
+push, location publish of the GPS command, photo upload incl. the retries of
+failed uploads - those run every 5 min even without WLAN when opted in):
 
 - Same switch as Settings / the top menu: `AutoConnect` on the ConnMan cellular
   service of the data SIM (`/net/connman/service/cellular_<IMSI>_context1`; the

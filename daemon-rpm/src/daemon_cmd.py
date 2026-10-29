@@ -264,7 +264,7 @@ class CommandExecutor(object):
         # Set and read on the command worker thread only.
         self._reason = None
         # Pending photo uploads: earliest time for the next automatic retry,
-        # and whether a retry job already sits in the worker queue.
+        # and whether a retry job is already queued or running.
         self.upload_retry_at = 0.0
         self.upload_job_queued = False
 
@@ -566,8 +566,16 @@ class CommandExecutor(object):
 
     def retry_uploads(self):
         """Upload the photos in photos/pending/ (command worker thread).
-        Stops at the first failure: the next one would almost surely fail too."""
-        self.upload_job_queued = False
+        The flag stays set until the job is done: cleared earlier, the 5s
+        watchdog would queue another retry during a slow upload, and after a
+        failure that job would run at once, bypassing UPLOAD_RETRY_SECONDS."""
+        try:
+            self._retry_uploads()
+        finally:
+            self.upload_job_queued = False
+
+    def _retry_uploads(self):
+        """Stops at the first failure: the next one would almost surely fail too."""
         files = self.pending_uploads()
         if not files:
             return
@@ -579,6 +587,13 @@ class CommandExecutor(object):
                         "configured", len(files))
             self.upload_retry_at = time.time() + UPLOAD_RETRY_SECONDS
             return
+        # Same temporary connection (and cross-daemon lock) as the first upload.
+        with _mobile_data() as md:
+            self._upload_pending(files, url, user, password)
+        if md.note:
+            log.info("camera: pending uploads: %s", md.note)
+
+    def _upload_pending(self, files, url, user, password):
         import camera_capture
         from fmd import paths
         log.info("camera: retrying %d pending upload(s), network %s",
@@ -1044,13 +1059,17 @@ def _run_active_phase(own_id, generation):
     def check_uploads(now):
         """Schedule a retry of pending photo uploads: at once when the network
         has come back, otherwise every UPLOAD_RETRY_SECONDS. ConnMan is only
-        asked while photos are actually waiting."""
+        asked while photos are actually waiting. Offline, a due retry still
+        runs if the user opted in to auto-enable mobile data: the failed
+        upload switched it off again, so waiting for "online" would wait
+        forever without WLAN."""
         if executor.upload_job_queued or not executor.pending_uploads():
             return
         if not _network_online():
             state["upload_offline"] = True
-            return
-        if state.get("upload_offline"):
+            if not settings.get_bool(settings.AUTO_ENABLE_MOBILE_DATA):
+                return
+        elif state.get("upload_offline"):
             state["upload_offline"] = False
             log.info("network back; retrying pending photo uploads now")
             executor.upload_retry_at = 0.0
