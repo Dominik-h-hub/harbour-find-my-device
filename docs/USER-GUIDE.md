@@ -20,7 +20,9 @@ After the next GPS fix of the other device, it will appear on your map.
 
 ## Map View (Main Page)
 
-The main page of the Radar App displays a map view where you can see the location of your device and other devices which you added in the tab "Devices".
+The main page has two tabs, "Map" and "Devices". Switch between them with the tab bar at the bottom of the screen or by swiping. If the background service is not installed, a hint banner above the tab bar leads you to the settings, where you can install it. Tap the cross to hide the banner.
+
+The Map tab displays a map view where you can see the location of your device and other devices which you added in the tab "Devices".
 The default OpenStreetMap map is NOT interactive. With a Geoapify tile server key (optional — free account at [geoapify.com](https://www.geoapify.com) needed, see [Settings → Map](#map)) you can tap the map to open a full-screen interactive map (zoom and scroll).
 
 ### Map-Page - Pull-Down Menu
@@ -85,25 +87,44 @@ If you pull down the devices page, you will see a menu with the following option
 
 The settings page allows you to configure various options for the Radar App, including MQTT settings, SMS settings, and command permissions. You can enable or disable specific commands, set up your MQTT broker, and configure your WebDAV upload folder.
 
+The settings are grouped into sections that you can expand. Tap a section header to open it; only one section is open at a time.
+
 ### Background services
 
-At the top of the settings the live status of the two background daemons is shown (running / deactivated / failed), with a Refresh button:
+At the top of the settings the live status of the two background daemons is shown, with a Refresh button:
 
 - GPS service: Activated when you turn the switch "Background activity" on.
 - Command service: Activated when at least one remote action or SMS action is turned on.
 
-The app starts and stops the daemons automatically whenever you save the settings — this section is just for checking that everything runs as expected.
+Possible states:
+
+- running: the service is active.
+- deactivated: the service is deactivated.
+- applying…: you just saved the settings and the service has not picked them up yet.
+- not installed: the background service package is missing or not running.
+
+
+If the background service package is not installed, this section shows an "Install background service" button. It opens the system installer with the package bundled in the app, and you have to confirm the installation there. If the app came from a repository without the bundled package (e.g. SailfishOS:Chum), install `harbour-find-my-device-daemon` from that repository instead. When the app contains a newer version of the service than the installed one, an "Update background service" button appears.
 
 ### General
 
 - Device-Id: The unique id of your device — this is what you enter on another device to pair it with yours. Tap the row to copy the id to the clipboard.
 - GPS query interval (minutes): Sets the interval for GPS position updates.
-- Auto-enable location when needed: If enabled, the app will automatically turn on the system location services (and accept the agreement) when needed.
-- Auto-enable mobile data when needed: If enabled and mobile data is off, the background service turns mobile data on to send a position or upload a photo and turns it off again right afterwards. Nothing happens while connected to WLAN or while roaming.
+- Auto-enable location when needed: If enabled, the app will automatically turn on the system location services (and accept the agreement) when needed. If location is on but GPS positioning is off (network-only mode), GPS is switched on as well.
+- Auto-enable mobile data when needed: If enabled and mobile data is off, the background service turns mobile data on to send a position or upload a photo and turns it off again right afterwards. This also covers positions taken by the app itself while background activity is off (the background service must be installed). Nothing happens while connected to WLAN or while roaming.
 
 <div class="row">
   <img src="images/settings-view-1.png" alt="Settings View" width="200">
 </div>
+
+### GPS at Home
+
+If both fields are filled and the phone is connected to this WiFi network, the given coordinates are sent instead of querying GPS. This applies to the periodic updates, the app's own position updates and the MQTT/SMS GPS command. In every other case the normal GPS flow runs.
+
+- WiFi SSID: The name of your WiFi network, e.g. `MyHomeNetwork` (case-sensitive).
+- GPS coordinates to push: Latitude and longitude separated by a comma, e.g. `52.520008, 13.404954`. Invalid or out-of-range values are ignored, and GPS is used instead.
+
+Note: The app can only see the connected WiFi network through the background service, so the background service must be installed.
 
 ### MQTT
 
@@ -141,7 +162,7 @@ The app starts and stops the daemons automatically whenever you save the setting
 
 - Whitelist (Allowed senders): A list of phone numbers that are allowed to send remote commands via SMS. Only commands from these numbers will be accepted. Enter one number per line (national and international formats of the same number both match).
 - Remote control via SMS: If enabled, the app will accept remote commands via SMS from whitelisted numbers. Each command requires a TOTP code or a one-time backup code (see the next two sections).
-- Allow command GPS: If enabled, the GPS command can be sent to your device via SMS — the current coordinates are sent back by SMS to the sender (SMS costs may apply; the reply does not show up under sent messages, but a notification is shown).
+- Allow command GPS: If enabled, the GPS command can be sent to your device via SMS — the current coordinates are sent back by SMS to the sender (SMS costs may apply; the reply does not show up under sent messages, but a notification is shown). If no current fix can be obtained, the last stored position is sent with its original time. While connected to the "GPS at Home" WiFi, the configured coordinates are sent.
 
 A command SMS is `KEYWORD [front|back] CODE`, for example `RING 123456` or `CAMERA front 123456` — see the [Technical Infos](TECHNICAL-INFOS.md#sms-command-format) for details.
 
@@ -170,7 +191,7 @@ If TOTP is not available, backup codes can be used for authentication instead. E
 
 ### About
 
-Shows the app version and links to report a bug or feature request, the code repository and this user manual.
+Shows the app version and links to report a bug or feature request, to add a translation (Weblate), the code repository and this user manual.
 
 ## Cover Actions
 

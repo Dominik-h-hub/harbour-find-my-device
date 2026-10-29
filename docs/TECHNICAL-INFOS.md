@@ -6,7 +6,7 @@ For a feature overview see the [README](../README.md), for the app usage see the
 
 ## Architecture Overview
 
-Since v1.2 the project ships as **two RPM packages**:
+Since v2.0 the project ships as **two RPM packages**:
 
 | Package | Content | Distribution |
 |---|---|---|
@@ -56,7 +56,10 @@ All parts share one SQLite database:
     version) every 30 s; the Settings page derives the daemon status purely
     from these records,
   - privileged wishes of the GUI (e.g. "enable system location") are queued in
-    the DB and forwarded by the command daemon to the root helper.
+    the DB and forwarded by the command daemon to the root helper,
+  - the command daemon mirrors the connected WiFi names into the DB for
+    [GPS at Home](#gps-at-home-fixed-coordinates), because the sandboxed GUI
+    must not ask ConnMan itself.
 - Every feature is opt-in; a daemon idles (connections down, short poll timer)
   when its features are disabled - it is never started/stopped from outside.
 
@@ -74,8 +77,9 @@ under `/usr/share/harbour-find-my-device-daemon/`.
   otherwise.
 - Periodically obtains a GPS fix (via geoclue on the D-Bus session), stores it in the SQLite DB and - if MQTT is enabled - publishes it retained to `fmd/<device-id>`.
 - The poll interval is the "GPS query interval (minutes)" from the settings; while the background switch is off the daemon idles and the running GUI app polls instead via QtPositioning (positions keep being published until you close the app).
-- Optionally switches the system location services on before a fix ("Auto-enable location when needed" setting, opt-in) - this goes through the privileged action processor.
+- Optionally switches the system location services on before a fix ("Auto-enable location when needed" setting, opt-in) - this goes through the privileged action processor. Location that is on in a network-only mode (`gps\enabled=false`) is treated like off here, because without a connection it gives no fix; GPS positioning is switched on with it.
 - Optionally switches mobile data on for the MQTT push only and off again right after ("Auto-enable mobile data when needed", opt-in; see [Mobile data](#mobile-data-auto-enable)).
+- While connected to the "GPS at Home" WiFi it stores and publishes the configured coordinates instead of a fix (see [GPS at Home](#gps-at-home-fixed-coordinates)).
 
 ### Command daemon - `harbour-find-my-device-daemon-cmd.service`
 
@@ -93,7 +97,8 @@ under `/usr/share/harbour-find-my-device-daemon/`.
   connection or a subscription stops checking out - the failure this guards
   against is invisible otherwise, see the health-check section.
 - SMS channel: listens to incoming SMS via ofono (D-Bus). A command SMS must come from a whitelisted number AND carry a valid TOTP code or one-time backup code.
-- Also forwards the sandboxed GUI's queued "enable system location" requests to the privileged helper.
+- Also forwards the sandboxed GUI's queued "enable system location" requests to the privileged helper, serves its queued "publish my newest fix" requests (see [Mobile data](#mobile-data-auto-enable)) and mirrors the connected WiFi names for GPS at Home - also while idle.
+- GPS command: uses the GPS at Home coordinates when the configured WiFi is connected. Otherwise it switches location on if it is off or in a network-only mode and "Auto-enable location when needed" is on, then tries a fix (max. 90 s). Without a fix it falls back to the last stored position, keeping its original timestamp.
 - Every executed action - even a failed one - posts a notification on the device (this is not a spy app).
 - GPS and CAMERA: with "Auto-enable mobile data when needed" on, mobile data is switched on for the location push / photo upload and off again afterwards (see [Mobile data](#mobile-data-auto-enable)).
 
@@ -112,6 +117,36 @@ push, location publish of the GPS command, photo upload):
   action, also on errors.
 - A lock file in `$XDG_RUNTIME_DIR` serializes the two daemons, so one cannot
   switch data off while the other is still uploading.
+- Before switching data on, the daemon writes an ownership record
+  (`mobiledata-enabled-by-fmd` in the data dir, contains the service path);
+  `restore()` deletes it after switching data off again. If a daemon is stopped
+  or killed inside the window (shutdown gives up on a busy worker after 5 s),
+  the record survives - also across a reboot, like ConnMan's `AutoConnect`.
+  The next daemon start and every new session (both under the lock) then
+  switch the leftover connection off, instead of mistaking it for one the
+  user turned on.
+- The connection counts as usable at `online`, or at `ready` (IP configured)
+  after 2 s: ConnMan's internet check can take 15 s and more although the
+  link already carries traffic. Overall wait at most 30 s.
+- App-only mode (background activity off): the sandboxed app cannot switch
+  mobile data. When its own publish fails and the option is on, it queues a
+  request in the runtime table (`location_publish_request`); the cmd daemon
+  publishes the newest stored own fix with a one-shot client, mobile data on
+  for it. The app keeps its pending copy as a fallback.
+
+### GPS at Home (fixed coordinates)
+
+`fmd/fixedloc.py` (shared) + `fixed_location.py` (daemon side). When both
+settings (WiFi SSID + `lat, lon`) are filled and valid and the phone is
+connected to that WiFi, every location path uses these coordinates instead of
+querying GPS: the GPS command, the periodic GPS daemon cycle and the app's
+foreground poll / manual refresh. No location auto-enable happens in that
+case. The stored fix gets accuracy 1 m and speed 0.
+
+Only the unsandboxed daemons may ask ConnMan for the connected WiFi services.
+The command daemon therefore mirrors the connected SSIDs into the runtime
+table (only while the feature is configured, written only on a change), and
+the GUI reads them from there. SSIDs are not written to the logs.
 
 ### Privileged action processor - `harbour-find-my-device-priv.service`
 
@@ -132,9 +167,10 @@ systemctl --user restart harbour-find-my-device-daemon-cmd.service
 systemctl --user stop harbour-find-my-device-daemon-gps.service
 ```
 
-The settings page shows the state of both daemons (`running` / `idle` /
-`not installed or not running`) derived purely from the heartbeat records in
-the DB - a heartbeat younger than 90 s counts as alive.
+The settings page shows the state of both daemons (`running` / `deactivated`
+(daemon idles, features off) / `applying…` (heartbeat fresh, but older than
+the last settings save) / `not installed`) derived purely from the heartbeat
+records in the DB - a heartbeat younger than 90 s counts as alive.
 
 ## Reading Logs on the Device
 
@@ -153,9 +189,17 @@ tail -f /tmp/fmd-gps.log
 tail -f /tmp/fmd-cmd.log
 tail -f /tmp/fmd-app.log
 
+# Privileged action processor (reboot, SMS send, location switch)
+tail -f /run/harbour-find-my-device/priv.log
+
 # Read the last 50 lines
 tail -n 50 /tmp/fmd-gps.log
 ```
+
+The privileged action processor runs as root and logs to
+`/run/harbour-find-my-device/priv.log` instead (rotates at 256 KB, 1 backup).
+`/run` is a tmpfs, so this log is lost on reboot. It is readable as
+`defaultuser`.
 
 Each log rotates at 1 MB (max. 3 backups: `.log`, `.log.1`, `.log.2`, `.log.3`).
 
@@ -187,15 +231,17 @@ journalctl --since "30 min ago" --no-pager _SYSTEMD_USER_UNIT=harbour-find-my-de
 | `~/.local/share/harbour-find-my-device/harbour-find-my-device/findmydevice.db` | SQLite DB: settings, devices, GPS fixes, daemon heartbeats |
 | `~/.local/share/harbour-find-my-device/harbour-find-my-device/photos/` | camera captures before WebDAV upload |
 | `~/.local/share/harbour-find-my-device/harbour-find-my-device/photos/pending/` | captures whose upload failed; retried automatically when the network is back (otherwise every 5 min) |
+| `~/.local/share/harbour-find-my-device/harbour-find-my-device/mobiledata-enabled-by-fmd` | exists only while a daemon has mobile data switched on (see [Mobile data](#mobile-data-auto-enable)) |
 | `/run/harbour-find-my-device/spool/`                       | privileged action request spool (volatile) |
 | `/tmp/fmd-gps.log`, `/tmp/fmd-cmd.log`, `/tmp/fmd-app.log`| rotating log files (max 1 MB, 3 backups)  |
+| `/run/harbour-find-my-device/priv.log`                     | log of the privileged action processor (root, volatile; max 256 KB, 1 backup) |
 | `/usr/share/harbour-find-my-device/`                       | installed app files (QML + Python + bundled daemon RPM under `daemon/`) |
 | `/usr/share/harbour-find-my-device-daemon/`                | installed daemon files (Python + VERSION)  |
 
 The nested data directory is the Sailjail layout
 (`~/.local/share/<OrganizationName>/<ApplicationName>/`): inside the sandbox it
 is the app's real data dir, and the unsandboxed daemons use exactly the same
-absolute path. A pre-1.2 DB in the old flat location
+absolute path. A pre-2.0 DB in the old flat location
 (`~/.local/share/harbour-find-my-device/findmydevice.db`) is migrated
 automatically on first start.
 
@@ -236,6 +282,11 @@ Location payload example:
   "battery": 78
 }
 ```
+
+Locations published by the GPS command also carry `"source"`: `live` (current
+fix), `wifi` (GPS at Home coordinates) or `db` (no current fix, last stored
+position with its original timestamp). Clients should treat the field as
+optional.
 
 Command payload example (see the token section below):
 
@@ -293,7 +344,7 @@ signal that the channel has to be rebuilt.
 | `RING`      | -                 | ring the device for 60 seconds                                |
 | `STOP_RING` | -                 | stop a running ring                                           |
 | `LOCK`      | -                 | lock the device into the lock screen                          |
-| `GPS`       | -                 | one-off fix: store, publish via MQTT (or reply by SMS)        |
+| `GPS`       | -                 | one-off fix (or GPS at Home coordinates / last stored fix): store, publish via MQTT (or reply by SMS) |
 | `CAMERA`    | `front` or `back` | take a photo and upload it to the configured WebDAV folder    |
 | `DELETE`    | -                 | wipe all user data and reboot - NOT a factory reset           |
 

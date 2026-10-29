@@ -119,6 +119,32 @@ def is_enabled(paths=DEFAULT_PATHS):
     return False
 
 
+def gps_mode_enabled(paths=DEFAULT_PATHS):
+    """False if location is on but in a network-only mode (gps\\enabled=false
+    in every config that has enabled=true). Network positioning cannot work
+    without a connection, so callers with auto-enable treat this like 'off'.
+    A missing key counts as on."""
+    found = False
+    for p in paths:
+        st = read_state(p)
+        if st.get("enabled") != "true":
+            continue
+        found = True
+        if st.get("gps_enabled") != "false":
+            return True
+    return not found
+
+
+def needs_enable():
+    """Why location must be switched on for a GPS fix: 'off', 'no_gps'
+    (network-only mode) or None (ready)."""
+    if not is_enabled():
+        return "off"
+    if not gps_mode_enabled():
+        return "no_gps"
+    return None
+
+
 def wait_until_enabled(timeout=3.0, poll=0.3, paths=DEFAULT_PATHS):
     """Wait until is_enabled() turns true; returns the final state.
 

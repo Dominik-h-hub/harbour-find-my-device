@@ -35,9 +35,31 @@ def connected_wifi_names():
         return []
 
 
+# Last decision logged by get(); only changes are logged.
+_last_decision = {"value": None}
+
+
 def get():
     """(lat, lon) to send instead of a GPS fix, or None."""
-    return fixedloc.match(connected_wifi_names)
+    seen = {}
+
+    def names():
+        seen["names"] = connected_wifi_names()
+        return seen["names"]
+
+    fixed = fixedloc.match(names)
+    # Log the decision on a change only (SSIDs stay out of the log).
+    if fixed is not None:
+        decision = "match"
+    elif "names" not in seen:
+        decision = "not configured"
+    else:
+        decision = "configured WiFi not connected (%d WiFi connected)" % len(
+            seen["names"])
+    if decision != _last_decision["value"]:
+        _last_decision["value"] = decision
+        log.info("GPS at Home: %s", decision)
+    return fixed
 
 
 def publish_wifi_state():

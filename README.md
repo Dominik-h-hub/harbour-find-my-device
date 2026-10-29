@@ -33,8 +33,10 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
   - GPS — report the current position (published via MQTT, or replied by SMS — SMS costs may apply)
   - CAMERA — take a photo (front or back camera) and upload it to your WebDAV folder
   - DELETE — wipe all user data (`/home/<defaultuser | nemo>`) and reboot — NOT a factory reset
+- **GPS at Home**: while connected to a configured WiFi network, fixed coordinates can be sent
+- **Auto-enable location / mobile data** (optional): the background service can switch on location services or mobile data for a position update or photo upload — mobile data is switched off again right afterwards
 - **Everything is opt-in**: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
-- **Translations via [Weblate](https://hosted.weblate.org/projects/harbour-find-my-device/)**: EN, DE, SV, FR, ET
+- **Translations via [Weblate](https://hosted.weblate.org/projects/harbour-find-my-device/)**: EN, DE, SV, FR, ET, NB
 
 ## Two Packages: App + Background Service
 

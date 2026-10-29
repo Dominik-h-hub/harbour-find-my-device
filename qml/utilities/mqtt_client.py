@@ -838,6 +838,36 @@ class FmdMqttClient(object):
             log.exception("message handler for %s failed (%s)", topic, self.cid)
 
 
+def publish_location_once(server, port, tls, username, password, device_id,
+                          payload, role=ROLE_PUB, connect_timeout=25):
+    """Connect, publish one location verified, close. True when the fix is
+    on the broker. For daemons without a standing connection (GPS cycle, a
+    fix handed over by the UI); never raises."""
+    client = FmdMqttClient(server, port, tls, username, password,
+                           client_id(device_id, role))
+    ok = False
+    try:
+        connected = client.connect() and client.wait_connected(connect_timeout)
+        if not connected:
+            # One hard retry, then give up (caller keeps the fix pending).
+            log.warning("publisher connect failed; retrying once")
+            connected = (client.force_reconnect()
+                         and client.wait_connected(connect_timeout))
+        if connected:
+            # Verified publish: waits for the PUBACK and internally does
+            # one reconnect+republish on failure (_publish).
+            ok = client.publish_location(device_id, payload)
+        else:
+            log.warning("publisher could not connect; fix not delivered")
+    except Exception as exc:
+        log.error("one-shot publish failed: %s", exc)
+    finally:
+        # close(), not disconnect(): the client is retired here and must
+        # never be revived (the next one reuses the same client id).
+        client.close()
+    return ok
+
+
 def _device_from_topic(topic):
     """Extract <device-id> from fmd/<id>[/cmd[/ack]]."""
     parts = topic.split("/")

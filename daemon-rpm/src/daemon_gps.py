@@ -167,31 +167,11 @@ class GpsDaemon(object):
     def _connect_and_publish(self, own_id, payload, server):
         tls = settings.get_bool(settings.MQTT_TLS)
         port = settings.get_int(settings.MQTT_PORT, 8883 if tls else 1883)
-        client = mqtt_client.FmdMqttClient(
+        return mqtt_client.publish_location_once(
             server, port, tls,
             settings.get(settings.MQTT_USERNAME),
             settings.get(settings.MQTT_PASSWORD),
-            mqtt_client.client_id(own_id, mqtt_client.ROLE_PUB))
-        ok = False
-        try:
-            connected = client.connect() and client.wait_connected(CONNECT_TIMEOUT_S)
-            if not connected:
-                # One hard retry, then give up for this tick (-> pending).
-                log.warning("publisher connect failed; retrying once")
-                connected = (client.force_reconnect()
-                             and client.wait_connected(CONNECT_TIMEOUT_S))
-            if connected:
-                # Verified publish: waits for the PUBACK and internally does
-                # one reconnect+republish on failure (mqtt_client._publish).
-                ok = client.publish_location(own_id, payload)
-            else:
-                log.warning("publisher could not connect; fix not delivered")
-        finally:
-            # close(), not disconnect(): the per-tick client is retired here
-            # and must never be revived (next tick's client reuses the same
-            # client id).
-            client.close()
-        return ok
+            own_id, payload, connect_timeout=CONNECT_TIMEOUT_S)
 
     def _flush_pending(self):
         """Deliver a stranded fix from an earlier tick, if any."""
@@ -240,14 +220,17 @@ class GpsDaemon(object):
             })
             return
 
-        # Auto-enable location if opted in and currently off.
-        if not location_control.is_enabled():
+        # Auto-enable location if opted in and currently off -- or on in a
+        # network-only mode, which gives no fix without a connection. Without
+        # opt-in only "off" skips the fix; network-only may still work.
+        why = location_control.needs_enable()
+        if why is not None:
             if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
-                log.info("auto-enabling location services")
+                log.info("auto-enabling location services (was %s)", why)
                 location_control.set_location_enabled(enable=True)
                 location_control.wait_until_enabled()  # priv service applies it async
                 time.sleep(3)   # allow the provider to start before first fix
-            else:
+            elif why == "off":
                 log.info("location disabled and auto-enable off; skipping fix")
                 self._flush_pending()
                 return
@@ -300,6 +283,9 @@ class GpsDaemon(object):
         db.init_schema()
         devices.ensure_own_device()
         log.info("GPS daemon started (version %s)", DAEMON_VERSION or "?")
+        # Undo mobile data an interrupted publish left switched on.
+        import mobiledata_control
+        mobiledata_control.recover_interrupted()
         beat = _Heartbeat()
         beat.start()
         while not _stop.is_set():

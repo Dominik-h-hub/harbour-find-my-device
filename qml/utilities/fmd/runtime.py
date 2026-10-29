@@ -33,6 +33,7 @@ HEARTBEAT_INTERVAL_S = 30
 
 _GENERATION_KEY = "settings_generation"
 _LOCATION_REQUEST_KEY = "location_enable_request"
+_PUBLISH_REQUEST_KEY = "location_publish_request"
 _CONNECTED_WIFI_KEY = "connected_wifi"
 
 
@@ -198,6 +199,26 @@ def consume_location_enable_request(max_age_s=300):
     if not raw:
         return False
     set(_LOCATION_REQUEST_KEY, "")
+    try:
+        return (int(time.time()) - int(raw)) <= max_age_s
+    except (TypeError, ValueError):
+        return False
+
+
+def request_location_publish():
+    """UI-side: ask the cmd daemon to publish the newest stored own fix (the
+    sandboxed GUI cannot switch mobile data on for it)."""
+    set(_PUBLISH_REQUEST_KEY, int(time.time()))
+    log.info("location publish request queued for the cmd daemon")
+
+
+def consume_location_publish_request(max_age_s=600):
+    """Daemon-side: True (and clear the flag) if a fresh publish request is
+    pending. Stale requests are dropped silently."""
+    raw = get(_PUBLISH_REQUEST_KEY, "")
+    if not raw:
+        return False
+    set(_PUBLISH_REQUEST_KEY, "")
     try:
         return (int(time.time()) - int(raw)) <= max_age_s
     except (TypeError, ValueError):

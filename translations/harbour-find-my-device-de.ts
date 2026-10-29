@@ -634,19 +634,19 @@
     </message>
     <message>
         <source>GPS coordinates to push (latitude, longitude)</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-Koordinaten, die gesendet werden sollen (Breitengrad, Längengrad)</translation>
     </message>
     <message>
         <source>GPS at Home</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS zu Hause</translation>
     </message>
     <message>
         <source>If both fields are filled and the phone is connected to this WiFi network, these coordinates are sent instead of querying GPS (periodic updates and MQTT/SMS commands).</source>
-        <translation type="unfinished"></translation>
+        <translation>Wenn beide Felder ausgefüllt sind und das Smartphone mit diesem WiFi-Netzwerk verbunden ist, werden diese Koordinaten gesendet, anstatt GPS abzufragen (gilt für regelmäßige Updates und MQTT/SMS-Befehle).</translation>
     </message>
     <message>
         <source>WiFi SSID, e.g. MyHomeNetwork</source>
-        <translation type="unfinished"></translation>
+        <translation>WLAN SSID, z.B. MyHomeNetwork</translation>
     </message>
 </context>
 </TS>

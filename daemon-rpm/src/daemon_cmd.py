@@ -195,6 +195,64 @@ def _process_location_requests():
         log.exception("location enable request failed")
 
 
+def _process_publish_requests(submit=None):
+    """Serve a queued UI 'publish my newest fix' wish (UI publish failed while
+    offline). `submit` hands the job to the command worker while serving --
+    the publish can take ~30s with mobile data and must not block the GLib
+    loop; idle, it runs inline."""
+    try:
+        if not runtime.consume_location_publish_request():
+            return
+        log.info("processing UI location publish request")
+        if submit is not None:
+            submit()
+        else:
+            _publish_latest_own_fix()
+    except Exception:
+        log.exception("location publish request failed")
+
+
+def _publish_latest_own_fix():
+    """Publish the newest stored own fix with a one-shot client, mobile data
+    on for it if opted in (see mobiledata_control)."""
+    if not settings.get_bool(settings.MQTT_ENABLED):
+        return
+    server = settings.get(settings.MQTT_SERVER)
+    if not server or not mqtt_client.paho_available():
+        return
+    if not settings.get_bool(settings.AUTO_ENABLE_MOBILE_DATA):
+        # Only ever requested for this; without it the UI's own client
+        # delivers the fix on its next reconnect.
+        log.info("UI publish request ignored: mobile data auto-enable is off")
+        return
+    own_id = devices.own_device_id()
+    last = gpsstore.get_latest(own_id)
+    if last is None:
+        log.info("UI publish request: no stored fix")
+        return
+    payload = {
+        "device_id": own_id,
+        "timestamp_utc": last["timestamp_utc"],
+        "timestamp_local": last["timestamp_local"],
+        "lat": last["latitude"], "lon": last["longitude"],
+        "alt": last["altitude"], "speed": last["speed"],
+        "accuracy": last["accuracy"], "battery": last["battery_level"],
+    }
+    tls = settings.get_bool(settings.MQTT_TLS)
+    port = settings.get_int(settings.MQTT_PORT, 8883 if tls else 1883)
+    # The mobile data lock also keeps this one-shot "pub" client apart from
+    # the GPS daemon's, which uses the same client id.
+    with _mobile_data() as md:
+        ok = mqtt_client.publish_location_once(
+            server, port, tls,
+            settings.get(settings.MQTT_USERNAME),
+            settings.get(settings.MQTT_PASSWORD),
+            own_id, payload)
+    log.info("UI fix from %s published via MQTT -> %s%s",
+             last["timestamp_local"], "ok" if ok else "FAILED",
+             " (%s)" % md.note if md.note else "")
+
+
 # ===========================================================================
 class CommandExecutor(object):
     """Executes commands and reports results. Shared by the MQTT and SMS paths."""
@@ -313,20 +371,25 @@ class CommandExecutor(object):
         # off and no opt-in, skip the fix (it would just time out after 90s)
         # and fall back to the last DB position below.
         try_fix = fixed is None
+        # On in a network-only mode counts as off for auto-enable: without a
+        # connection it gives no fix (see location_control.needs_enable).
+        why = location_control.needs_enable() if fixed is None else None
         if fixed is not None:
             log.info("GPS command: connected to configured WiFi; sending "
                      "fixed coordinates instead of a GPS fix")
-        elif not location_control.is_enabled():
+        elif why is not None:
             if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
-                log.info("GPS command: location disabled; auto-enabling "
-                         "location services")
+                log.info("GPS command: location %s; auto-enabling "
+                         "location services", why)
                 location_control.set_location_enabled(enable=True)
                 # The priv service applies it asynchronously.
                 enabled = location_control.wait_until_enabled()
                 log.info("GPS command: location enabled=%s", enabled)
                 time.sleep(3)   # allow the provider to start before the fix
-                loc_note = "Location services were off, enabled automatically"
-            else:
+                loc_note = ("Location services were off, enabled automatically"
+                            if why == "off" else
+                            "GPS positioning was off, enabled automatically")
+            elif why == "off":
                 log.info("GPS command: location disabled and auto-enable off; "
                          "skipping fix")
                 loc_note = ("Location services are off "
@@ -628,6 +691,10 @@ class _CommandWorker(object):
         so an upload never races a capture writing into the same directory)."""
         self._queue.put(("uploads", None, None, None, None))
 
+    def submit_publish(self):
+        """Queue publishing the newest own fix on behalf of the UI."""
+        self._queue.put(("publish", None, None, None, None))
+
     def stop(self, timeout=5):
         """Signal shutdown and wait briefly. A worker stuck in a long job is
         abandoned (daemon thread); it drains the queue up to the sentinel and
@@ -649,6 +716,8 @@ class _CommandWorker(object):
                     self._executor.publish_ack(cmd, a)
                 elif kind == "uploads":
                     self._executor.retry_uploads()
+                elif kind == "publish":
+                    _publish_latest_own_fix()
                 else:
                     result = self._executor.execute(cmd, a, channel=b,
                                                     sender=sender)
@@ -1003,6 +1072,7 @@ def _run_active_phase(own_id, generation):
         check_mqtt(now)
         check_uploads(now)
         _process_location_requests()
+        _process_publish_requests(worker.submit_publish)
         if runtime.generation() != generation or not _features_active():
             log.info("settings changed; rebuilding listeners")
             loop.quit()
@@ -1074,6 +1144,10 @@ def main():
         priv_client.log_status()
     except Exception:
         log.exception("could not read priv service state")
+    # Shutdown abandons a worker busy after 5s, possibly inside a mobile data
+    # window; undo what such a session left switched on.
+    import mobiledata_control
+    mobiledata_control.recover_interrupted()
 
     while not _stop.is_set():
         try:
@@ -1083,6 +1157,7 @@ def main():
             # The UI's location wish must be served even while idle (used by
             # the foreground GPS flow when no remote feature is on).
             _process_location_requests()
+            _process_publish_requests()
             # The GUI's foreground poll needs the connected WiFi for
             # "GPS at Home" even while idle.
             fixed_location.publish_wifi_state()

@@ -9,6 +9,20 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sat Oct 31 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.2-2
+- CHANGED: Moved tab bar from main page to bottom due to jolla phone notch.
+- CHANGED: Weblate translation integration.
+- ADDED: Mobile data can be turned automatically on and off from daemons.
+- ADDED: GPS-at-Home-section to send static GPS coordinates when connected to specific wifi network.
+- ADDED: Find-My Device app logo in notifications
+- CHANGED: command daemon will check autoLocSwitch if location was disabled and GPS command was sent via MQTT or SMS to enable GPS by itself.
+- FIX: If camera upload fails the push message on phone is now correct
+- FIX: Automatic pictures upload retry if internet connection was lost on camera command upload
+- FIX: GPS command via SMS will now send last gps fix if fix could not be retrieved.
+- ADDED: Logging enhancement for daemon_cmd, priv_service and sms_sender
+- ADDED: Notification for failed remote SMS command due to false TOTP code
+- ADDED: Logging enhancement for camera_capture, daemon_cmd, priv_client, priv_service and sms_sender
+
 * Mon Aug 31 2026 Dominik Heidinger <dominikh@atomicmail.io> 2.1-1
 - FIX: Introduced cmd daemon heartbeats fmd/<id>/hc to fix some lost cmd commands while mqtt subscription was silently dead
 - FIX: Hardening of cmd daemon error scenarios

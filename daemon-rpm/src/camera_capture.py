@@ -106,20 +106,22 @@ def capture_environment():
 
 
 def _drain_bus_errors(bus):
-    """Pop queued ERROR/WARNING messages from the bus as readable strings."""
+    """Pop queued ERROR/WARNING messages from the bus as (is_error, text)."""
     msgs = []
     while True:
         msg = bus.pop_filtered(Gst.MessageType.ERROR | Gst.MessageType.WARNING)
         if msg is None:
             return msgs
-        if msg.type == Gst.MessageType.ERROR:
+        is_error = msg.type == Gst.MessageType.ERROR
+        if is_error:
             err, dbg = msg.parse_error()
             kind = "ERROR"
         else:
             err, dbg = msg.parse_warning()
             kind = "WARNING"
         src_name = msg.src.get_name() if msg.src is not None else "?"
-        msgs.append("%s from %s: %s (%s)" % (kind, src_name, err.message, dbg))
+        msgs.append((is_error, "%s from %s: %s (%s)" % (
+            kind, src_name, err.message, dbg)))
 
 
 def _start_pipeline(pipeline, bus):
@@ -135,14 +137,23 @@ def _start_pipeline(pipeline, bus):
         log.info("set_state %s -> %s (%.2fs)", target.value_nick,
                  ret.value_nick, time.monotonic() - t)
         if ret == Gst.StateChangeReturn.FAILURE:
-            details = _drain_bus_errors(bus)
+            details = [d for _is_err, d in _drain_bus_errors(bus)]
             for d in details:
                 log.error("gst: %s", d)
             return "could not set %s: %s" % (
                 target.value_nick.upper(),
                 "; ".join(details) or "no bus message")
-    for d in _drain_bus_errors(bus):
-        log.warning("gst: %s", d)
+    # A state change may return ASYNC while the streaming thread already posted
+    # an ERROR; draining removes it from the bus, so on_bus() would never see it.
+    errors = []
+    for is_err, d in _drain_bus_errors(bus):
+        if is_err:
+            log.error("gst: %s", d)
+            errors.append(d)
+        else:
+            log.warning("gst: %s", d)
+    if errors:
+        return "error while starting: %s" % "; ".join(errors)
     return None
 
 
