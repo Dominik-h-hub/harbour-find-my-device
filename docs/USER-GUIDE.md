@@ -69,6 +69,7 @@ Your own device only offers "Edit" (change the label).
 <div class="row">
   <img src="images/devices-view-kontext-menu.png" alt="Devices View Context Menu" width="200">
   <img src="images/edit-device.png" alt="Edit Device" width="200">
+  <img src="images/edit-device-own.png" alt="Edit Own Device" width="200">
 </div>
 
 ### Device-Page - Pull-Down Menu
@@ -103,8 +104,11 @@ Possible states:
 - applying…: you just saved the settings and the service has not picked them up yet.
 - not installed: the background service package is missing or not running.
 
-
 If the background service package is not installed, this section shows an "Install background service" button. It opens the system installer with the package bundled in the app, and you have to confirm the installation there. If the app came from a repository without the bundled package (e.g. SailfishOS:Chum), install `harbour-find-my-device-daemon` from that repository instead. When the app contains a newer version of the service than the installed one, an "Update background service" button appears.
+
+<div class="row">
+  <img src="images/settings-view-1.png" alt="Settings - Background services" width="200">
+</div>
 
 ### General
 
@@ -114,7 +118,7 @@ If the background service package is not installed, this section shows an "Insta
 - Auto-enable mobile data when needed: If enabled and mobile data is off, the background service turns mobile data on to send a position or upload a photo and turns it off again right afterwards. This also covers positions taken by the app itself while background activity is off (the background service must be installed). Nothing happens while connected to WLAN or while roaming.
 
 <div class="row">
-  <img src="images/settings-view-1.png" alt="Settings View" width="200">
+  <img src="images/settings-view-2.png" alt="Settings - General" width="200">
 </div>
 
 ### GPS at Home
@@ -125,6 +129,10 @@ If both fields are filled and the phone is connected to this WiFi network, the g
 - GPS coordinates to push: Latitude and longitude separated by a comma, e.g. `52.520008, 13.404954`. Invalid or out-of-range values are ignored, and GPS is used instead.
 
 Note: The app can only see the connected WiFi network through the background service, so the background service must be installed.
+
+<div class="row">
+  <img src="images/settings-view-3.png" alt="Settings - GPS at Home" width="200">
+</div>
 
 ### MQTT
 
@@ -137,7 +145,7 @@ Note: The app can only see the connected WiFi network through the background ser
 - Background activity: If enabled, the location keeps being reported while the app is closed (the "GPS service" daemon runs). While it is off, the running app polls instead.
 
 <div class="row">
-  <img src="images/settings-view-2.png" alt="Settings View" width="200">
+  <img src="images/settings-view-4.png" alt="Settings - MQTT" width="200">
 </div>
 
 ### Remote actions
@@ -147,6 +155,10 @@ Note: The app can only see the connected WiFi network through the background ser
 - Allow command LOCK: If enabled, the LOCK command can be sent to your device remotely.
 - Allow command DELETE (wipe): If enabled, the DELETE command can be sent to your device remotely. User data will be wiped and the device will reboot.
 
+<div class="row">
+  <img src="images/settings-view-5.png" alt="Settings - Remote actions" width="200">
+</div>
+
 ### Camera
 
 - Allow command CAMERA: If enabled, the CAMERA command can be sent to your device remotely. Photos will be uploaded to the configured WebDAV folder.
@@ -155,7 +167,7 @@ Note: The app can only see the connected WiFi network through the background ser
 - WebDAV password: The password for your WebDAV folder
 
 <div class="row">
-  <img src="images/settings-view-3.png" alt="Settings View" width="200">
+  <img src="images/settings-view-6.png" alt="Settings - Camera" width="200">
 </div>
 
 ### SMS
@@ -166,12 +178,20 @@ Note: The app can only see the connected WiFi network through the background ser
 
 A command SMS is `KEYWORD [front|back] CODE`, for example `RING 123456` or `CAMERA front 123456` — see the [Technical Infos](TECHNICAL-INFOS.md#sms-command-format) for details.
 
+<div class="row">
+  <img src="images/settings-view-7.png" alt="Settings - SMS" width="200">
+</div>
+
 ### SMS authentication (TOTP)
 
 SMS commands are authenticated with a TOTP code (like a login second factor):
 
 - TOTP secret: Enrol this secret in a TOTP authenticator app on a SECOND device — either scan the shown QR code or tap the secret to copy it. The current 6-digit code of the authenticator app is the `CODE` required in every command SMS.
 - Generate new TOTP secret: Creates a new secret (the old one becomes invalid — re-enrol your authenticator app afterwards).
+
+<div class="row">
+  <img src="images/settings-view-8.png" alt="Settings - SMS authentication (TOTP)" width="200">
+</div>
 
 ### SMS - Backup Codes
 
@@ -180,18 +200,26 @@ If TOTP is not available, backup codes can be used for authentication instead. E
 - Unused backup codes: Shows how many backup codes are left.
 - Regenerate backup codes: Generates a fresh set of backup codes and displays them — store them in a safe place.
 
+<div class="row">
+  <img src="images/settings-view-9.png" alt="Settings - SMS - Backup Codes" width="200">
+</div>
+
 ### Map
 
 - Tile provider: Choose between "OpenStreetMap (no key needed)" (static map) and "OpenStreetMap Geoapify".
 - Geoapify API key: Your personal Geoapify key for the map view. This is optional, but required for the full-screen interactive (zoomable) map.
 
 <div class="row">
-  <img src="images/settings-view-4.png" alt="Settings View" width="200">
+  <img src="images/settings-view-10.png" alt="Settings - Map" width="200">
 </div>
 
 ### About
 
 Shows the app version and links to report a bug or feature request, to add a translation (Weblate), the code repository and this user manual.
+
+<div class="row">
+  <img src="images/settings-view-11.png" alt="Settings - About" width="200">
+</div>
 
 ## Cover Actions
 

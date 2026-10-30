@@ -76,10 +76,6 @@ This is not a spy app: every remote action — even a failed one — shows a not
 - Qt 5.6.3 (Sailfish OS Silica UI) + Python 3 backend/daemons
 - Two-RPM model: sandboxed store app + separate daemon package (see [Technical Infos](docs/TECHNICAL-INFOS.md))
 - Building, versioning and the CI build order: see [Building](docs/TECHNICAL-INFOS.md#building)
-- Tested on:
-  - Fairphone 4 - Sailfish OS 5.0.0.62
-  - Jolla Phone 2026 - Sailfish OS 5.1.0.xx
-  - Emulator - Sailfish OS 5.0.0.62, 5.1.0.11
 
 ## Contributing to the project
 
