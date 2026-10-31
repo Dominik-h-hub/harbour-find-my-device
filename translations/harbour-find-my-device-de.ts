@@ -265,7 +265,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="93"/>
         <source>%1 queued until reconnect</source>
-        <translation>%1 warten bis zum Reconnect.</translation>
+        <translation>%1 warten bis zum Reconnect</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="97"/>
