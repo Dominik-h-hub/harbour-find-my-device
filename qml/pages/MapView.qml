@@ -150,9 +150,12 @@ SilicaFlickable {
     Component.onCompleted: reload()
 
     // --- the map (static; isolated in MapCanvas.qml) ----------------------
+    // The map starts below a Theme.itemSizeSmall gap so neither the map nor
+    // the status banner sits under the device notch.
     Loader {
         id: mapLoader
         anchors.fill: parent
+        anchors.topMargin: Theme.itemSizeSmall
         active: Bridge.ready && Bridge.osmUserAgent !== ""
         source: Qt.resolvedUrl("MapCanvas.qml")
         onStatusChanged: {
@@ -227,7 +230,7 @@ SilicaFlickable {
     // --- status banner (offline / no GPS) ---------------------------------
     Rectangle {
         id: statusBanner
-        anchors { top: parent.top; left: parent.left; right: parent.right }
+        anchors { top: mapLoader.top; left: parent.left; right: parent.right }
         height: bannerLabel.height + Theme.paddingMedium
         color: Theme.rgba(Theme.highlightDimmerColor, 0.9)
         visible: !root.mapData.network_online || !root.mapData.gps_available || statusBanner._sticky

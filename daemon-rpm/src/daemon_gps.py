@@ -35,6 +35,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fmd import db, devices, gpsstore, runtime, settings
+import fixed_location
 import location_control
 import mqtt_client
 
@@ -156,33 +157,21 @@ class GpsDaemon(object):
         server = settings.get(settings.MQTT_SERVER)
         if not server or not mqtt_client.paho_available():
             return True
+        import mobiledata_control
+        # Mobile data on for this push only, if opted in and currently off
+        # (never on WLAN / while roaming); switched off again right after.
+        with mobiledata_control.temporarily_enabled(
+                settings.get_bool(settings.AUTO_ENABLE_MOBILE_DATA)):
+            return self._connect_and_publish(own_id, payload, server)
+
+    def _connect_and_publish(self, own_id, payload, server):
         tls = settings.get_bool(settings.MQTT_TLS)
         port = settings.get_int(settings.MQTT_PORT, 8883 if tls else 1883)
-        client = mqtt_client.FmdMqttClient(
+        return mqtt_client.publish_location_once(
             server, port, tls,
             settings.get(settings.MQTT_USERNAME),
             settings.get(settings.MQTT_PASSWORD),
-            mqtt_client.client_id(own_id, mqtt_client.ROLE_PUB))
-        ok = False
-        try:
-            connected = client.connect() and client.wait_connected(CONNECT_TIMEOUT_S)
-            if not connected:
-                # One hard retry, then give up for this tick (-> pending).
-                log.warning("publisher connect failed; retrying once")
-                connected = (client.force_reconnect()
-                             and client.wait_connected(CONNECT_TIMEOUT_S))
-            if connected:
-                # Verified publish: waits for the PUBACK and internally does
-                # one reconnect+republish on failure (mqtt_client._publish).
-                ok = client.publish_location(own_id, payload)
-            else:
-                log.warning("publisher could not connect; fix not delivered")
-        finally:
-            # close(), not disconnect(): the per-tick client is retired here
-            # and must never be revived (next tick's client reuses the same
-            # client id).
-            client.close()
-        return ok
+            own_id, payload, connect_timeout=CONNECT_TIMEOUT_S)
 
     def _flush_pending(self):
         """Deliver a stranded fix from an earlier tick, if any."""
@@ -206,14 +195,42 @@ class GpsDaemon(object):
         asked for anymore."""
         own_id = devices.own_device_id()
 
-        # Auto-enable location if opted in and currently off.
-        if not location_control.is_enabled():
+        # Connected to the configured WiFi: store/publish the fixed
+        # coordinates, no GPS query and no location auto-enable.
+        fixed = fixed_location.get()
+        if fixed is not None:
+            import gps_reader
+            log.info("connected to configured WiFi; using fixed coordinates "
+                     "instead of a GPS fix")
+            lat, lon = fixed
+            now = time.time()
+            ts_utc, ts_local = gps_reader.iso_utc(now), gps_reader.iso_local(now)
+            battery = gps_reader.read_battery_level()
+            gpsstore.store_fix(own_id, ts_utc, ts_local, lat, lon,
+                               speed=fixed_location.SPEED,
+                               accuracy=fixed_location.ACCURACY_M,
+                               battery=battery)
+            self._publish_new(own_id, {
+                "device_id": own_id,
+                "timestamp_utc": ts_utc,
+                "timestamp_local": ts_local,
+                "lat": lat, "lon": lon, "alt": None,
+                "speed": fixed_location.SPEED,
+                "accuracy": fixed_location.ACCURACY_M, "battery": battery,
+            })
+            return
+
+        # Auto-enable location if opted in and currently off -- or on in a
+        # network-only mode, which gives no fix without a connection. Without
+        # opt-in only "off" skips the fix; network-only may still work.
+        why = location_control.needs_enable()
+        if why is not None:
             if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
-                log.info("auto-enabling location services")
+                log.info("auto-enabling location services (was %s)", why)
                 location_control.set_location_enabled(enable=True)
                 location_control.wait_until_enabled()  # priv service applies it async
                 time.sleep(3)   # allow the provider to start before first fix
-            else:
+            elif why == "off":
                 log.info("location disabled and auto-enable off; skipping fix")
                 self._flush_pending()
                 return
@@ -244,13 +261,16 @@ class GpsDaemon(object):
         gpsstore.store_fix(own_id, fix.timestamp_utc, fix.timestamp_local,
                            fix.lat, fix.lon, fix.alt, fix.speed,
                            fix.accuracy_h, battery)
-        payload = {
+        self._publish_new(own_id, {
             "device_id": own_id,
             "timestamp_utc": fix.timestamp_utc,
             "timestamp_local": fix.timestamp_local,
             "lat": fix.lat, "lon": fix.lon, "alt": fix.alt,
             "speed": fix.speed, "accuracy": fix.accuracy_h, "battery": battery,
-        }
+        })
+
+    def _publish_new(self, own_id, payload):
+        """Publish a new fix; keep it pending if it cannot be delivered."""
         if self._pending is not None:
             # retain=True: only the newest position matters.
             log.info("pending fix superseded by a newer one")
@@ -263,6 +283,9 @@ class GpsDaemon(object):
         db.init_schema()
         devices.ensure_own_device()
         log.info("GPS daemon started (version %s)", DAEMON_VERSION or "?")
+        # Undo mobile data an interrupted publish left switched on.
+        import mobiledata_control
+        mobiledata_control.recover_interrupted()
         beat = _Heartbeat()
         beat.start()
         while not _stop.is_set():
@@ -309,6 +332,21 @@ class GpsDaemon(object):
             _stop.wait(min(remaining, runtime.HEARTBEAT_INTERVAL_S))
 
 
+def _install_dbus_mainloop():
+    """Make GLib the default D-Bus main loop before anything opens the bus.
+
+    dbus.SystemBus() hands out one shared connection per process, and that
+    connection keeps the main loop that was default when it was created.
+    Whoever touches the bus first (fixed_location, ...) would otherwise
+    create it without one, and any later signal receiver on it fails with
+    "D-Bus connections must be attached to a main loop"."""
+    try:
+        from dbus.mainloop.glib import DBusGMainLoop
+        DBusGMainLoop(set_as_default=True)
+    except Exception as exc:
+        log.warning("could not install the D-Bus main loop: %s", exc)
+
+
 def main():
     global DAEMON_VERSION
     _fh = logging.handlers.RotatingFileHandler(
@@ -320,6 +358,7 @@ def main():
         handlers=[logging.StreamHandler(), _fh])
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
+    _install_dbus_mainloop()
     DAEMON_VERSION = runtime.read_version_file(VERSION_FILE)
     GpsDaemon().run()
     return 0

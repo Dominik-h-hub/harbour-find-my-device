@@ -24,6 +24,9 @@ log = logging.getLogger("fmd.settings")
 DEVICE_LABEL = "device_label"
 GPS_INTERVAL_MIN = "gps_interval_min"
 AUTO_ENABLE_LOCATION = "auto_enable_location"
+AUTO_ENABLE_MOBILE_DATA = "auto_enable_mobile_data"  # temporarily, for a push
+FIXED_LOCATION_WIFI = "fixed_location_wifi"       # SSID; GPS command sends the
+FIXED_LOCATION_COORDS = "fixed_location_coords"   # fixed "lat, lon" instead of a fix
 # MQTT
 MQTT_ENABLED = "mqtt_enabled"
 MQTT_SERVER = "mqtt_server"
@@ -56,13 +59,17 @@ _SECRET_KEYS = frozenset({MQTT_PASSWORD, WEBDAV_PASSWORD})
 # Keys additionally masked in log output only (stored in clear -- do not move
 # them into _SECRET_KEYS, that would garble existing installs' stored values).
 # Users share logs for support, so keep API keys and phone numbers out of them.
-_LOG_MASKED_KEYS = _SECRET_KEYS | {GEOAPIFY_KEY, SMS_WHITELIST}
+_LOG_MASKED_KEYS = _SECRET_KEYS | {GEOAPIFY_KEY, SMS_WHITELIST,
+                                   FIXED_LOCATION_WIFI, FIXED_LOCATION_COORDS}
 
 # Defaults applied when a key is missing.
 DEFAULTS = {
     DEVICE_LABEL: "",
     GPS_INTERVAL_MIN: "5",
     AUTO_ENABLE_LOCATION: "0",
+    AUTO_ENABLE_MOBILE_DATA: "0",
+    FIXED_LOCATION_WIFI: "",
+    FIXED_LOCATION_COORDS: "",
     MQTT_ENABLED: "0",
     MQTT_SERVER: "",
     MQTT_TLS: "1",

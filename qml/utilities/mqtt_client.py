@@ -68,6 +68,10 @@ PUBLISH_ACK_RETRY_TIMEOUT_S = 10
 # one threw away a payload that the link would have carried a second later).
 CONNACK_TIMEOUT_S = 25
 
+# How long disconnect() lets the network thread send DISCONNECT and exit on its
+# own before it force-closes the socket under it.
+DISCONNECT_GRACE_S = 1.0
+
 # OS-level TCP keepalive. The MQTT keepalive above is deliberately long, but a
 # WLAN<->mobile handover leaves the old socket "half-open".
 #
@@ -350,19 +354,26 @@ class FmdMqttClient(object):
                 old.disconnect()
             except Exception:
                 pass
+            thread = getattr(old, "_thread", None)
+            own_thread = thread is threading.current_thread()
             try:
-                # Close the socket to unstick a thread blocked in a TLS
-                # read/handshake; together with _thread_terminate it then exits
-                # instead of finishing a reconnect that would fight the
-                # successor for the (identical) client id.
-                sock = old.socket()
-                if sock is not None:
-                    sock.close()
+                if thread is not None and not own_thread:
+                    thread.join(DISCONNECT_GRACE_S)
             except Exception:
                 pass
             try:
-                thread = getattr(old, "_thread", None)
-                if thread is not None and thread is not threading.current_thread():
+                # Still running: close the socket to unstick a thread blocked
+                # in a TLS read/handshake; together with _thread_terminate it
+                # then exits instead of finishing a reconnect that would fight
+                # the successor for the (identical) client id.
+                if thread is None or own_thread or thread.is_alive():
+                    sock = old.socket()
+                    if sock is not None:
+                        sock.close()
+            except Exception:
+                pass
+            try:
+                if thread is not None and not own_thread:
                     thread.join(2.0)
                     if thread.is_alive():
                         log.warning("mqtt network thread still busy; abandoned")
@@ -607,9 +618,11 @@ class FmdMqttClient(object):
         return self._publish(topic_cmd(device_id), payload, retain=False,
                              wait=wait)
 
-    def publish_ack(self, device_id, payload):
-        """Publish a command result on the ack topic (retain=false, QoS1)."""
-        return self._publish(topic_ack(device_id), payload, retain=False)
+    def publish_ack(self, device_id, payload, wait=True):
+        """Publish a command result on the ack topic (retain=false, QoS1).
+        wait=False: fire and forget, no PUBACK wait and no reconnect repair."""
+        return self._publish(topic_ack(device_id), payload, retain=False,
+                             wait=wait)
 
     def _publish(self, topic, payload, retain, wait=True):
         """Publish with delivery verification and one self-repair attempt.
@@ -823,6 +836,36 @@ class FmdMqttClient(object):
             # Belt to suppress_exceptions' braces, and the only place the
             # traceback reaches the file log instead of just stderr.
             log.exception("message handler for %s failed (%s)", topic, self.cid)
+
+
+def publish_location_once(server, port, tls, username, password, device_id,
+                          payload, role=ROLE_PUB, connect_timeout=25):
+    """Connect, publish one location verified, close. True when the fix is
+    on the broker. For daemons without a standing connection (GPS cycle, a
+    fix handed over by the UI); never raises."""
+    client = FmdMqttClient(server, port, tls, username, password,
+                           client_id(device_id, role))
+    ok = False
+    try:
+        connected = client.connect() and client.wait_connected(connect_timeout)
+        if not connected:
+            # One hard retry, then give up (caller keeps the fix pending).
+            log.warning("publisher connect failed; retrying once")
+            connected = (client.force_reconnect()
+                         and client.wait_connected(connect_timeout))
+        if connected:
+            # Verified publish: waits for the PUBACK and internally does
+            # one reconnect+republish on failure (_publish).
+            ok = client.publish_location(device_id, payload)
+        else:
+            log.warning("publisher could not connect; fix not delivered")
+    except Exception as exc:
+        log.error("one-shot publish failed: %s", exc)
+    finally:
+        # close(), not disconnect(): the client is retired here and must
+        # never be revived (the next one reuses the same client id).
+        client.close()
+    return ok
 
 
 def _device_from_topic(topic):

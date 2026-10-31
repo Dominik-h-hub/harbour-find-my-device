@@ -16,7 +16,7 @@ import queue
 import threading
 import time
 
-from fmd import db, devices, gpsstore, runtime, settings, tokens
+from fmd import db, devices, fixedloc, gpsstore, runtime, settings, tokens
 import mqtt_client
 
 try:
@@ -573,8 +573,10 @@ _LOCATION_CONF_PATHS = ("/var/lib/location/location.conf",
                         "/etc/location/location.conf")
 
 
-def _location_enabled():
-    readable = False
+def _location_state():
+    """'off', 'no_gps' (on, but network-only mode: gps\\enabled=false) or
+    'on'. Same rule as the daemons' location_control.needs_enable()."""
+    readable = enabled = gps = False
     import re
     for path in _LOCATION_CONF_PATHS:
         try:
@@ -584,8 +586,19 @@ def _location_enabled():
             continue
         readable = True
         if re.search(r"^enabled\s*=\s*true\s*$", text, re.MULTILINE):
-            return True
-    return not readable  # unreadable (sandbox) -> assume enabled
+            enabled = True
+            if not re.search(r"^gps\\enabled\s*=\s*false\s*$", text,
+                             re.MULTILINE):
+                gps = True
+    if not readable:
+        return "on"  # unreadable (sandbox) -> assume enabled
+    if not enabled:
+        return "off"
+    return "on" if gps else "no_gps"
+
+
+def _location_enabled():
+    return _location_state() != "off"
 
 
 def _read_battery_level():
@@ -695,26 +708,39 @@ def _do_refresh_location(notify=True, notify_fail=None):
         notify_fail = notify
     own_id = devices.own_device_id()
 
-    if not _location_enabled():
+    # "GPS at Home": connected to the configured WiFi (as reported by the cmd
+    # daemon) -> use the fixed coordinates, no GPS query.
+    fixed = fixedloc.match(runtime.connected_wifi)
+    loc = "on" if fixed is not None else _location_state()
+    if fixed is not None:
+        _log_ui("connected to configured WiFi; using fixed coordinates")
+        fix = _QmlFix(True, lat=fixed[0], lon=fixed[1],
+                      speed=fixedloc.SPEED, accuracy_h=fixedloc.ACCURACY_M)
+    elif loc != "on":
+        # 'no_gps' (network-only mode) counts as off for auto-enable: it gives
+        # no fix without a connection. Without opt-in only 'off' skips.
         if settings.get_bool(settings.AUTO_ENABLE_LOCATION):
             # The sandboxed GUI cannot flip the system switch itself; it queues
             # a wish that the (unsandboxed) cmd daemon forwards to the priv
             # service. Without an installed daemon the request stays pending
             # and the fix attempt below reports its failure via the banner.
-            _log_ui("requesting location enable via background service")
+            _log_ui("requesting location enable via background service "
+                    "(location %s)" % loc)
             runtime.request_location_enable()
             time.sleep(3)  # give the daemon a moment to apply it
-        else:
+        elif loc == "off":
             if notify_fail:
                 _emit("locationFix", False, "gps_disabled")
             _emit("mapUpdated")
             return {"ok": False, "error": "gps_disabled"}
 
-    fix = _qml_fix(timeout=90)
+    if fixed is None:
+        fix = _qml_fix(timeout=90)
     battery = _read_battery_level()
     if not fix.success:
         # Keep the raw error in the log; show a clean message in the UI banner.
-        _log_ui("no GPS fix: %s" % fix.error)
+        _log_ui("no GPS fix: %s (location now %s)"
+                % (fix.error, _location_state()))
         if notify_fail:
             _emit("locationFix", False, _fix_error_code(fix.error))
         _emit("mapUpdated")
@@ -767,6 +793,14 @@ def _publish_own_location(own_id, fix, battery):
         _pending_location = (own_id, payload)
     log.warning("UI MQTT publish failed or client not running; fix stored "
                 "locally, will publish on reconnect")
+    # Typically no network: the sandboxed GUI cannot switch mobile data on,
+    # the cmd daemon can. It publishes the newest stored fix (this one) and
+    # switches data off again. The pending copy above stays as a fallback; a
+    # second delivery of the same retained fix is harmless.
+    if (settings.get_bool(settings.AUTO_ENABLE_MOBILE_DATA)
+            and runtime.daemon_status("cmd") != "not_installed_or_stopped"):
+        _log_ui("handing the fix to the background service (mobile data)")
+        runtime.request_location_publish()
 
 
 # =========================================================================

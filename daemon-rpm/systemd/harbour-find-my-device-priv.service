@@ -5,3 +5,6 @@ Description=Find My Device privileged action processor (reboot / send SMS)
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/python3 /usr/share/harbour-find-my-device-daemon/priv_service.py
+# Each outgoing SMS waits up to 45s for ofono's final state; the default oneshot
+# start timeout (90s) would kill the run after two pending SMS.
+TimeoutStartSec=5min

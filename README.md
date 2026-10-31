@@ -1,7 +1,8 @@
 <!-- markdownlint-disable MD041 -->
 <p align="center">
     <a href="https://github.com/Dominik-h-hub/harbour-find-my-device/actions/workflows/build.yaml"><img alt="GitHub Action" src="https://github.com/Dominik-h-hub/harbour-find-my-device/actions/workflows/build.yaml/badge.svg"></a>
-    <br>
+    <a href="https://hosted.weblate.org/projects/harbour-find-my-device/"><img alt="Crowdin" src="https://hosted.weblate.org/widget/harbour-find-my-device/svg-badge.svg?native=1"></a>
+ <br>
     <img alt="Logo" src="icons/172x172/harbour-find-my-device.png" width="100">
     <br>
     <b>Radar App for Sailfish OS </b><br>
@@ -15,11 +16,10 @@ Radar (Find My Device) is a native find-my-device app for Sailfish OS: see your 
 For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical internals (daemons, logs, MQTT topics, token generation) see the [Technical Infos](docs/TECHNICAL-INFOS.md).
 
 <p align="center">
+<a href="https://store.jolla.com"><img src="docs/images/get-it-on-logos/get-it-on-jollaStore.png" alt="Get it on the Jolla Store" height="55"></a>
+<a href="https://sailfishos-chum.github.io/apps/harbour-find-my-device/"><img src="docs/images/get-it-on-logos/get-it-on-chum.png" alt="Get it on CHUM" height="55"></a>
 <a href="https://openrepos.net/content/domih/radar-find-my-device"><img src="docs/images/get-it-on-logos/get-it-on-openrepos.png" alt="Get it on OpenRepos" height="55"></a>
 <a href="https://github.com/Dominik-h-hub/harbour-find-my-device/releases"><img src="docs/images/get-it-on-logos/direct-rpm-download.png" alt="Direct RPM Download" height="55"></a>
-<a href="https://store.jolla.com"><img src="docs/images/get-it-on-logos/get-it-on-jollaStore.png" alt="Get it on the Jolla Store" height="55"></a>
-<!-- <a href="https://sailfishos-chum.github.io/"><img src="docs/images/get-it-on-logos/get-it-on-chum.png" alt="Get it on CHUM" height="55"></a> -->
-
 </p>
 
 ## Features
@@ -33,8 +33,10 @@ For the app usage see the [User Guide](docs/USER-GUIDE.md), for technical intern
   - GPS — report the current position (published via MQTT, or replied by SMS — SMS costs may apply)
   - CAMERA — take a photo (front or back camera) and upload it to your WebDAV folder
   - DELETE — wipe all user data (`/home/<defaultuser | nemo>`) and reboot — NOT a factory reset
+- **GPS at Home**: while connected to a configured WiFi network, fixed coordinates can be sent
+- **Auto-enable location / mobile data** (optional): the background service can switch on location services or mobile data for a position update or photo upload — mobile data is switched off again right afterwards
 - **Everything is opt-in**: each command, MQTT, SMS and background tracking can be enabled/disabled individually in the settings
-- **Translations**: EN, DE, SV, FR
+- **Translations via [Weblate](https://hosted.weblate.org/projects/harbour-find-my-device/)**: EN, DE, SV, FR, ET, NB
 
 ## Two Packages: App + Background Service
 
@@ -74,10 +76,6 @@ This is not a spy app: every remote action — even a failed one — shows a not
 - Qt 5.6.3 (Sailfish OS Silica UI) + Python 3 backend/daemons
 - Two-RPM model: sandboxed store app + separate daemon package (see [Technical Infos](docs/TECHNICAL-INFOS.md))
 - Building, versioning and the CI build order: see [Building](docs/TECHNICAL-INFOS.md#building)
-- Tested on:
-  - Fairphone 4 - Sailfish OS 5.0.0.62
-  - Jolla Phone 2026 - Sailfish OS 5.1.0.xx
-  - Emulator - Sailfish OS 5.0.0.62, 5.1.0.11
 
 ## Contributing to the project
 
@@ -85,30 +83,9 @@ We are happy about any contribution to the project, whether it's bug fixes, new 
 
 ## Localization
 
-All language/regional translations are managed here [translations/*](translations/) in the GitHub repository.
-If you want to contribute translations, please submit them as pull requests against the `translations/harbour-find-my-device-{language-code}.ts` files directly.
+All language/regional translations are managed via [hosted.weblate.org](https://hosted.weblate.org/projects/harbour-find-my-device/)
 
-- Go to folder translations.
-- If there is a file with your language code, click on it and select the edit icon
-- If not:
-  - Click on harbour-find-my-device.ts file
-  - Select copy icon (Copy raw file)
-  - Go back, click Add file -> Create new file
-  - Enter harbour-find-my-device-xx.ts replacing xx with your language code as the name. For example, de for german
-  - Paste the copied file in the new file's contents
-- replace:
-
-  ```xml
-  <source>Save</source>
-  <translation type="unfinished"></translation>
-  ```
-
-  with the correct translation for your language (remove "type="unfinished" and add the translation in between the <translation> tags). For example, for german:
-
-  ```xml
-  <source>Save</source>
-  <translation>Speichern</translation>
-  ```
+If you want to contribute or create a new translations, please submit them via Weblate and don't submit them as pull requests.
 
 Thanks for your consideration and contribution!
 

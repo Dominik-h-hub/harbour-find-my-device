@@ -109,6 +109,9 @@ Dialog {
         ownIdLabel.value = cfg.own_device_id || "";
         intervalField.text = "" + (cfg.gps_interval_min || "5");
         autoLocSwitch.checked = cfg.auto_enable_location === "1";
+        autoDataSwitch.checked = cfg.auto_enable_mobile_data === "1";
+        fixedWifiField.text = cfg.fixed_location_wifi || "";
+        fixedCoordsField.text = cfg.fixed_location_coords || "";
 
         mqttSwitch.checked = cfg.mqtt_enabled === "1";
         serverField.text = cfg.mqtt_server || "";
@@ -155,6 +158,9 @@ Dialog {
         var values = {
             gps_interval_min: intervalField.text,
             auto_enable_location: autoLocSwitch.checked ? "1" : "0",
+            auto_enable_mobile_data: autoDataSwitch.checked ? "1" : "0",
+            fixed_location_wifi: fixedWifiField.text.trim(),
+            fixed_location_coords: fixedCoordsField.text.trim(),
             mqtt_enabled: mqttSwitch.checked ? "1" : "0",
             mqtt_server: serverField.text,
             mqtt_tls: tlsSwitch.checked ? "1" : "0",
@@ -396,8 +402,48 @@ Dialog {
                     id: autoLocSwitch
                     text: qsTr("Auto-enable location when needed")
                     description: qsTr("Lets the daemon turn on the system location "
-                                    + "services and accept the agreement. Opt-in.")
+                                    + "services and accept the agreement.")
                 }
+                TextSwitch {
+                    id: autoDataSwitch
+                    text: qsTr("Auto-enable mobile data when needed")
+                    description: qsTr("Lets the daemon turn on mobile data for a "
+                                    + "position push or photo upload and turn it "
+                                    + "off again afterwards. Not while connected "
+                                    + "to WLAN or roaming.")
+                }
+            }
+
+            // --- GPS at home -------------------------------------------------
+            SettingsSection {
+                title: qsTr("GPS at Home")
+                sectionId: "gpshome"
+                currentSection: dialog.openSection
+                onToggled: dialog.openSection = expanded ? "" : sectionId
+
+                Label {
+                    x: Theme.horizontalPageMargin
+                    width: parent.width - 2 * Theme.horizontalPageMargin
+                    wrapMode: Text.Wrap
+                    font.pixelSize: Theme.fontSizeExtraSmall
+                    color: Theme.secondaryColor
+                    text: qsTr("If both fields are filled and the phone is connected to "
+                             + "this WiFi network, these coordinates are sent instead "
+                             + "of querying GPS (periodic updates and MQTT/SMS commands).")
+                }
+                TextField {
+                    id: fixedWifiField
+                    width: parent.width
+                    label: qsTr("WiFi SSID, e.g. MyHomeNetwork")
+                    inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                }
+                TextField {
+                    id: fixedCoordsField
+                    width: parent.width
+                    label: qsTr("GPS coordinates to push (latitude, longitude)")
+                    inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                }
+
             }
 
             // --- MQTT --------------------------------------------------------
@@ -857,7 +903,7 @@ Dialog {
                 ListItem {
                     contentHeight: Theme.itemSizeMedium
 
-                    onClicked: Qt.openUrlExternally("https://github.com/Dominik-h-hub/harbour-find-my-device/tree/main/translations")
+                    onClicked: Qt.openUrlExternally("https://hosted.weblate.org/projects/harbour-find-my-device/")
 
                     Label {
                         anchors.left: parent.left

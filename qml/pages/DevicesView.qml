@@ -11,7 +11,9 @@ SilicaListView {
 
     model: ListModel { id: deviceModel }
 
-    header: PageHeader { title: qsTr("Devices") }
+    // Keeps the first entry clear of the status bar / notch area.
+    // The tab bar at the bottom already names this tab.
+    header: Item { width: list.width; height: Theme.itemSizeSmall }
 
     property bool activeTab: true
     onActiveTabChanged: if (activeTab) reload()

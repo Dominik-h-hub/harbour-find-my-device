@@ -23,15 +23,22 @@ ExecStart: python3 /usr/share/harbour-find-my-device-daemon/priv_service.py
 import glob
 import json
 import logging
+import logging.handlers
 import os
 import stat
 import subprocess
 import sys
+import time
 
 # Where the user daemon queues requests (see priv_client.py); the tmpfiles drop-in
 # creates the directory owned by the primary user (uid 100000).
 SPOOL_DIR = "/run/harbour-find-my-device/spool"
 UTILS_DIR = "/usr/share/harbour-find-my-device-daemon"
+# Root-owned (0755) parent of the spool: readable for the user, but the user
+# cannot plant a symlink here (unlike /tmp), so root may safely append to it.
+LOG_FILE = "/run/harbour-find-my-device/priv.log"
+# How long to wait for ofono to report the final state of an outgoing SMS.
+SMS_STATE_TIMEOUT_S = 45
 
 log = logging.getLogger("fmd.priv")
 
@@ -52,8 +59,9 @@ def _do_sendsms(req):
     if UTILS_DIR not in sys.path:
         sys.path.insert(0, UTILS_DIR)
     import sms_sender
-    res = sms_sender.send_sms(to, body)
-    log.info("sendsms to %s -> success=%s error=%s", to, res.success, res.error)
+    res = sms_sender.send_sms(to, body, wait_state=SMS_STATE_TIMEOUT_S)
+    log.info("sendsms to %s (%d chars) -> success=%s state=%s path=%s error=%s",
+             to, len(body), res.success, res.state, res.message_path, res.error)
 
 
 def _do_location(req):
@@ -69,7 +77,7 @@ def _do_location(req):
              ", ".join("%s: %s" % (r["path"], r["error"] or "ok") for r in results))
 
 
-def _process(path):
+def _process(path, req_id):
     try:
         # Open first, validate afterwards via fstat() on the opened fd: checking
         # the path before opening would be racy (TOCTOU), as a same-uid writer
@@ -109,6 +117,8 @@ def _process(path):
         log.error("bad request file %s: %s", path, exc)
         return
     cmd = (req.get("cmd") or "").lower()
+    log.info("processing request %s (cmd=%r, queued %.1fs ago)",
+             req_id, cmd, time.time() - st.st_mtime)
     try:
         if cmd == "reboot":
             _do_reboot()
@@ -122,21 +132,74 @@ def _process(path):
         log.exception("privileged command %r failed", cmd)
 
 
-def main():
+def _spool_listing():
+    """Spool entries with their age -- leftovers keep the path unit retriggering."""
+    try:
+        now = time.time()
+        entries = []
+        for name in sorted(os.listdir(SPOOL_DIR)):
+            try:
+                age = now - os.lstat(os.path.join(SPOOL_DIR, name)).st_mtime
+                entries.append("%s(%.1fs)" % (name, age))
+            except OSError:
+                entries.append("%s(?)" % name)
+        return " ".join(entries) or "empty"
+    except Exception as exc:
+        return "unreadable (%s)" % exc
+
+
+def _setup_logging():
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    handlers = [logging.StreamHandler()]
+    try:
+        fh = logging.handlers.RotatingFileHandler(
+            LOG_FILE, maxBytes=256 * 1024, backupCount=1)
+        fh.setFormatter(fmt)
+        handlers.append(fh)
+    except Exception as exc:
+        sys.stderr.write("cannot open %s: %s\n" % (LOG_FILE, exc))
     logging.basicConfig(
         level=getattr(logging, os.environ.get("FMD_LOG_LEVEL", "INFO"), logging.INFO),
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=handlers)
+
+
+def main():
+    _setup_logging()
     if not os.path.isdir(SPOOL_DIR):
+        log.warning("spool directory %s missing", SPOOL_DIR)
         return 0
-    for path in sorted(glob.glob(os.path.join(SPOOL_DIR, "*.json"))):
+    log.info("priv service started (pid %d), spool: %s", os.getpid(),
+             _spool_listing())
+    # Leftovers of an interrupted run would keep the spool non-empty and make
+    # the path unit retrigger us endlessly; their action may be half done, so
+    # drop them rather than repeat it.
+    for path in glob.glob(os.path.join(SPOOL_DIR, "*.work")):
+        log.warning("removing stale in-progress request %s",
+                    os.path.basename(path))
         try:
-            _process(path)
+            os.remove(path)
+        except OSError as exc:
+            log.error("could not remove %s: %s", path, exc)
+    for path in sorted(glob.glob(os.path.join(SPOOL_DIR, "*.json"))):
+        req_id = os.path.basename(path)[:-len(".json")]
+        # Claim the request first: the user daemon treats "the .json is gone"
+        # as picked up, and an SMS may take up to SMS_STATE_TIMEOUT_S here.
+        work = path[:-len(".json")] + ".work"
+        try:
+            os.rename(path, work)
+        except OSError as exc:
+            log.error("could not claim request %s: %s", req_id, exc)
+            work = path
+        try:
+            _process(work, req_id)
         finally:
             # Always remove the request so the .path unit does not loop.
             try:
-                os.remove(path)
-            except OSError:
-                pass
+                os.remove(work)
+            except OSError as exc:
+                log.error("could not remove request %s: %s", work, exc)
+    log.info("priv service done, spool now: %s", _spool_listing())
     return 0
 
 
