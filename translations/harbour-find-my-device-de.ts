@@ -779,7 +779,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="443"/>
         <source>GPS coordinates to push (latitude, longitude)</source>
-        <translation>GPS-Koordinaten, die gesendet werden sollen (Breitengrad, Längengrad)</translation>
+        <translation>Zu sendende GPS-Koordinaten (Breite, Länge)</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="419"/>
