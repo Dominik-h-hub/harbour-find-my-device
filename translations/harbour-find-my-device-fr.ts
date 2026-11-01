@@ -78,7 +78,7 @@
     <message>
         <location filename="../qml/pages/ConfirmDeletePage.qml" line="41"/>
         <source>WARNING: You are about to delete all user data from your device. This cannot be undone. After the user data has been deleted the device will reboot. Locating it will no longer be possible. Do you really want to continue?</source>
-        <translation>ATTENTION : Vous vous apprêtez à effacer toutes les données utilisateur de votre appareil. Cette action ne peut pas être annulée. Après l’effacement des données utilisateur l’appareil redémarrera. Il ne sera plus possible de le localiser. Souhaitez-vous vraiment continuer ?</translation>
+        <translation>ATTENTION&#xa0;: Vous vous apprêtez à effacer toutes les données utilisateur de votre appareil. Cette action ne peut pas être annulée. Après l’effacement des données utilisateur l’appareil redémarrera. Il ne sera plus possible de le localiser. Souhaitez-vous vraiment continuer&#xa0;?</translation>
     </message>
     <message>
         <location filename="../qml/pages/ConfirmDeletePage.qml" line="72"/>
@@ -93,7 +93,7 @@
     <message>
         <location filename="../qml/pages/ConfirmDeletePage.qml" line="53"/>
         <source>Note: Request for deletion will be sent after you press the button below. Wipe will be performed only if DELETE command is activated on remote device. Otherwise it will be declined.</source>
-        <translation>Note : La demande d’effacement sera envoyée immédiatement après appui sur le bouton ci-dessous. L’effacement ne sera effectif que si la commande « DELETE » est activée sur l’appareil distant. Il sera refusé dans le cas contraire.</translation>
+        <translation>Note&#xa0;: La demande d’effacement sera envoyée immédiatement après appui sur le bouton ci-dessous. L’effacement ne sera effectif que si la commande «&#xa0;DELETE&#xa0;» est activée sur l’appareil distant. Il sera refusé dans le cas contraire.</translation>
     </message>
 </context>
 <context>
@@ -101,7 +101,7 @@
     <message>
         <location filename="../qml/cover/CoverPage.qml" line="97"/>
         <source>Battery: %1%</source>
-        <translation>Batterie : %1%</translation>
+        <translation>Batterie&#xa0;: %1%</translation>
     </message>
     <message>
         <location filename="../qml/cover/CoverPage.qml" line="75"/>
@@ -134,7 +134,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="79"/>
         <source>Could not send %1: %2</source>
-        <translation>Échec d’envoi %1 : %2</translation>
+        <translation>Échec d’envoi %1&#xa0;: %2</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="92"/>
@@ -149,7 +149,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="94"/>
         <source>%1 failed: wrong PIN</source>
-        <translation>%1 rejeté : mauvais code PIN</translation>
+        <translation>%1 rejeté&#xa0;: mauvais code PIN</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="95"/>
@@ -159,7 +159,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="98"/>
         <source>%1: %2</source>
-        <translation>%1 : %2</translation>
+        <translation>%1&#xa0;: %2</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="131"/>
@@ -189,12 +189,12 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="90"/>
         <source>DELETE confirmed: device wiped</source>
-        <translation>DELETE confirmé : appareil effacé</translation>
+        <translation>DELETE confirmé&#xa0;: appareil effacé</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="96"/>
         <source>%1: no response</source>
-        <translation>%1 : pas de réponse</translation>
+        <translation>%1&#xa0;: pas de réponse</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="146"/>
@@ -260,7 +260,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="140"/>
         <source>Last GPS FIX: %1</source>
-        <translation>Dernier positionnement GPS : %1</translation>
+        <translation>Dernier positionnement GPS&#xa0;: %1</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="93"/>
@@ -270,7 +270,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="97"/>
         <source>Could not send %1: no connection</source>
-        <translation>Impossible d’envoyer %1 : pas de connexion</translation>
+        <translation>Impossible d’envoyer %1&#xa0;: pas de connexion</translation>
     </message>
 </context>
 <context>
@@ -339,7 +339,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="265"/>
         <source>Pull down and tap &apos;Update map&apos;</source>
-        <translation>Tirer vers le bas et sélectionner « Mettre à jour la carte »</translation>
+        <translation>Tirer vers le bas et sélectionner «&#xa0;Mettre à jour la carte&#xa0;»</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="204"/>
@@ -369,7 +369,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="128"/>
         <source>No GPS module available</source>
-        <translation>Aucun module GPS disponible.</translation>
+        <translation>Aucun module GPS disponible</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="130"/>
@@ -413,12 +413,12 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="338"/>
         <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
-        <translation>Service GPS : Activé lorsque l’interrupteur « Activité d’arrière-plan » est allumé.</translation>
+        <translation>Service GPS&#xa0;: Activé lorsque l’interrupteur «&#xa0;Activité d’arrière-plan&#xa0;» est allumé.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="345"/>
         <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
-        <translation>Service de commande : Activé lorsqu’au moins une action distante ou par SMS est activée.</translation>
+        <translation>Service de commande&#xa0;: Activé lorsqu’au moins une action distante ou par SMS est activée.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="352"/>
@@ -443,7 +443,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="409"/>
         <source>Auto-enable mobile data when needed</source>
-        <translation type="unfinished"></translation>
+        <translation>Activer les données mobiles automatiquement quand nécessaire</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="451"/>
@@ -683,7 +683,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="653"/>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
-        <translation>Envoie les coordonnées GPS actuelles par SMS à l’expéditeur. Le SMS ne sera PAS visible dans les messages envoyés mais une notification sera visible. ATTENTION : des coûts d’envoi de SMS peuvent s’appliquer.</translation>
+        <translation>Envoie les coordonnées GPS actuelles par SMS à l’expéditeur. Le SMS ne sera PAS visible dans les messages envoyés mais une notification sera visible. ATTENTION&#xa0;: des coûts d’envoi de SMS peuvent s’appliquer.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="522"/>
@@ -693,7 +693,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="572"/>
         <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
-        <translation>Note : l’aperçu de la sonnerie sera joué au volume courant du système. La commande distante sera jouée à 100% du volume, ignorant un appareil silencieux.</translation>
+        <translation>Note&#xa0;: l’aperçu de la sonnerie sera joué au volume courant du système. La commande distante sera jouée à 100% du volume, ignorant un appareil silencieux.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="577"/>
@@ -734,7 +734,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="278"/>
         <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
-        <translation>Les commandes distantes, le contrôle par SMS et le suivi d’arrière plan nécessitent le paquet du service d’arrière-plan. Celui-ci tourne en dehors du bac-à-sable et contient des fonctionnalités privilégiées pour le redémarrage et les réponses par SMS ; l’installeur système vous demandera de confirmer l’installation.</translation>
+        <translation>Les commandes distantes, le contrôle par SMS et le suivi d’arrière plan nécessitent le paquet du service d’arrière-plan. Celui-ci tourne en dehors du bac-à-sable et contient des fonctionnalités privilégiées pour le redémarrage et les réponses par SMS&#xa0;; l’installeur système vous demandera de confirmer l’installation.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="288"/>
@@ -744,12 +744,12 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="302"/>
         <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
-        <translation>Les commandes distantes, le contrôle par SMS et le suivi d’arrière plan nécessitent le service d’arrière-plan. Installez le paquet « harbour-find-my-device-daemon » depuis le même dépôt que cette application (e.g. SailfishOS:Chum).</translation>
+        <translation>Les commandes distantes, le contrôle par SMS et le suivi d’arrière plan nécessitent le service d’arrière-plan. Installez le paquet «&#xa0;harbour-find-my-device-daemon&#xa0;» depuis le même dépôt que cette application (e.g. SailfishOS:Chum).</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="317"/>
         <source>Background service update available (installed: %1, new: %2).</source>
-        <translation>Mise à jour du service d’arrière-plan disponible (installé : %1, nouveau : %2).</translation>
+        <translation>Mise à jour du service d’arrière-plan disponible (installé&#xa0;: %1, nouveau&#xa0;: %2).</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="325"/>
@@ -774,37 +774,37 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="586"/>
         <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
-        <translation>Effacera toutes les données utilisateur sous « home/&lt;user&gt;/ » et redémarrera l’appareil ensuite.</translation>
+        <translation>Effacera toutes les données utilisateur sous «&#xa0;home/&lt;user&gt;/&#xa0;» et redémarrera l’appareil ensuite.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="443"/>
         <source>GPS coordinates to push (latitude, longitude)</source>
-        <translation type="unfinished"></translation>
+        <translation>Coordonnées GPS à pousser (latitude, longitude)</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="419"/>
         <source>GPS at Home</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS à la Maison</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="430"/>
         <source>If both fields are filled and the phone is connected to this WiFi network, these coordinates are sent instead of querying GPS (periodic updates and MQTT/SMS commands).</source>
-        <translation type="unfinished"></translation>
+        <translation>Si les deux champs sont remplis et que le téléphone est connecté à ce réseau WiFi, ces coordonnées sont envoyées au lieu d’interroger le GPS (mises à jour périodiques et commandes MQTT/SMS).</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="437"/>
         <source>WiFi SSID, e.g. MyHomeNetwork</source>
-        <translation type="unfinished"></translation>
+        <translation>SSID WiFi, par exemple WifiMaison</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="404"/>
         <source>Lets the daemon turn on the system location services and accept the agreement.</source>
-        <translation type="unfinished"></translation>
+        <translation>Laisser le démon allumer le service de localisation et accepter les conditions générales.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="410"/>
         <source>Lets the daemon turn on mobile data for a position push or photo upload and turn it off again afterwards. Not while connected to WLAN or roaming.</source>
-        <translation type="unfinished"></translation>
+        <translation>Laisser le démon activer les données mobiles pour pousser la position ou envoyer une photo et les désactiver juste après. Non actif lorsque connecté au WiFi ou en itinérance.</translation>
     </message>
 </context>
 </TS>
