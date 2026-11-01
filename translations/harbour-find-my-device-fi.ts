@@ -199,7 +199,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="146"/>
         <source>no data yet</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">ei vielä dataa</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="171"/>
@@ -265,7 +265,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="93"/>
         <source>%1 queued until reconnect</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">%1 jonossa, kunnes yhdistetään uudelleen</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="97"/>
@@ -703,27 +703,27 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="585"/>
         <source>Allow command DELETE (wipe)</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Salli komento POISTA (pyyhi tiedot)</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="602"/>
         <source>Allow command CAMERA</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Salli komento KAMERA</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="652"/>
         <source>Allow command GPS</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Salli komento GPS</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="912"/>
         <source>Add a translation</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Lisää käännös</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="673"/>
         <source>Enrol this secret in a TOTP authenticator app on OTHER devices. The current code is required in SMS commands. Keep backup codes safe for use without an authenticator app.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Kirjaa tämä salasana muiden laitteiden TOTP-tunnistussovelluksiin. Ajantasainen tunniste vaaditaan SMS-komennoissa. Pidä varakoodit turvassa käyttöä varten tilanteissa, jolloin tunnistusohjelma ei ole käytettävissä.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="63"/>
