@@ -6,38 +6,38 @@
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="58"/>
         <source>Edit this device</source>
-        <translation type="unfinished"></translation>
+        <translation>Muokkaa tätä laitetta</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="59"/>
         <source>Edit device</source>
-        <translation type="unfinished"></translation>
+        <translation>Muokkaa laitetta</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="59"/>
         <source>Add device</source>
-        <translation type="unfinished"></translation>
+        <translation>Lisää laite</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="74"/>
         <source>Device-Id (10 letters/digits)</source>
-        <translation type="unfinished"></translation>
+        <translation>Laitteen tunnus (10 kirjainta/numeroa)</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="73"/>
         <location filename="../qml/pages/AddDevicePage.qml" line="75"/>
         <source>Device-Id</source>
-        <translation type="unfinished"></translation>
+        <translation>Laitteen tunnus</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="100"/>
         <source>Device label (shown on the map)</source>
-        <translation type="unfinished"></translation>
+        <translation>Laitteen nimi (näytetään kartalla)</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="126"/>
         <source>The PIN must match the remote device&apos;s own PIN. The same MQTT server as configured in Settings is used to reach it.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">PIN täytyy olla sama kuin toisen laitteen PIN. yhteistä asetussivulla määritettyä MQTT-palvelinta käytetään toisen laitteen tavoittamiseen.</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="113"/>
@@ -334,7 +334,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="264"/>
         <source>No location yet</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Ei vielä sijaintia</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="265"/>
