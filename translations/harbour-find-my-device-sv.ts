@@ -443,7 +443,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="409"/>
         <source>Auto-enable mobile data when needed</source>
-        <translation type="unfinished"></translation>
+        <translation>Aktivera mobil datauppkoppling automatiskt, vid behov</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="451"/>
@@ -779,32 +779,32 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="443"/>
         <source>GPS coordinates to push (latitude, longitude)</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS-koordinater att skicka (latitud, longitud)</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="419"/>
         <source>GPS at Home</source>
-        <translation type="unfinished"></translation>
+        <translation>GPS hemma</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="430"/>
         <source>If both fields are filled and the phone is connected to this WiFi network, these coordinates are sent instead of querying GPS (periodic updates and MQTT/SMS commands).</source>
-        <translation type="unfinished"></translation>
+        <translation>Om båda fälten är ifyllda och telefonen är ansluten till detta Wi-Fi-nätverk skickas dessa koordinater istället för att GPS-data hämtas (periodiska uppdateringar och MQTT-/SMS-kommandon).</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="437"/>
         <source>WiFi SSID, e.g. MyHomeNetwork</source>
-        <translation type="unfinished"></translation>
+        <translation>WiFi SSID, t.ex. MittHemNätverk</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="404"/>
         <source>Lets the daemon turn on the system location services and accept the agreement.</source>
-        <translation type="unfinished"></translation>
+        <translation>Låter tjänsten aktivera systemets platstjänster och godkänna användarvillkoren.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="410"/>
         <source>Lets the daemon turn on mobile data for a position push or photo upload and turn it off again afterwards. Not while connected to WLAN or roaming.</source>
-        <translation type="unfinished"></translation>
+        <translation>Låter tjänsten aktivera mobildata vid positionsuppdatering eller bilduppladdning och stänga av den igen efteråt. Gäller ej när enheten är ansluten till WiFi eller vid roaming.</translation>
     </message>
 </context>
 </TS>
