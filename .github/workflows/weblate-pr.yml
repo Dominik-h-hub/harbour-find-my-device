@@ -1,0 +1,63 @@
+name: Weblate PR
+
+on:
+  push:
+    branches:
+      - weblate
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: weblate-pr
+  cancel-in-progress: false
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      HEAD_BRANCH: weblate
+      BASE_BRANCH: main
+      # Comma seperated reviewers
+      REVIEWERS: Dominik-h-hub
+
+    steps:
+      - name: Check open PRs
+        id: check
+        run: |
+          count=$(gh pr list --repo "$REPO" \
+            --head "$HEAD_BRANCH" --base "$BASE_BRANCH" \
+            --state open --json number --jq 'length')
+          echo "Offene PRs: $count"
+          if [ "$count" -gt 0 ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check PR Diffs
+        id: diff
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          ahead=$(gh api "repos/$REPO/compare/$BASE_BRANCH...$HEAD_BRANCH" --jq '.ahead_by')
+          echo "Commits vor main: $ahead"
+          if [ "$ahead" -gt 0 ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create new PR
+        if: steps.check.outputs.exists == 'false' && steps.diff.outputs.has_changes == 'true'
+        run: |
+          url=$(gh pr create --repo "$REPO" \
+            --head "$HEAD_BRANCH" --base "$BASE_BRANCH" \
+            --reviewer "$REVIEWERS" \
+            --title "Übersetzungen von Weblate" \
+            --body "Automatisch erstellter Pull Request mit neuen Übersetzungen aus [Weblate](https://hosted.weblate.org/).
+
+          From Commit ${GITHUB_SHA::7}.")
+          echo "Created: $url"
