@@ -88,7 +88,7 @@
     <message>
         <location filename="../qml/pages/ConfirmDeletePage.qml" line="91"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
+        <translation>Peruuta</translation>
     </message>
     <message>
         <location filename="../qml/pages/ConfirmDeletePage.qml" line="53"/>
@@ -101,7 +101,7 @@
     <message>
         <location filename="../qml/cover/CoverPage.qml" line="97"/>
         <source>Battery: %1%</source>
-        <translation type="unfinished"></translation>
+        <translation>Akku:%1%</translation>
     </message>
     <message>
         <location filename="../qml/cover/CoverPage.qml" line="75"/>
@@ -119,17 +119,17 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="23"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Asetukset</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="27"/>
         <source>Add device</source>
-        <translation type="unfinished"></translation>
+        <translation>Lisää laite</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="31"/>
         <source>Refresh</source>
-        <translation type="unfinished"></translation>
+        <translation>Päivitä</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="79"/>
@@ -139,12 +139,12 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="92"/>
         <source>%1 sent</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 lähetetty</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="91"/>
         <source>%1 acknowledged</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 hyväksytty</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="94"/>
@@ -159,12 +159,12 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="98"/>
         <source>%1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1: %2</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="131"/>
         <source>(this device)</source>
-        <translation type="unfinished"></translation>
+        <translation>(tämä laite)</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="143"/>
@@ -174,7 +174,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="144"/>
         <source>wrong PIN</source>
-        <translation type="unfinished"></translation>
+        <translation>väärä PIN</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="145"/>
@@ -184,7 +184,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="142"/>
         <source>Device deleted and not reachable anymore</source>
-        <translation type="unfinished"></translation>
+        <translation>Laite poistettu eikä ole enää tavoitettavissa</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="90"/>
@@ -229,7 +229,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="225"/>
         <source>Photo (front camera)</source>
-        <translation type="unfinished"></translation>
+        <translation>Valokuva (etukamera)</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="213"/>
@@ -250,12 +250,12 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="249"/>
         <source>No devices</source>
-        <translation type="unfinished"></translation>
+        <translation>Ei laitteita</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="250"/>
         <source>Pull down to add a device</source>
-        <translation type="unfinished"></translation>
+        <translation>Pyyhkäise alas lisätäksesi laitteen</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="140"/>
@@ -286,12 +286,12 @@
     <message>
         <location filename="../qml/pages/MainPage.qml" line="14"/>
         <source>Map</source>
-        <translation type="unfinished"></translation>
+        <translation>Kartta</translation>
     </message>
     <message>
         <location filename="../qml/pages/MainPage.qml" line="14"/>
         <source>Devices</source>
-        <translation type="unfinished"></translation>
+        <translation>Laitteet</translation>
     </message>
     <message>
         <location filename="../qml/pages/MainPage.qml" line="85"/>
@@ -304,7 +304,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="32"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Asetukset</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="187"/>
@@ -314,7 +314,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="36"/>
         <source>Update map</source>
-        <translation type="unfinished"></translation>
+        <translation>Päivitä kartta</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="132"/>
@@ -324,7 +324,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="249"/>
         <source>Internet connection not available</source>
-        <translation type="unfinished"></translation>
+        <translation>Internetyhteys ei ole käytettävissä</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="250"/>
@@ -339,7 +339,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="265"/>
         <source>Pull down and tap &apos;Update map&apos;</source>
-        <translation type="unfinished"></translation>
+        <translation>Pyyhkäise alas ja valitse &apos;Päivitä kartta&apos;</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="204"/>
@@ -349,7 +349,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="212"/>
         <source>Install QtLocation on the device to show the map. Device positions are still listed on the Devices tab.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Asenna QtLocation laitteeseen nayttääksesi kartan. Laitteiden sijainnit ovat listattuna Laitteet-välilehdellä.</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="127"/>
@@ -359,12 +359,12 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="129"/>
         <source>GPS is disabled</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">GPS on estetty</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="131"/>
         <source>GPS error</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">GPS-virhe</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="128"/>
@@ -388,12 +388,12 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="206"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Asetukset</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="210"/>
         <source>Background services</source>
-        <translation type="unfinished"></translation>
+        <translation>Taustapalvelut</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="227"/>
@@ -408,7 +408,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="264"/>
         <source>Refresh</source>
-        <translation type="unfinished"></translation>
+        <translation>Päivitä</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="338"/>
@@ -478,22 +478,22 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="479"/>
         <source>MQTT username</source>
-        <translation type="unfinished"></translation>
+        <translation>MQTT-käyttäjätunnus</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="485"/>
         <source>MQTT password</source>
-        <translation type="unfinished"></translation>
+        <translation>MQTT-salasana</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="491"/>
         <source>Port</source>
-        <translation type="unfinished"></translation>
+        <translation>Portti</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="497"/>
         <source>Background activity</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Taustatoiminto</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="498"/>
@@ -513,12 +513,12 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="523"/>
         <source>Device will ring for 60 seconds the below defined tone.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Laite soittaa 60 sekuntia alla määritettyä ääntä.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="532"/>
         <source>Ringtone</source>
-        <translation type="unfinished"></translation>
+        <translation>Soittoääni</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="550"/>
