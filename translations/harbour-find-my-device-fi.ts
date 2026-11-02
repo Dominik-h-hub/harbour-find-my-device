@@ -598,7 +598,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="737"/>
         <source>Scan with an authenticator app on another device</source>
-        <translation type="unfinished">Skannaa todennussovelluksella toisessa laitteessa.</translation>
+        <translation>Skannaa todennussovelluksella toisessa laitteessa</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="741"/>
