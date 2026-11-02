@@ -106,7 +106,7 @@
     <message>
         <location filename="../qml/cover/CoverPage.qml" line="75"/>
         <source>Radar</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Radar</translation>
     </message>
 </context>
 <context>
@@ -149,7 +149,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="94"/>
         <source>%1 failed: wrong PIN</source>
-        <translation type="unfinished">%1 epäonnistui: väärä PIN-koodi</translation>
+        <translation>%1 epäonnistui: väärä PIN-koodi</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="95"/>
@@ -169,7 +169,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="143"/>
         <source>no PIN set</source>
-        <translation type="unfinished">PIN-koodia ei ole asetettu</translation>
+        <translation>PIN-koodia ei ole asetettu</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="144"/>
@@ -189,7 +189,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="90"/>
         <source>DELETE confirmed: device wiped</source>
-        <translation type="unfinished">DELETE vahvistettu: laitteen tiedot poistettu</translation>
+        <translation>POISTA vahvistettu: laitteen tiedot poistettu</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="96"/>
