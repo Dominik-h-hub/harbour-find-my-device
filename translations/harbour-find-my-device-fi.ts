@@ -37,12 +37,12 @@
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="126"/>
         <source>The PIN must match the remote device&apos;s own PIN. The same MQTT server as configured in Settings is used to reach it.</source>
-        <translation type="unfinished">PIN täytyy olla sama kuin toisen laitteen PIN. yhteistä asetussivulla määritettyä MQTT-palvelinta käytetään toisen laitteen tavoittamiseen.</translation>
+        <translation>PIN täytyy olla sama kuin toisen laitteen PIN. Yhteistä asetussivulla määritettyä MQTT-palvelinta käytetään toisen laitteen tavoittamiseen.</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="113"/>
         <source>PIN for remote access (HMAC secret)</source>
-        <translation type="unfinished">PIN-koodi etähallintaan (HMAC secret)</translation>
+        <translation type="unfinished">PIN-koodi etähallintaan (HMAC tiiviste)</translation>
     </message>
     <message>
         <location filename="../qml/pages/AddDevicePage.qml" line="101"/>
@@ -55,12 +55,12 @@
     <message>
         <location filename="../qml/pages/BackupCodesPage.qml" line="16"/>
         <source>Backup codes</source>
-        <translation type="unfinished">Varmuuskoodit</translation>
+        <translation>Varakoodit</translation>
     </message>
     <message>
         <location filename="../qml/pages/BackupCodesPage.qml" line="23"/>
         <source>Write these down now. Each code works once and is shown only here. They replace the TOTP code in an SMS command when you have no authenticator app.</source>
-        <translation type="unfinished">Kirjoita nämä talteen nyt. Kukin koodi toimii vain kerran ja näytetään vain tässä. Ne korvaavat TOTP-koodin tekstiviestikomennossa, jos sinulla ei ole todennussovellusta.</translation>
+        <translation>Kirjoita nämä talteen nyt. Kukin koodi toimii vain kerran ja näytetään vain tässä. Ne korvaavat TOTP-koodin tekstiviestikomennossa, jos sinulla ei ole todennussovellusta.</translation>
     </message>
     <message>
         <location filename="../qml/pages/BackupCodesPage.qml" line="42"/>
@@ -93,7 +93,7 @@
     <message>
         <location filename="../qml/pages/ConfirmDeletePage.qml" line="53"/>
         <source>Note: Request for deletion will be sent after you press the button below. Wipe will be performed only if DELETE command is activated on remote device. Otherwise it will be declined.</source>
-        <translation type="unfinished">Huomautus: Poistamispyyntö lähetetään, kun olet painanut alla olevaa painiketta. Poistaminen toteutetaan vain, jos DELETE-komento käynnistetään toisessa laitteessa. Muuten pyyntö jätetään ottamatta huomioon.</translation>
+        <translation>Huomautus: Poistamispyyntö lähetetään, kun olet painanut alla olevaa painiketta. Poistaminen toteutetaan vain, jos POISTA-komento käynnistetään toisessa laitteessa. Muuten pyyntö jätetään ottamatta huomioon.</translation>
     </message>
 </context>
 <context>
@@ -593,7 +593,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="689"/>
         <source>TOTP secret</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">TOTP-salasana</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="737"/>
@@ -663,7 +663,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="884"/>
         <source>Report a bug or request a feature</source>
-        <translation type="unfinished"></translation>
+        <translation>Raportoi virhe tai pyydä ominaisuutta</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="940"/>
@@ -678,27 +678,27 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="968"/>
         <source>User Manual</source>
-        <translation type="unfinished"></translation>
+        <translation>Käyttöohje</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="653"/>
         <source>Sends current GPS coordinates via SMS to sender. SMS will NOT be shown under sent messages but notification will be shown. ATTENTION: SMS costs may apply.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Lähettää GPS-koordinaatit tekstiviestillä lähettäjälle. Tekstiviestiä EI näytetä lähetetyissä viesteissä mutta ilmoitus näytetään. HUOMIO: Viestistä voi aiheutua kustannuksia.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="522"/>
         <source>Allow command RING</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Salli komento SOITA</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="572"/>
         <source>Note: Preview sound will be played with the current system volume, remote command will be played with 100% volume, ignoring muted device.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Huomautus: Testiääni soitetaan nykyisellä laitteen äänitasolla. Etäkomento soitetaan 100% äänitasolla, vaikka laite olisi äänettömällä.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="577"/>
         <source>Allow command LOCK</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Salli komento LUKITSE</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="585"/>
@@ -729,82 +729,82 @@
         <location filename="../qml/pages/SettingsPage.qml" line="63"/>
         <source>running</source>
         <extracomment>shows status of background daemon on settings page; s is one of &quot;unknown&quot;, &quot;running&quot;, &quot;deactivated&quot;, &quot;applying&quot;</extracomment>
-        <translation type="unfinished"></translation>
+        <translation>käynnissä</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="278"/>
         <source>Remote commands, SMS control and background tracking need the background service package. It runs outside the app sandbox and contains a privileged helper for reboot and SMS replies; the system installer will ask you to confirm the installation.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Etäkomennot, tekstiviestiohjaus ja seurantapalvelu tarvitsevat taustapalvelun. Se toimii hiekkalaatikon ulkopuolella ja sisältää ohjelmat uudelleenkäynnistämiseen ja tekstiviestivastauksiin. Järjestelmä pyytää sinua vahvistamaan näiden asennuksen.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="288"/>
         <source>Install background service</source>
-        <translation type="unfinished"></translation>
+        <translation>Asenna taustapalvelut</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="302"/>
         <source>Remote commands, SMS control and background tracking need the background service. Install the package &apos;harbour-find-my-device-daemon&apos; from the same repository this app came from (e.g. SailfishOS:Chum).</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Etäkomennot, tekstiviestiohjaus ja seurantapalvelu vaativat taustapalvelun. Asenna ohjelmisto &apos;harbour-find-my-device-daemon&apos; samasta ohjelmalähteestä kuin tämä ohjelma (esim. SailfishOS:Chum).</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="317"/>
         <source>Background service update available (installed: %1, new: %2).</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Taustapalveluohjelman päivitys saatavilla (asennettu : %1, uusi: %2).</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="325"/>
         <source>Update background service</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Päivitä taustapalveluohjelma</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="64"/>
         <source>deactivated</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">deaktivoitu</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="68"/>
         <source>not installed</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">ei ole asennettu</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="67"/>
         <source>applying…</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">asetetaan…</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="586"/>
         <source>Will delete all userdata stored under &apos;home/&lt;user&gt;/&apos; and reboot device afterwards.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Poistaa kaikki käyttäjätiedot kansiosta &apos;home/&lt;käyttäjä&gt;/&apos; ja käynnistää tämän jälkeen puhelimen uudelleen.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="443"/>
         <source>GPS coordinates to push (latitude, longitude)</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Jaettavat GPS-koordinaatit (leveys, pituus)</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="419"/>
         <source>GPS at Home</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">GPS kotona</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="430"/>
         <source>If both fields are filled and the phone is connected to this WiFi network, these coordinates are sent instead of querying GPS (periodic updates and MQTT/SMS commands).</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Jos molemmat kentät on täytetty ja puhelin on yhdistetty tähän WIFi-verkkoon, nämä koordinaatit lähetetään GPS-koordinaattien asemesta (säännölliset päivitykset ja MQTT/SMS-komennot).</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="437"/>
         <source>WiFi SSID, e.g. MyHomeNetwork</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">WiFi SSID, esim. Kotiverkko</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="404"/>
         <source>Lets the daemon turn on the system location services and accept the agreement.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Sallii taustapalvelun käynnistää paikannuspalvelut ja hyväksymään sopimuksen.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="410"/>
         <source>Lets the daemon turn on mobile data for a position push or photo upload and turn it off again afterwards. Not while connected to WLAN or roaming.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Sallii taustapalvelun ottamaan käyttöön mobiilidatan sijainnin tai valokuvan jakamiseksi sekä laittamaan sen pois jälkeenpäin. Ei käytössä, jos yhdistetty WLAN: iin tai verkkovierailun yhteydessä.</translation>
     </message>
 </context>
 </TS>
