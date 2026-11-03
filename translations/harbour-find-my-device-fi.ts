@@ -214,12 +214,12 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="180"/>
         <source>LOCK</source>
-        <translation type="unfinished">LUKITSE</translation>
+        <translation>LUKITSE</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="187"/>
         <source>CAMERA</source>
-        <translation type="unfinished">KAMERA</translation>
+        <translation>KAMERA</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="195"/>
@@ -260,7 +260,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="140"/>
         <source>Last GPS FIX: %1</source>
-        <translation type="unfinished">Viimeisin GPS-paikannus: %1</translation>
+        <translation>Viimeisin GPS-paikannus: %1</translation>
     </message>
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="93"/>
@@ -270,7 +270,7 @@
     <message>
         <location filename="../qml/pages/DevicesView.qml" line="97"/>
         <source>Could not send %1: no connection</source>
-        <translation type="unfinished">Ei voitu lähettää %1: ei yhteyttä</translation>
+        <translation>Ei voitu lähettää %1: ei yhteyttä</translation>
     </message>
 </context>
 <context>
@@ -296,7 +296,7 @@
     <message>
         <location filename="../qml/pages/MainPage.qml" line="85"/>
         <source>Remote commands and background tracking need the background service. Tap to set it up in the Settings.</source>
-        <translation type="unfinished">Etäkomennot ja taustaseuranta vaatii taustapalvelut. Valitse niiden asettaminen asetussivulla.</translation>
+        <translation>Etäkomennot ja taustaseuranta vaatii taustapalvelun. Valitse määrittääksesi se asetussivulla.</translation>
     </message>
 </context>
 <context>
@@ -309,7 +309,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="187"/>
         <source>Tap the map to explore</source>
-        <translation type="unfinished">Valitse kartta tutkiaksesi</translation>
+        <translation>Valitse kartta tutkiaksesi</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="36"/>
@@ -319,7 +319,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="132"/>
         <source>No GPS fix</source>
-        <translation type="unfinished">Ei GPS-tietoa</translation>
+        <translation>Ei GPS-tietoa</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="249"/>
@@ -334,7 +334,7 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="264"/>
         <source>No location yet</source>
-        <translation type="unfinished">Ei vielä sijaintia</translation>
+        <translation>Ei vielä sijaintia</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="265"/>
@@ -344,37 +344,37 @@
     <message>
         <location filename="../qml/pages/MapView.qml" line="204"/>
         <source>Map module not available</source>
-        <translation type="unfinished">Karttamoduuli ei ole käytettävissä</translation>
+        <translation>Karttamoduuli ei ole käytettävissä</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="212"/>
         <source>Install QtLocation on the device to show the map. Device positions are still listed on the Devices tab.</source>
-        <translation type="unfinished">Asenna QtLocation laitteeseen nayttääksesi kartan. Laitteiden sijainnit ovat listattuna Laitteet-välilehdellä.</translation>
+        <translation>Asenna QtLocation laitteeseen nayttääksesi kartan. Laitteiden sijainnit ovat listattuna Laitteet-välilehdellä.</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="127"/>
         <source>No GPS fix yet — Retry at next refresh time</source>
-        <translation type="unfinished">Ei GPS-tietoa vielä — Yritä uudelleen seuraavalla päivityskerralla</translation>
+        <translation>Ei GPS-tietoa vielä — Yritä uudelleen seuraavalla päivityskerralla</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="129"/>
         <source>GPS is disabled</source>
-        <translation type="unfinished">GPS on estetty</translation>
+        <translation>GPS on estetty</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="131"/>
         <source>GPS error</source>
-        <translation type="unfinished">GPS-virhe</translation>
+        <translation>GPS-virhe</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="128"/>
         <source>No GPS module available</source>
-        <translation type="unfinished">GPS- moduuli ei ole käytettävissä</translation>
+        <translation>GPS-moduuli ei ole käytettävissä</translation>
     </message>
     <message>
         <location filename="../qml/pages/MapView.qml" line="130"/>
         <source>GPS reader library unavailable</source>
-        <translation type="unfinished">GPS-lukijan kirjasto ei ole käytettävissä</translation>
+        <translation>GPS-lukijan kirjasto ei ole käytettävissä</translation>
     </message>
 </context>
 <context>
@@ -383,7 +383,7 @@
         <location filename="../qml/pages/SettingsPage.qml" line="22"/>
         <location filename="../qml/pages/SettingsPage.qml" line="141"/>
         <source>(not set)</source>
-        <translation type="unfinished">(ei ole asetettu)</translation>
+        <translation>(ei ole asetettu)</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="206"/>
@@ -398,12 +398,12 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="227"/>
         <source>GPS service</source>
-        <translation type="unfinished">GPS-palvelu</translation>
+        <translation>GPS-palvelu</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="248"/>
         <source>Command service</source>
-        <translation type="unfinished">Komennot-palvelu</translation>
+        <translation>Komennot-palvelu</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="264"/>
@@ -413,47 +413,47 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="338"/>
         <source>GPS service: Activated when you turn the switch &apos;Background activity&apos; on.</source>
-        <translation type="unfinished">GPS-palvelu: Aktivoidaan, kun valitset &apos;Taustapalvelut&apos; päälle.</translation>
+        <translation>GPS-palvelu: Aktivoidaan, kun valitset &apos;Taustapalvelut&apos; päälle.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="345"/>
         <source>Command service: Activated when you turn min. one remote action or SMS action on.</source>
-        <translation type="unfinished">Komentopalvelut: Aktivoidaan, kun valitset vähintään yhden etätoiminnon tai SMS-toiminnon päälle.</translation>
+        <translation>Komentopalvelut: Aktivoidaan, kun valitset vähintään yhden etätoiminnon tai SMS-toiminnon päälle.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="352"/>
         <source>General</source>
-        <translation type="unfinished">Yleistä</translation>
+        <translation>Yleistä</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="370"/>
         <source>Device-Id</source>
-        <translation type="unfinished">Laitetunnus</translation>
+        <translation>Laitetunnus</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="397"/>
         <source>GPS query interval (minutes)</source>
-        <translation type="unfinished">GPS-kyselyn tiheys (minuuttia)</translation>
+        <translation>GPS-kyselyn tiheys (minuuttia)</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="403"/>
         <source>Auto-enable location when needed</source>
-        <translation type="unfinished">Käynnistä paikannus automaattisesti tarpeen mukaan</translation>
+        <translation>Käynnistä paikannus automaattisesti tarpeen mukaan</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="409"/>
         <source>Auto-enable mobile data when needed</source>
-        <translation type="unfinished">Käynnistä mobiilidata automaattisesti tarpeen mukaan</translation>
+        <translation>Käynnistä mobiilidata automaattisesti tarpeen mukaan</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="451"/>
         <source>MQTT</source>
-        <translation type="unfinished">MQTT</translation>
+        <translation>MQTT</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="458"/>
         <source>Publish coordinates over MQTT</source>
-        <translation type="unfinished">Jaa koordinaattitiedot MQTT: n avulla</translation>
+        <translation>Jaa koordinaattitiedot MQTT:n avulla</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="459"/>
@@ -468,12 +468,12 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="465"/>
         <source>broker.example.com</source>
-        <translation type="unfinished">valittaja.esimerkki.fi</translation>
+        <translation>esimerkki.fi</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="470"/>
         <source>Use TLS</source>
-        <translation type="unfinished">Käytä TLS-salausta</translation>
+        <translation>Käytä TLS-salausta</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="479"/>
@@ -493,27 +493,27 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="497"/>
         <source>Background activity</source>
-        <translation type="unfinished">Taustatoiminto</translation>
+        <translation>Taustatoiminto</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="498"/>
         <source>Keep reporting the location while the app is closed (the daemon &apos;GPS service&apos; runs).</source>
-        <translation type="unfinished">Raportoi sijaintia vaikka sovellus on suljettu (palvelu &apos;GPS-palvelu&apos; on käynnissä).</translation>
+        <translation>Raportoi sijaintia vaikka sovellus on suljettu (palvelu &apos;GPS-palvelu&apos; on käynnissä).</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="508"/>
         <source>Remote actions</source>
-        <translation type="unfinished">Etätoiminnot</translation>
+        <translation>Etätoiminnot</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="516"/>
         <source>PIN for remote access (HMAC secret)</source>
-        <translation type="unfinished">PIN-koodi etäpääsyyn (HMAC secret)</translation>
+        <translation>PIN-koodi etäpääsyyn (HMAC salaus)</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="523"/>
         <source>Device will ring for 60 seconds the below defined tone.</source>
-        <translation type="unfinished">Laite soittaa 60 sekuntia alla määritettyä ääntä.</translation>
+        <translation>Laite soittaa 60 sekuntia alla määritettyä ääntä.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="532"/>
@@ -533,7 +533,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="578"/>
         <source>If device is unlocked, it will be locked into lock screen.</source>
-        <translation type="unfinished">Jos laite on lukitsematta, lukitusnäyttö asetetaan päälle.</translation>
+        <translation>Jos laite on lukitsematta, lukitusnäyttö asetetaan päälle.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="595"/>
@@ -543,7 +543,7 @@
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="603"/>
         <source>A photo can be captured and uploaded to the configured WebDAV server.</source>
-        <translation type="unfinished">Valokuva voidaan ottaa ja ladata määritetylle WebDAV-palvelimelle.</translation>
+        <translation>Valokuva voidaan ottaa ja ladata määritetylle WebDAV-palvelimelle.</translation>
     </message>
     <message>
         <location filename="../qml/pages/SettingsPage.qml" line="611"/>
