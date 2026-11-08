@@ -1,0 +1,4 @@
+pyicloud==2026.10.1
+paho-mqtt>=2.0
+requests>=2.31          # only needed for the openHAB example in report_status()
+tzdata
